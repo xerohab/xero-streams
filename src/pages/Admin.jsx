@@ -10,6 +10,7 @@ import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil } from "lucide-re
 import VideoUploadForm from "@/components/admin/VideoUploadForm";
 import SeriesForm from "@/components/admin/SeriesForm";
 import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
+import WebScraper from "@/components/admin/WebScraper";
 import EditVideoModal from "@/components/admin/EditVideoModal";
 import EditSeriesModal from "@/components/admin/EditSeriesModal";
 import { Toaster } from "react-hot-toast";
@@ -93,6 +94,7 @@ export default function Admin() {
           <TabsList className="bg-secondary">
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
+            <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
             <TabsTrigger value="series">Add Series</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
@@ -115,6 +117,17 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <BulkEpisodeUpload seriesList={seriesList} onSuccess={refresh} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="scrape">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Scrape Video Links from URL</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <WebScraper seriesList={seriesList} onSuccess={refresh} />
               </CardContent>
             </Card>
           </TabsContent>
