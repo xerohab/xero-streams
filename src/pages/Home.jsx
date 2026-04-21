@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/browse/Navbar";
 import HeroSection from "@/components/browse/HeroSection";
-import VideoRow from "@/components/browse/VideoRow";
+import VideoCard from "@/components/browse/VideoCard";
+import SeriesCard from "@/components/browse/SeriesCard";
 import { Loader2, Film, Tv } from "lucide-react";
 
 export default function Home() {
@@ -21,35 +22,21 @@ export default function Home() {
 
   const isLoading = loadingVideos || loadingSeries;
 
-  // Filter by tab
-  const movies = videos.filter((v) => v.content_type === "movie" || (!v.content_type && !v.series_id));
-  const tvEpisodes = videos.filter((v) => v.content_type === "episode" || (v.series_id && v.content_type !== "movie"));
+  // Latest 5 for hero banner
+  const heroVideos = videos.slice(0, 5);
 
-  const activeVideos = activeTab === "movies" ? movies : activeTab === "tv" ? tvEpisodes : videos;
-
-  // Featured video
-  const featuredVideo = activeVideos.find((v) => v.is_featured) || activeVideos[0];
-  const featuredSeriesTitle = featuredVideo?.series_id
-    ? seriesList.find((s) => s.id === featuredVideo.series_id)?.title
-    : null;
-
-  // Series rows (only for TV tab or All)
-  const seriesRows = seriesList
-    .map((series) => ({
-      title: series.title,
-      videos: activeVideos
-        .filter((v) => v.series_id === series.id)
-        .sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0)),
-    }))
-    .filter((row) => row.videos.length > 0);
-
-  // Standalone movies (not in a series)
-  const standaloneMovies = activeVideos.filter(
-    (v) => !v.series_id || !seriesList.some((s) => s.id === v.series_id)
+  // Movies (standalone, not in any series)
+  const movies = videos.filter(
+    (v) => v.content_type === "movie" || (!v.series_id && !v.content_type)
   );
 
-  // Recently added (all active)
-  const recentVideos = [...activeVideos].slice(0, 15);
+  // Series that have episodes
+  const seriesWithEpisodes = seriesList.filter((s) =>
+    videos.some((v) => v.series_id === s.id)
+  );
+
+  const episodeCountBySeries = (seriesId) =>
+    videos.filter((v) => v.series_id === seriesId).length;
 
   if (isLoading) {
     return (
@@ -78,10 +65,11 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <HeroSection video={featuredVideo} seriesTitle={featuredSeriesTitle} />
+      {/* Hero: latest 5 videos */}
+      <HeroSection videos={heroVideos} seriesList={seriesList} />
 
-      {/* Category Tabs */}
-      <div className="relative z-10 -mt-6 px-6 md:px-16 mb-4">
+      {/* Tabs */}
+      <div className="relative z-10 -mt-6 px-6 md:px-16 mb-8">
         <div className="flex items-center gap-1 bg-background/60 backdrop-blur-md border border-border rounded-full p-1 w-fit">
           {[
             { id: "all", label: "All", icon: null },
@@ -104,40 +92,42 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="relative z-10 pb-16">
-        {activeTab === "movies" ? (
-          <>
-            {standaloneMovies.length > 0 && (
-              <VideoRow title="Movies" videos={standaloneMovies} />
-            )}
-            {standaloneMovies.length === 0 && (
-              <div className="text-center py-16 text-muted-foreground px-6">
-                No movies yet. Add some from the admin panel.
-              </div>
-            )}
-          </>
-        ) : activeTab === "tv" ? (
-          <>
-            {seriesRows.length > 0 ? seriesRows.map((row) => (
-              <VideoRow key={row.title} title={row.title} videos={row.videos} />
-            )) : (
-              <div className="text-center py-16 text-muted-foreground px-6">
-                No TV series yet. Add some from the admin panel.
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {recentVideos.length > 0 && (
-              <VideoRow title="Recently Added" videos={recentVideos} />
-            )}
-            {seriesRows.map((row) => (
-              <VideoRow key={row.title} title={row.title} videos={row.videos} />
-            ))}
-            {standaloneMovies.length > 0 && (
-              <VideoRow title="Movies" videos={standaloneMovies} />
-            )}
-          </>
+      <div className="relative z-10 pb-16 px-6 md:px-16">
+
+        {/* TV Series Grid */}
+        {(activeTab === "all" || activeTab === "tv") && seriesWithEpisodes.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-bold text-foreground mb-4">TV Series</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {seriesWithEpisodes.map((series) => (
+                <SeriesCard
+                  key={series.id}
+                  series={series}
+                  episodeCount={episodeCountBySeries(series.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Movies Grid */}
+        {(activeTab === "all" || activeTab === "movies") && movies.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-bold text-foreground mb-4">Movies</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {movies.map((movie) => (
+                <VideoCard key={movie.id} video={movie} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty states */}
+        {activeTab === "tv" && seriesWithEpisodes.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">No TV series yet.</div>
+        )}
+        {activeTab === "movies" && movies.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">No movies yet.</div>
         )}
       </div>
     </div>
