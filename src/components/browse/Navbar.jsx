@@ -49,7 +49,7 @@ export default function Navbar() {
             <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
           </div>
           <span className="text-xl font-black tracking-tight text-foreground">
-            StreamLine
+            Xero Streams
           </span>
         </Link>
 
