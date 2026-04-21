@@ -34,7 +34,7 @@ export default function VideoRow({ title, videos }) {
         {/* Videos */}
         <div
           ref={scrollRef}
-          className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-6 md:px-16 pb-2"
+          className="flex gap-4 md:gap-5 overflow-x-auto scrollbar-hide px-6 md:px-16 pb-4"
         >
           {videos.map((video, i) => (
             <VideoCard key={video.id} video={video} index={i} />

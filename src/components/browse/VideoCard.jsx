@@ -1,22 +1,18 @@
 import React, { useState } from "react";
 import { Play, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 
 export default function VideoCard({ video, index }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="flex-shrink-0 w-[160px] md:w-[240px] lg:w-[280px] group"
+    <div
+      className="flex-shrink-0 w-[180px] md:w-[220px] lg:w-[260px]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link to={`/watch?id=${video.id}`}>
-        <div className="relative aspect-video rounded-md overflow-hidden bg-secondary transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-primary/20 group-hover:z-10">
+        <div className="relative aspect-video rounded-md overflow-hidden bg-secondary transition-shadow duration-300 hover:shadow-lg hover:shadow-black/40">
           {video.thumbnail_url ? (
             <img
               src={video.thumbnail_url}
@@ -52,17 +48,13 @@ export default function VideoCard({ video, index }) {
           )}
         </div>
 
-        <div className="mt-2 px-1">
-          <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+        {/* Title only — no description, no overlap */}
+        <div className="mt-2 px-1 pb-1">
+          <h3 className="text-xs md:text-sm font-semibold text-foreground leading-snug hover:text-primary transition-colors line-clamp-2">
             {video.title}
           </h3>
-          {video.description && (
-            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-              {video.description}
-            </p>
-          )}
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
