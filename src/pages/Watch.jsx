@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Cast, Clock, Download, Film, Loader2, SkipForward } from "lucide-react";
+import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -147,13 +147,7 @@ export default function Watch() {
                 >
                   <div className="bg-black/70 rounded-2xl px-8 py-7 flex flex-col items-center gap-4 text-center backdrop-blur-sm">
                     <p className="text-foreground font-semibold text-lg">MKV files can't play in the browser</p>
-                    <p className="text-muted-foreground text-sm max-w-xs">Download the file and open it with a media player like VLC.</p>
-                    <a href={video.video_url} download target="_blank" rel="noreferrer">
-                      <Button className="bg-primary hover:bg-primary/90 gap-2">
-                        <Download className="w-4 h-4" />
-                        Download to Watch
-                      </Button>
-                    </a>
+                    <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
                   </div>
                 </div>
               ) : (
@@ -169,6 +163,15 @@ export default function Watch() {
                   Your browser does not support this video format.
                 </video>
               )}
+
+              {/* Cast button overlay */}
+              <button
+                onClick={handleCast}
+                className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
+                title="Cast to TV"
+              >
+                <Cast className="w-5 h-5" />
+              </button>
 
               {/* Autoplay countdown overlay */}
               {autoplayCountdown !== null && nextEpisode && (
@@ -238,10 +241,7 @@ export default function Watch() {
                     Play Next Episode
                   </Button>
                 )}
-                <Button variant="outline" className="gap-2" onClick={handleCast}>
-                  <Cast className="w-4 h-4" />
-                  Cast to TV
-                </Button>
+
               </div>
             </div>
           </div>
