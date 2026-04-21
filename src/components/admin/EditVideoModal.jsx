@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,22 @@ export default function EditVideoModal({ video, seriesList, open, onClose, onSav
   });
   const [saving, setSaving] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+
+  useEffect(() => {
+    if (video) {
+      setForm({
+        title: video.title || "",
+        description: video.description || "",
+        video_url: video.video_url || "",
+        thumbnail_url: video.thumbnail_url || "",
+        series_id: video.series_id || "",
+        episode_number: video.episode_number || "",
+        duration: video.duration || "",
+        is_featured: video.is_featured || false,
+        content_type: video.content_type || "movie",
+      });
+    }
+  }, [video?.id]);
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
