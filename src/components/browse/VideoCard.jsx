@@ -17,7 +17,7 @@ export default function VideoCard({ video, index }) {
             <img
               src={video.thumbnail_url}
               alt={video.title}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary flex items-center justify-center">
