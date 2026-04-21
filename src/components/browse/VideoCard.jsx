@@ -49,8 +49,8 @@ export default function VideoCard({ video, index }) {
         </div>
 
         {/* Title only — no description, no overlap */}
-        <div className="mt-2 px-1 pb-1">
-          <h3 className="text-xs md:text-sm font-semibold text-foreground leading-snug hover:text-primary transition-colors line-clamp-2">
+        <div className="mt-2 px-1 pb-1 min-h-[2.5rem]">
+          <h3 className="text-xs md:text-sm font-semibold text-foreground leading-snug hover:text-primary transition-colors break-words line-clamp-3">
             {video.title}
           </h3>
         </div>
