@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil } from "lucide-react";
+import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon } from "lucide-react";
 import VideoUploadForm from "@/components/admin/VideoUploadForm";
 import SeriesForm from "@/components/admin/SeriesForm";
 import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
@@ -19,6 +19,7 @@ export default function Admin() {
   const [user, setUser] = useState(null);
   const [editingVideo, setEditingVideo] = useState(null);
   const [editingSeries, setEditingSeries] = useState(null);
+  const [fetchingPosterFor, setFetchingPosterFor] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -48,6 +49,16 @@ export default function Admin() {
   const deleteSeries = async (id) => {
     await base44.entities.Series.delete(id);
     refresh();
+  };
+
+  const fetchPoster = async (v) => {
+    setFetchingPosterFor(v.id);
+    const series = seriesList.find((s) => s.id === v.series_id);
+    const titleToSearch = series ? series.title : v.title;
+    const type = v.content_type === "movie" ? "movie" : "tv";
+    await base44.functions.invoke("fetchPoster", { title: titleToSearch, type, videoId: v.id });
+    refresh();
+    setFetchingPosterFor(null);
   };
 
   if (user && user.role !== "admin") {
@@ -226,13 +237,23 @@ export default function Admin() {
                               </div>
                             </div>
                             <div className="flex gap-1 flex-shrink-0">
-                              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => setEditingVideo(v)}>
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteVideo(v.id)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                               <Button
+                                 variant="ghost"
+                                 size="icon"
+                                 className="text-muted-foreground hover:text-yellow-400"
+                                 title="Auto-fetch poster"
+                                 onClick={() => fetchPoster(v)}
+                                 disabled={fetchingPosterFor === v.id}
+                               >
+                                 {fetchingPosterFor === v.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                               </Button>
+                               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => setEditingVideo(v)}>
+                                 <Pencil className="w-4 h-4" />
+                               </Button>
+                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteVideo(v.id)}>
+                                 <Trash2 className="w-4 h-4" />
+                               </Button>
+                             </div>
                           </div>
                         );
                       })}

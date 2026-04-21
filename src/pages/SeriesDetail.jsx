@@ -26,9 +26,10 @@ export default function SeriesDetail() {
     enabled: !!seriesId,
   });
 
-  const sortedEpisodes = [...episodes].sort(
-    (a, b) => (a.episode_number || 0) - (b.episode_number || 0)
-  );
+  const sortedEpisodes = [...episodes].sort((a, b) => {
+    if (a.episode_number && b.episode_number) return a.episode_number - b.episode_number;
+    return a.title.localeCompare(b.title);
+  });
 
   if (loadingSeries || loadingEpisodes) {
     return (

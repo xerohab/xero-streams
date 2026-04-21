@@ -30,10 +30,10 @@ export default function Home() {
     (v) => v.content_type === "movie" || (!v.series_id && !v.content_type)
   );
 
-  // Series that have episodes
-  const seriesWithEpisodes = seriesList.filter((s) =>
-    videos.some((v) => v.series_id === s.id)
-  );
+  // Series that have episodes, sorted A-Z
+  const seriesWithEpisodes = seriesList
+    .filter((s) => videos.some((v) => v.series_id === s.id))
+    .sort((a, b) => a.title.localeCompare(b.title));
 
   const episodeCountBySeries = (seriesId) =>
     videos.filter((v) => v.series_id === seriesId).length;
