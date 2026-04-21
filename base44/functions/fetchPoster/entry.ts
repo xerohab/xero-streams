@@ -104,6 +104,17 @@ Return only a likely valid direct image URL or null if you don't know.`,
       } catch (_) {}
     }
 
+    // --- Fallback: use series cover image if nothing found ---
+    if (!posterUrl && videoId) {
+      const video = await base44.asServiceRole.entities.Video.filter({ id: videoId });
+      const seriesId = video?.[0]?.series_id;
+      if (seriesId) {
+        const seriesResults = await base44.asServiceRole.entities.Series.filter({ id: seriesId });
+        const seriesCover = seriesResults?.[0]?.cover_image;
+        if (seriesCover) posterUrl = seriesCover;
+      }
+    }
+
     if (posterUrl && videoId) {
       await base44.asServiceRole.entities.Video.update(videoId, { thumbnail_url: posterUrl });
     }
