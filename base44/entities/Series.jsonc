@@ -1,0 +1,42 @@
+{
+  "name": "Series",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Series title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Series description"
+    },
+    "cover_image": {
+      "type": "string",
+      "description": "URL for the series cover image"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "action",
+        "comedy",
+        "drama",
+        "documentary",
+        "horror",
+        "sci-fi",
+        "thriller",
+        "education",
+        "music",
+        "other"
+      ],
+      "description": "Series category"
+    },
+    "sort_order": {
+      "type": "number",
+      "default": 0,
+      "description": "Display order"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
