@@ -98,7 +98,7 @@ export default function Home() {
         {(activeTab === "all" || activeTab === "tv") && seriesWithEpisodes.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xl font-bold text-foreground mb-4">TV Series</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
               {seriesWithEpisodes.map((series) => (
                 <SeriesCard
                   key={series.id}
@@ -114,7 +114,7 @@ export default function Home() {
         {(activeTab === "all" || activeTab === "movies") && movies.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xl font-bold text-foreground mb-4">Movies</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
               {movies.map((movie) => (
                 <VideoCard key={movie.id} video={movie} />
               ))}
