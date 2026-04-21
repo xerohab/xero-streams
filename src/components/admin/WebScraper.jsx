@@ -47,6 +47,7 @@ export default function WebScraper({ seriesList, onSuccess }) {
 
     const records = episodes.map(ep => ({
       title: ep.title,
+      description: ep.description || undefined,
       video_url: ep.video_url,
       thumbnail_url: seriesCover || undefined,
       series_id: selectedSeries,
@@ -113,25 +114,34 @@ export default function WebScraper({ seriesList, onSuccess }) {
             </div>
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
               {episodes.map((ep, index) => (
-                <div key={index} className="bg-secondary/50 border border-border rounded-lg px-3 py-2 flex items-center gap-3">
-                  <span className="text-xs font-mono text-muted-foreground w-6 text-center">{ep.episode_number}</span>
-                  <div className="flex-1 min-w-0 space-y-1">
+                <div key={index} className="bg-secondary/50 border border-border rounded-lg px-3 py-2 flex gap-3">
+                  <span className="text-xs font-mono text-muted-foreground w-6 text-center pt-1.5">{ep.episode_number}</span>
+                  <div className="flex-1 min-w-0 space-y-1.5">
                     <Input
                       value={ep.title}
                       onChange={e => updateEp(index, "title", e.target.value)}
+                      placeholder="Episode title"
+                      className="bg-secondary border-border h-7 text-sm"
+                    />
+                    <Input
+                      value={ep.description || ""}
+                      onChange={e => updateEp(index, "description", e.target.value)}
+                      placeholder="Description (optional)"
                       className="bg-secondary border-border h-7 text-sm"
                     />
                     <p className="text-xs text-muted-foreground truncate">{ep.video_url}</p>
                   </div>
-                  <Input
-                    type="number"
-                    value={ep.episode_number}
-                    onChange={e => updateEp(index, "episode_number", Number(e.target.value))}
-                    className="bg-secondary border-border h-7 text-sm w-16 shrink-0"
-                  />
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0" onClick={() => removeEp(index)}>
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  <div className="flex flex-col gap-1 items-end shrink-0">
+                    <Input
+                      type="number"
+                      value={ep.episode_number}
+                      onChange={e => updateEp(index, "episode_number", Number(e.target.value))}
+                      className="bg-secondary border-border h-7 text-sm w-16"
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeEp(index)}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

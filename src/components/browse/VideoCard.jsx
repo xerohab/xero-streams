@@ -12,7 +12,7 @@ export default function VideoCard({ video, index }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link to={`/watch?id=${video.id}`}>
-        <div className="relative aspect-video rounded-md overflow-hidden bg-secondary transition-shadow duration-300 hover:shadow-lg hover:shadow-black/40">
+        <div className="relative aspect-video rounded-md overflow-hidden bg-secondary transition-shadow duration-300 hover:shadow-lg hover:shadow-black/40 w-full">
           {video.thumbnail_url ? (
             <img
               src={video.thumbnail_url}
