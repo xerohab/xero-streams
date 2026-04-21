@@ -159,6 +159,7 @@ export default function Watch() {
                   controls
                   autoPlay
                   controlsList="nodownload"
+                  onContextMenu={(e) => e.preventDefault()}
                   className="w-full h-full"
                   poster={video.thumbnail_url}
                   onEnded={startCountdown}
