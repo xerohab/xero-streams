@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, SkipForward } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -19,8 +19,8 @@ function getEmbedUrl(url) {
 
 export default function Watch() {
   const navigate = useNavigate();
-  const urlParams = new URLSearchParams(window.location.search);
-  const videoId = urlParams.get("id");
+  const location = useLocation();
+  const videoId = new URLSearchParams(location.search).get("id");
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
@@ -55,6 +55,9 @@ export default function Watch() {
   const currentIndex = seriesEpisodes.findIndex((v) => v.id === videoId);
   const nextEpisode = currentIndex >= 0 && currentIndex < seriesEpisodes.length - 1
     ? seriesEpisodes[currentIndex + 1]
+    : null;
+  const prevEpisode = currentIndex > 0
+    ? seriesEpisodes[currentIndex - 1]
     : null;
 
   const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id).slice(0, 15);
@@ -231,6 +234,16 @@ export default function Watch() {
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
+                {prevEpisode && (
+                  <Button
+                    variant="secondary"
+                    className="gap-2"
+                    onClick={() => navigate(`/watch?id=${prevEpisode.id}`)}
+                  >
+                    <SkipBack className="w-4 h-4" />
+                    Previous Episode
+                  </Button>
+                )}
                 {nextEpisode && (
                   <Button
                     variant="secondary"
@@ -238,10 +251,9 @@ export default function Watch() {
                     onClick={() => navigate(`/watch?id=${nextEpisode.id}`)}
                   >
                     <SkipForward className="w-4 h-4" />
-                    Play Next Episode
+                    Next Episode
                   </Button>
                 )}
-
               </div>
             </div>
           </div>
@@ -253,7 +265,7 @@ export default function Watch() {
         {seriesEpisodes.length > 1 && (
           <VideoRow
             title={`All Episodes — ${series?.title}`}
-            videos={seriesEpisodes.filter((v) => v.id !== videoId)}
+            videos={seriesEpisodes}
           />
         )}
         {moreVideos.length > 0 && (
