@@ -158,6 +158,7 @@ export default function Watch() {
                   ref={videoRef}
                   controls
                   autoPlay
+                  controlsList="nodownload"
                   className="w-full h-full"
                   poster={video.thumbnail_url}
                   onEnded={startCountdown}
