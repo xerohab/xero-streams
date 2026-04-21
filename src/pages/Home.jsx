@@ -98,8 +98,11 @@ export default function Home() {
         {(activeTab === "all" || activeTab === "tv") && seriesWithEpisodes.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xl font-bold text-foreground mb-4">TV Series</h2>
+            {activeTab === "all" && seriesWithEpisodes.length > 15 && (
+              <p className="text-sm text-muted-foreground mb-4">Showing 15 of {seriesWithEpisodes.length} series — select <button onClick={() => setActiveTab("tv")} className="text-primary hover:underline font-medium">TV Shows</button> or use <button onClick={() => setActiveTab("tv")} className="text-primary hover:underline font-medium">Search</button> to find more.</p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {seriesWithEpisodes.map((series) => (
+              {(activeTab === "all" ? seriesWithEpisodes.slice(0, 15) : seriesWithEpisodes).map((series) => (
                 <SeriesCard
                   key={series.id}
                   series={series}
@@ -114,8 +117,11 @@ export default function Home() {
         {(activeTab === "all" || activeTab === "movies") && movies.length > 0 && (
           <div className="mb-12">
             <h2 className="text-xl font-bold text-foreground mb-4">Movies</h2>
+            {activeTab === "all" && movies.length > 15 && (
+              <p className="text-sm text-muted-foreground mb-4">Showing 15 of {movies.length} movies — select <button onClick={() => setActiveTab("movies")} className="text-primary hover:underline font-medium">Movies</button> or use <button onClick={() => setActiveTab("movies")} className="text-primary hover:underline font-medium">Search</button> to find more.</p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {movies.map((movie) => (
+              {(activeTab === "all" ? movies.slice(0, 15) : movies).map((movie) => (
                 <VideoCard key={movie.id} video={movie} />
               ))}
             </div>
