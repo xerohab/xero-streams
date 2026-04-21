@@ -34,6 +34,15 @@
       "type": "boolean",
       "default": false,
       "description": "Whether this video is featured on the hero banner"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "movie",
+        "episode"
+      ],
+      "default": "movie",
+      "description": "Whether this is a standalone movie or a series episode"
     }
   },
   "required": [

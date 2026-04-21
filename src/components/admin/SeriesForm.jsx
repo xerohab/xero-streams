@@ -6,12 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import toast from "react-hot-toast";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
 export default function SeriesForm({ onSuccess }) {
-  const { toast } = useToast();
   const [uploadingCover, setUploadingCover] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -33,7 +32,7 @@ export default function SeriesForm({ onSuccess }) {
     e.preventDefault();
     const payload = { ...form, category: form.category || undefined };
     await base44.entities.Series.create(payload);
-    toast({ title: "Series created!" });
+    toast.success("Series created!");
     setForm({ title: "", description: "", cover_image: "", category: "" });
     onSuccess?.();
   };

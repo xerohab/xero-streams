@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link as LinkIcon, Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import toast from "react-hot-toast";
 
 export default function VideoUploadForm({ seriesList, onSuccess }) {
-  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [form, setForm] = useState({
@@ -23,6 +22,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
     episode_number: "",
     duration: "",
     is_featured: false,
+    content_type: "movie",
   });
 
   const handleFileUpload = async (e) => {
@@ -32,7 +32,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     setForm((prev) => ({ ...prev, video_url: file_url }));
     setUploading(false);
-    toast({ title: "Video uploaded successfully" });
+    toast.success("Video uploaded successfully");
   };
 
   const handleThumbnailUpload = async (e) => {
@@ -52,7 +52,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
       series_id: form.series_id || undefined,
     };
     await base44.entities.Video.create(payload);
-    toast({ title: "Video added successfully!" });
+    toast.success("Video added successfully!");
     setForm({
       title: "",
       description: "",
@@ -62,6 +62,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
       episode_number: "",
       duration: "",
       is_featured: false,
+      content_type: "movie",
     });
     onSuccess?.();
   };
@@ -203,6 +204,19 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
           placeholder="e.g. 24:30"
           className="bg-secondary border-border"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Content Type</Label>
+        <Select value={form.content_type} onValueChange={(v) => update("content_type", v)}>
+          <SelectTrigger className="bg-secondary border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="movie">Movie</SelectItem>
+            <SelectItem value="episode">TV Episode</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex items-center gap-3">
