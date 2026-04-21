@@ -91,12 +91,23 @@ export default function Watch() {
                 />
               ) : (
                 <video
-                  src={video.video_url}
                   controls
                   autoPlay
                   className="w-full h-full"
                   poster={video.thumbnail_url}
-                />
+                >
+                  <source
+                    src={video.video_url}
+                    type={
+                      video.video_url?.toLowerCase().endsWith(".mkv")
+                        ? "video/x-matroska"
+                        : video.video_url?.toLowerCase().endsWith(".wav")
+                        ? "audio/wav"
+                        : undefined
+                    }
+                  />
+                  Your browser does not support this video format.
+                </video>
               )}
             </div>
           </div>
