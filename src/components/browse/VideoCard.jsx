@@ -7,7 +7,7 @@ export default function VideoCard({ video, index }) {
 
   return (
     <div
-      className="flex-shrink-0 w-[180px] md:w-[220px] lg:w-[260px]"
+      className="w-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
