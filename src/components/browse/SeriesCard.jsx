@@ -12,12 +12,12 @@ export default function SeriesCard({ series, episodeCount }) {
         className="group relative cursor-pointer rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1"
       >
         {/* Thumbnail */}
-        <div className="aspect-[2/3] relative overflow-hidden bg-secondary">
+        <div className="aspect-video relative overflow-hidden bg-secondary">
           {series.cover_image ? (
             <img
               src={series.cover_image}
               alt={series.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
