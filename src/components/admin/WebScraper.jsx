@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, CheckCircle, Trash2, Upload } from "lucide-react";
+import { Loader2, Search, Trash2, Upload, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function WebScraper({ seriesList, onSuccess }) {
@@ -13,17 +13,23 @@ export default function WebScraper({ seriesList, onSuccess }) {
   const [scanning, setScanning] = useState(false);
   const [episodes, setEpisodes] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [scanMode, setScanMode] = useState(null); // 'direct' or 'page_links'
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
     setScanning(true);
     setEpisodes([]);
+    setScanMode(null);
     const res = await base44.functions.invoke("scrapeVideoLinks", { url });
     setScanning(false);
     if (res.data.error) { toast.error(res.data.error); return; }
-    if (res.data.episodes.length === 0) { toast.error("No mp4/wav files found at that URL"); return; }
+    if (res.data.episodes.length === 0) { toast.error("No files or episode links found at that URL"); return; }
     setEpisodes(res.data.episodes);
-    toast.success(`Found ${res.data.total} file${res.data.total !== 1 ? "s" : ""}`);
+    setScanMode(res.data.mode);
+    const msg = res.data.mode === 'page_links'
+      ? `Found ${res.data.total} episode links — URLs are download pages, not direct video files`
+      : `Found ${res.data.total} file${res.data.total !== 1 ? "s" : ""}`;
+    toast.success(msg);
   };
 
   const updateEp = (index, field, value) => {
@@ -62,7 +68,7 @@ export default function WebScraper({ seriesList, onSuccess }) {
     <div className="space-y-6">
       <div className="space-y-2">
         <Label>Directory URL</Label>
-        <p className="text-xs text-muted-foreground">Enter the URL of a directory page containing mp4/wav video files</p>
+        <p className="text-xs text-muted-foreground">Enter a directory URL with direct video files, or a show page with episode links (e.g. naijaprey.tv)</p>
         <div className="flex gap-2">
           <Input
             value={url}
@@ -94,9 +100,16 @@ export default function WebScraper({ seriesList, onSuccess }) {
             </Select>
           </div>
 
+          {scanMode === 'page_links' && (
+            <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2 text-xs text-yellow-400">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>These are <strong>download page links</strong>, not direct video files. Episodes will be imported but you'll need to edit each video URL to a direct file link before they can play.</span>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Found {episodes.length} file{episodes.length !== 1 ? "s" : ""} — review &amp; edit before importing</Label>
+              <Label>Found {episodes.length} episode{episodes.length !== 1 ? "s" : ""} — review &amp; edit before importing</Label>
             </div>
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
               {episodes.map((ep, index) => (

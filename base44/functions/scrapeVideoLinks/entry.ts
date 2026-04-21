@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const baseUrl = url.endsWith('/') ? url : url + '/';
 
     const res = await fetch(baseUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
     });
 
     if (!res.ok) {
@@ -31,70 +31,103 @@ Deno.serve(async (req) => {
       links.push(match[1]);
     }
 
-    // Filter for mp4 and wav files only
-    const mediaExtensions = /\.(mp4|wav|mkv|avi|mov|webm|m4v|mp3|ogg|flac)$/i;
-    const mediaLinks = links
+    // Helper to resolve relative URLs
+    const resolveUrl = (link) => {
+      if (link.startsWith('http://') || link.startsWith('https://')) return link;
+      if (link.startsWith('/')) {
+        const urlObj = new URL(baseUrl);
+        return `${urlObj.protocol}//${urlObj.host}${link}`;
+      }
+      return baseUrl + link;
+    };
+
+    // 1. Try direct media file links first
+    const mediaExtensions = /\.(mp4|wav|mkv|avi|mov|webm|m4v|mp3|ogg|flac)(\?.*)?$/i;
+    const directMediaLinks = links
       .filter(link => mediaExtensions.test(link))
-      .map(link => {
-        // Resolve relative URLs
-        if (link.startsWith('http://') || link.startsWith('https://')) return link;
-        if (link.startsWith('/')) {
-          const urlObj = new URL(baseUrl);
-          return `${urlObj.protocol}//${urlObj.host}${link}`;
-        }
-        return baseUrl + link;
-      })
-      // Remove duplicates
+      .map(resolveUrl)
       .filter((link, i, arr) => arr.indexOf(link) === i);
 
-    // Parse episode info from filenames
-    const episodes = mediaLinks.map((link, index) => {
-      const filename = decodeURIComponent(link.split('/').pop());
-      const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
+    if (directMediaLinks.length > 0) {
+      const episodes = parseEpisodes(directMediaLinks);
+      return Response.json({ episodes, total: episodes.length, mode: 'direct' });
+    }
 
-      // Try to extract episode number from common patterns
-      // e.g. "S01E05", "Episode 5", "Ep5", "5 - Title", "05"
-      let episodeNumber = null;
-      let title = nameWithoutExt;
+    // 2. Fallback: look for episode/download page links
+    // Match links with patterns like "episode-1", "ep-1", "download-*-episode-1", "season-*-episode-*"
+    const episodePagePattern = /(?:episode|ep)[-_\s]?(\d+)/i;
+    const downloadPagePattern = /\/(?:sdm_downloads|download|dl|episode)s?\/[^"]+/i;
 
-      const patterns = [
-        /[Ss]\d+[Ee](\d+)/,           // S01E05
-        /[Ee]p(?:isode)?[\s._-]?(\d+)/i, // Episode 5, Ep5
-        /[\s._-](\d+)[\s._-]/,        // " 5 " or ".5."
-        /^(\d+)[\s._-]/,              // Starts with number
-        /[\s._-](\d+)$/,              // Ends with number
-      ];
+    const episodeLinks = links
+      .filter(link => {
+        // Skip same-page anchors, javascript, mailto, images, css, etc.
+        if (link.startsWith('#') || link.startsWith('javascript:') || link.startsWith('mailto:')) return false;
+        if (/\.(jpg|jpeg|png|gif|webp|svg|css|js|xml|zip)(\?.*)?$/i.test(link)) return false;
+        // Must match episode pattern or download pattern
+        return episodePagePattern.test(link) || downloadPagePattern.test(link);
+      })
+      .map(resolveUrl)
+      .filter((link, i, arr) => arr.indexOf(link) === i);
 
-      for (const pattern of patterns) {
-        const m = nameWithoutExt.match(pattern);
-        if (m) {
-          episodeNumber = parseInt(m[1], 10);
-          break;
-        }
-      }
+    if (episodeLinks.length > 0) {
+      const episodes = parseEpisodes(episodeLinks);
+      return Response.json({ episodes, total: episodes.length, mode: 'page_links' });
+    }
 
-      if (episodeNumber === null) episodeNumber = index + 1;
+    return Response.json({ error: 'No media files or episode links found at that URL. Try a direct file directory URL.' }, { status: 404 });
 
-      // Clean up title - replace underscores, dots, dashes with spaces
-      title = nameWithoutExt
-        .replace(/[._]/g, ' ')
-        .replace(/-/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      return {
-        title,
-        video_url: link,
-        episode_number: episodeNumber,
-        filename,
-      };
-    });
-
-    // Sort by episode number
-    episodes.sort((a, b) => a.episode_number - b.episode_number);
-
-    return Response.json({ episodes, total: episodes.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
+
+function parseEpisodes(links) {
+  const episodes = links.map((link, index) => {
+    const filename = decodeURIComponent(link.split('/').pop().split('?')[0]);
+    const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
+
+    let episodeNumber = null;
+    let title = nameWithoutExt;
+
+    const patterns = [
+      /[Ss]\d+[Ee](\d+)/,              // S01E05
+      /[Ee]p(?:isode)?[-_\s]?(\d+)/i,  // Episode 5, Ep5, episode-5
+      /[-_](\d+)[-_]?$/,               // ends with -5 or _5
+      /[\s._-](\d+)[\s._-]/,           // " 5 " or ".5."
+      /^(\d+)[\s._-]/,                 // Starts with number
+      /(\d+)$/,                        // Ends with number
+    ];
+
+    for (const pattern of patterns) {
+      const m = (nameWithoutExt + ' ' + link).match(pattern);
+      if (m) {
+        episodeNumber = parseInt(m[1], 10);
+        break;
+      }
+    }
+
+    if (episodeNumber === null) episodeNumber = index + 1;
+
+    // Try to build a clean title from the URL path
+    const pathParts = link.split('/').filter(Boolean);
+    const lastPart = pathParts[pathParts.length - 1] || nameWithoutExt;
+    title = lastPart
+      .replace(/\.[^.]+$/, '')       // remove extension
+      .replace(/[-_]/g, ' ')         // dashes/underscores to spaces
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Capitalise first letter of each word
+    title = title.replace(/\b\w/g, c => c.toUpperCase());
+
+    return {
+      title,
+      video_url: link,
+      episode_number: episodeNumber,
+      filename,
+    };
+  });
+
+  episodes.sort((a, b) => a.episode_number - b.episode_number);
+  return episodes;
+}
