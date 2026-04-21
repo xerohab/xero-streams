@@ -22,7 +22,7 @@ const emptyEpisode = () => ({
 
 export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
   const [selectedSeries, setSelectedSeries] = useState("");
-  const [episodes, setEpisodes] = useState([emptyEpisode()]);
+  const [episodes, setEpisodes] = useState([{ ...emptyEpisode(), episode_number: "1" }]);
   const [saving, setSaving] = useState(false);
   const [sourceTab, setSourceTab] = useState("link");
 
@@ -30,7 +30,13 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
     setEpisodes((prev) => prev.map((ep, i) => i === index ? { ...ep, [field]: value } : ep));
   };
 
-  const addEpisode = () => setEpisodes((prev) => [...prev, emptyEpisode()]);
+  const addEpisode = () => {
+    setEpisodes((prev) => {
+      const lastEp = prev[prev.length - 1];
+      const nextNum = lastEp?.episode_number ? Number(lastEp.episode_number) + 1 : prev.length + 1;
+      return [...prev, { ...emptyEpisode(), episode_number: String(nextNum) }];
+    });
+  };
   const removeEpisode = (index) => setEpisodes((prev) => prev.filter((_, i) => i !== index));
 
   const handleVideoFileUpload = async (index, e) => {
@@ -54,11 +60,12 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
     const valid = episodes.filter((ep) => ep.title && ep.video_url);
     if (valid.length === 0) { toast.error("Add at least one episode with a title and video"); return; }
     setSaving(true);
+    const seriesCover = seriesList?.find((s) => s.id === selectedSeries)?.cover_image;
     const records = valid.map((ep) => ({
       title: ep.title,
       description: ep.description || undefined,
       video_url: ep.video_url,
-      thumbnail_url: ep.thumbnail_url || undefined,
+      thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
       series_id: selectedSeries,
       episode_number: ep.episode_number ? Number(ep.episode_number) : undefined,
       duration: ep.duration || undefined,
