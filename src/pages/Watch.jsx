@@ -2,7 +2,7 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, Film, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Download, Film, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -65,6 +65,7 @@ export default function Watch() {
   }
 
   const embedUrl = getEmbedUrl(video.video_url);
+  const isMkv = video.video_url?.toLowerCase().endsWith(".mkv");
   const isDirectVideo = !embedUrl;
   const series = video.series_id ? seriesList.find((s) => s.id === video.series_id) : null;
   const seriesVideos = series
@@ -89,6 +90,22 @@ export default function Watch() {
                   allowFullScreen
                   title={video.title}
                 />
+              ) : isMkv ? (
+                <div
+                  className="w-full h-full flex flex-col items-center justify-center gap-5 bg-black"
+                  style={video.thumbnail_url ? { backgroundImage: `url(${video.thumbnail_url})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+                >
+                  <div className="bg-black/70 rounded-2xl px-8 py-7 flex flex-col items-center gap-4 text-center backdrop-blur-sm">
+                    <p className="text-foreground font-semibold text-lg">MKV files can't play in the browser</p>
+                    <p className="text-muted-foreground text-sm max-w-xs">Download the file and open it with a media player like VLC.</p>
+                    <a href={video.video_url} download target="_blank" rel="noreferrer">
+                      <Button className="bg-primary hover:bg-primary/90 gap-2">
+                        <Download className="w-4 h-4" />
+                        Download to Watch
+                      </Button>
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <video
                   controls
@@ -96,16 +113,7 @@ export default function Watch() {
                   className="w-full h-full"
                   poster={video.thumbnail_url}
                 >
-                  <source
-                    src={video.video_url}
-                    type={
-                      video.video_url?.toLowerCase().endsWith(".mkv")
-                        ? "video/x-matroska"
-                        : video.video_url?.toLowerCase().endsWith(".wav")
-                        ? "audio/wav"
-                        : undefined
-                    }
-                  />
+                  <source src={video.video_url} />
                   Your browser does not support this video format.
                 </video>
               )}
