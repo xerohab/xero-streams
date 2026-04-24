@@ -78,6 +78,17 @@ export default function AdminAdult() {
     }
   };
 
+  const handleDeleteGigafansImages = async () => {
+    if (!confirm("Delete all images titled 'PICS by Gigafans.net...'? This cannot be undone.")) return;
+    const res = await base44.functions.invoke("deleteGigafansImages", {});
+    if (res.data.success) {
+      toast.success(res.data.message);
+      refresh();
+    } else {
+      toast.error(res.data.error || "Failed to delete images");
+    }
+  };
+
   if (isAdmin === null) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
@@ -196,17 +207,31 @@ export default function AdminAdult() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDeleteAllImages}
-                      className="ml-auto"
-                    >
-                      Delete All .jpg/.jpeg Files
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteAllImages}
+                        className="ml-auto"
+                      >
+                        Delete All .jpg/.jpeg Files
+                      </Button>
+                    </div>
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteGigafansImages}
+                        className="ml-auto"
+                      >
+                        Delete Gigafans Images
+                      </Button>
+                    </div>
                   </div>
                   <AdultImageScraper adultSeriesList={seriesList} onSuccess={refresh} />
                 </CardContent>
