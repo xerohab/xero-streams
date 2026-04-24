@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon, Users, ShieldCheck, ShieldAlert, Heart } from "lucide-react";
+import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon, Users, ShieldCheck, ShieldAlert, Heart, Shield } from "lucide-react";
 import VideoUploadForm from "@/components/admin/VideoUploadForm";
 import SeriesForm from "@/components/admin/SeriesForm";
 import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
@@ -19,6 +19,7 @@ import SortOrderManager from "@/components/admin/SortOrderManager";
 import EditUserModal from "@/components/admin/EditUserModal";
 import DonationSettings from "@/components/admin/DonationSettings";
 import { Toaster } from "react-hot-toast";
+import { Link as RouterLink } from "react-router-dom";
 
 export default function Admin() {
   const [user, setUser] = useState(null);
@@ -114,13 +115,18 @@ export default function Admin() {
               <p className="text-sm text-muted-foreground">Manage your video library</p>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Badge variant="secondary" className="gap-1.5">
               <Film className="w-3 h-3" />{seriesList.length} Series
             </Badge>
             <Badge variant="secondary" className="gap-1.5">
               <Video className="w-3 h-3" />{videos.length} Videos
             </Badge>
+            <RouterLink to="/admin/adult">
+              <Badge className="gap-1.5 bg-red-600/20 text-red-400 border border-red-500/30 cursor-pointer hover:bg-red-600/30">
+                <ShieldAlert className="w-3 h-3" /> Adult Admin
+              </Badge>
+            </RouterLink>
           </div>
         </div>
 

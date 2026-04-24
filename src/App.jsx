@@ -14,6 +14,8 @@ import FranchiseDetail from '@/pages/FranchiseDetail';
 import MovieDetail from '@/pages/MovieDetail';
 import Dashboard from '@/pages/Dashboard';
 import Donate from '@/pages/Donate';
+import Leaks from '@/pages/Leaks';
+import AdminAdult from '@/pages/AdminAdult';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -50,6 +52,8 @@ const AuthenticatedApp = () => {
       <Route path="/movie" element={<MovieDetail />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/donate" element={<Donate />} />
+      <Route path="/leaks" element={<Leaks />} />
+      <Route path="/admin/adult" element={<AdminAdult />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

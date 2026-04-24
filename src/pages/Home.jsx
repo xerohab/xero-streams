@@ -6,7 +6,7 @@ import HeroSection from "@/components/browse/HeroSection";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
-import { Loader2, Film, Tv, ShieldAlert } from "lucide-react";
+import { Loader2, Film, Tv } from "lucide-react";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 
 export default function Home() {
@@ -143,7 +143,7 @@ export default function Home() {
             { id: "all", label: "All", icon: null },
             { id: "movies", label: "Movies", icon: Film },
             { id: "tv", label: "TV Series", icon: Tv },
-            ...(user?.age_verified ? [{ id: "adult", label: "Adult", icon: ShieldAlert }] : []),
+    
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -211,49 +211,7 @@ export default function Home() {
         )}
 
         {/* Adult tab - only shown for age-verified users */}
-        {activeTab === "adult" && user?.age_verified && (
-          <div className="mb-12 space-y-10">
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-red-400" />
-              <h2 className="text-xl font-bold text-foreground">Adult Content</h2>
-              <span className="text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-2 py-0.5 rounded-full font-semibold">18+</span>
-            </div>
 
-            {adultSeriesWithEpisodes.length > 0 && (
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Tv className="w-5 h-5 text-red-400" /> TV Series
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {adultSeriesWithEpisodes.map((s) => (
-                    <SeriesCard key={s.id} series={s} episodeCount={adultEpisodeCount(s.id)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {adultMovies.length > 0 && (
-              <div>
-                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Film className="w-5 h-5 text-red-400" /> Movies
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {adultMovies.map((v) => (
-                    <VideoCard key={v.id} video={v} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {adultMovies.length === 0 && adultSeriesWithEpisodes.length === 0 && (
-              <div className="bg-card border border-red-500/20 rounded-xl p-8 text-center">
-                <ShieldAlert className="w-10 h-10 text-red-400 mx-auto mb-3" />
-                <p className="text-foreground font-semibold mb-1">Adult Section</p>
-                <p className="text-muted-foreground text-sm">Adult content will appear here once added by an admin.</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
