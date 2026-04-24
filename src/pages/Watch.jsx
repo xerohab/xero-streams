@@ -100,7 +100,7 @@ export default function Watch() {
   const nextVideo = nextEpisode || nextFranchiseMovie;
   const prevVideo = prevEpisode || prevFranchiseMovie;
 
-  const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id).slice(0, 15);
+  const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
 
   // Autoplay next countdown
   const startCountdown = () => {
