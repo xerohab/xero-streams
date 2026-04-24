@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Sparkles, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function EditVideoModal({ video, seriesList, franchises = [], open, onClose, onSaved }) {
@@ -27,6 +27,44 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
   });
   const [saving, setSaving] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
+  const [fetchingPoster, setFetchingPoster] = useState(false);
+
+  const handleAiDescription = async () => {
+    if (!form.title) return;
+    setFetchingAiInfo(true);
+    try {
+      const type = form.content_type === "episode" ? "episode" : "movie";
+      const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type });
+      if (res.data?.description) {
+        update("description", res.data.description);
+        toast.success("AI description applied!");
+      } else {
+        toast.error("Couldn't find info for that title");
+      }
+    } catch (e) {
+      toast.error("AI info failed");
+    }
+    setFetchingAiInfo(false);
+  };
+
+  const handleAutoFetchPoster = async () => {
+    if (!form.title) return;
+    setFetchingPoster(true);
+    try {
+      const type = form.content_type === "episode" ? "tv" : "movie";
+      const res = await base44.functions.invoke("fetchPoster", { title: form.title, type, videoId: video?.id });
+      if (res.data?.poster_url) {
+        update("thumbnail_url", res.data.poster_url);
+        toast.success("Poster found!");
+      } else {
+        toast.error("No poster found — try uploading manually");
+      }
+    } catch (e) {
+      toast.error("Failed to fetch poster");
+    }
+    setFetchingPoster(false);
+  };
 
   useEffect(() => {
     if (video) {
@@ -85,8 +123,14 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} className="bg-secondary border-border" />
           </div>
           <div className="space-y-1">
-            <Label>Description</Label>
-            <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" />
+            <div className="flex items-center justify-between">
+              <Label>Description</Label>
+              <Button type="button" variant="ghost" size="sm" onClick={handleAiDescription} disabled={fetchingAiInfo || !form.title} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
+                {fetchingAiInfo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                AI Auto-Fill
+              </Button>
+            </div>
+            <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />
           </div>
           <div className="space-y-1">
             <Label>Video URL</Label>
@@ -96,11 +140,17 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
             <Label>Thumbnail</Label>
             <div className="flex gap-2">
               <Input value={form.thumbnail_url} onChange={(e) => update("thumbnail_url", e.target.value)} className="bg-secondary border-border flex-1" placeholder="URL or upload →" />
+              <Button type="button" variant="secondary" onClick={handleAutoFetchPoster} disabled={fetchingPoster || !form.title} title="Auto-fetch poster">
+                {fetchingPoster ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+              </Button>
               <Button type="button" variant="secondary" className="relative overflow-hidden" disabled={uploadingThumb}>
                 {uploadingThumb ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <input type="file" accept="image/*" onChange={handleThumbnailUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
               </Button>
             </div>
+            {form.thumbnail_url && (
+              <img src={form.thumbnail_url} alt="Preview" className="h-16 rounded object-cover border border-border mt-1" />
+            )}
           </div>
           <div className="space-y-1">
             <Label>Content Type</Label>
