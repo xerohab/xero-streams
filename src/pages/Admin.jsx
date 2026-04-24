@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon, Users, ShieldCheck, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon, Users, ShieldCheck, ShieldAlert, Heart } from "lucide-react";
 import VideoUploadForm from "@/components/admin/VideoUploadForm";
 import SeriesForm from "@/components/admin/SeriesForm";
 import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
@@ -16,12 +16,15 @@ import EditSeriesModal from "@/components/admin/EditSeriesModal";
 import FranchiseForm from "@/components/admin/FranchiseForm";
 import FranchiseMassEditor from "@/components/admin/FranchiseMassEditor";
 import SortOrderManager from "@/components/admin/SortOrderManager";
+import EditUserModal from "@/components/admin/EditUserModal";
+import DonationSettings from "@/components/admin/DonationSettings";
 import { Toaster } from "react-hot-toast";
 
 export default function Admin() {
   const [user, setUser] = useState(null);
   const [editingVideo, setEditingVideo] = useState(null);
   const [editingSeries, setEditingSeries] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
   const [fetchingPosterFor, setFetchingPosterFor] = useState(null);
   const queryClient = useQueryClient();
 
@@ -132,6 +135,7 @@ export default function Admin() {
             <TabsTrigger value="sortorder">Sort Order</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="donations">Donations</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -386,11 +390,32 @@ export default function Admin() {
                               <ShieldCheck className="w-3.5 h-3.5" /> Approve 18+
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-foreground"
+                            onClick={() => setEditingUser(u)}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="donations">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-primary" /> Donation Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DonationSettings />
               </CardContent>
             </Card>
           </TabsContent>
@@ -415,6 +440,14 @@ export default function Admin() {
           open={!!editingSeries}
           onClose={() => setEditingSeries(null)}
           onSaved={refresh}
+        />
+      )}
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          open={!!editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={refetchUsers}
         />
       )}
     </div>

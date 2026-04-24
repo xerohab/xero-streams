@@ -13,6 +13,7 @@ import Search from '@/pages/Search';
 import FranchiseDetail from '@/pages/FranchiseDetail';
 import MovieDetail from '@/pages/MovieDetail';
 import Dashboard from '@/pages/Dashboard';
+import Donate from '@/pages/Donate';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
       <Route path="/franchise" element={<FranchiseDetail />} />
       <Route path="/movie" element={<MovieDetail />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/donate" element={<Donate />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
