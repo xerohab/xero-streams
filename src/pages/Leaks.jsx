@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ShieldAlert, Film, Tv, Loader2, Lock } from "lucide-react";
+import { ShieldAlert, Film, Tv, Loader2, Lock, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -27,6 +27,12 @@ export default function Leaks() {
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["leaks-series"],
     queryFn: () => base44.entities.Series.filter({ is_adult: true }),
+    enabled: !!user?.age_verified,
+  });
+
+  const { data: images = [], isLoading: loadingImages } = useQuery({
+    queryKey: ["leaks-images"],
+    queryFn: () => base44.entities.Image.filter({ is_adult: true }, "-created_date"),
     enabled: !!user?.age_verified,
   });
 
@@ -81,11 +87,13 @@ export default function Leaks() {
     );
   }
 
-  const isLoading = loadingVideos || loadingSeries;
+  const isLoading = loadingVideos || loadingSeries || loadingImages;
 
   const movies = videos.filter((v) => !v.series_id);
-  const seriesWithEpisodes = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
+  const videoSeries = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
+  const imageSeries = seriesList.filter((s) => images.some((img) => img.series_id === s.id));
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
+  const imageCountBySeries = (seriesId) => images.filter((img) => img.series_id === seriesId).length;
 
 
 
@@ -109,7 +117,7 @@ export default function Leaks() {
           {[
             { id: "all", label: "All" },
             { id: "videos", label: "Videos", icon: Film },
-            { id: "series", label: "Series", icon: Tv },
+            { id: "images", label: "Images", icon: ImageIcon },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -135,35 +143,63 @@ export default function Leaks() {
             <ContinueWatchingRow isAdult={true} />
 
             {/* Videos */}
-            {(activeTab === "all" || activeTab === "videos") && movies.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Film className="w-5 h-5 text-red-400" /> Videos
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                   {movies.map((v) => (
-                     <VideoCard key={v.id} video={v} from="/leaks" isAdult={true} />
-                   ))}
-                 </div>
-              </div>
+            {(activeTab === "all" || activeTab === "videos") && (movies.length > 0 || videoSeries.length > 0) && (
+              <>
+                {movies.length > 0 && (
+                  <div className="mb-12">
+                    <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                      <Film className="w-5 h-5 text-red-400" /> Videos
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                       {movies.map((v) => (
+                         <VideoCard key={v.id} video={v} from="/leaks" isAdult={true} />
+                       ))}
+                     </div>
+                  </div>
+                )}
+                {videoSeries.length > 0 && (
+                  <div className="mb-12">
+                    <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                      <Tv className="w-5 h-5 text-red-400" /> Series
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                       {videoSeries.map((s) => (
+                         <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
+                       ))}
+                     </div>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Series */}
-            {(activeTab === "all" || activeTab === "series") && seriesWithEpisodes.length > 0 && (
+            {/* Images */}
+            {(activeTab === "all" || activeTab === "images") && imageSeries.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Tv className="w-5 h-5 text-red-400" /> Series
+                  <ImageIcon className="w-5 h-5 text-red-400" /> Image Collections
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                   {seriesWithEpisodes.map((s) => (
-                     <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
-                   ))}
+                   {imageSeries.map((series) => {
+                     const seriesImages = images.filter(img => img.series_id === series.id);
+                     const firstImage = seriesImages[0];
+                     return (
+                       <Link key={series.id} to={`/series?id=${series.id}&from=/leaks`}>
+                         <div className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                           {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" />}
+                           <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center">
+                             <p className="text-white font-semibold text-center px-2 mb-2">{series.title}</p>
+                             <p className="text-white/80 text-xs">{seriesImages.length} image{seriesImages.length !== 1 ? "s" : ""}</p>
+                           </div>
+                         </div>
+                       </Link>
+                     );
+                   })}
                  </div>
               </div>
             )}
 
             {(() => {
-               const hasContent = movies.length > 0 || seriesWithEpisodes.length > 0;
+               const hasContent = movies.length > 0 || videoSeries.length > 0 || imageSeries.length > 0;
                if (!hasContent) {
                  return (
                    <div className="text-center py-20 text-muted-foreground">
