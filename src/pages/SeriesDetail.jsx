@@ -27,12 +27,18 @@ export default function SeriesDetail() {
     enabled: !!seriesId,
   });
 
+  const { data: images = [], isLoading: loadingImages } = useQuery({
+    queryKey: ["series-images", seriesId],
+    queryFn: () => base44.entities.Image.filter({ series_id: seriesId }, "-created_date"),
+    enabled: !!seriesId,
+  });
+
   const sortedEpisodes = [...episodes].sort((a, b) => {
     if (a.episode_number && b.episode_number) return a.episode_number - b.episode_number;
     return a.title.localeCompare(b.title);
   });
 
-  if (loadingSeries || loadingEpisodes) {
+  if (loadingSeries || loadingEpisodes || loadingImages) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -84,26 +90,45 @@ export default function SeriesDetail() {
               {series.description}
             </p>
           )}
-          <p className="text-muted-foreground text-sm mt-2">
-            <Film className="inline w-4 h-4 mr-1" />
-            {sortedEpisodes.length} episode{sortedEpisodes.length !== 1 ? "s" : ""}
-          </p>
+          {sortedEpisodes.length > 0 && (
+            <p className="text-muted-foreground text-sm mt-2">
+              <Film className="inline w-4 h-4 mr-1" />
+              {sortedEpisodes.length} episode{sortedEpisodes.length !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Episodes Grid */}
-      <div className="px-6 md:px-16 py-10">
-        <h2 className="text-xl font-bold text-foreground mb-6">All Episodes</h2>
-        {sortedEpisodes.length === 0 ? (
-          <p className="text-muted-foreground">No episodes yet.</p>
-        ) : (
+      {sortedEpisodes.length > 0 && (
+        <div className="px-6 md:px-16 py-10">
+          <h2 className="text-xl font-bold text-foreground mb-6">All Episodes</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {sortedEpisodes.map((ep) => (
               <VideoCard key={ep.id} video={ep} />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Images Grid */}
+      {images.length > 0 && (
+        <div className="px-6 md:px-16 py-10">
+          <h2 className="text-xl font-bold text-foreground mb-6">Images</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {images.map((img) => (
+              <a key={img.id} href={img.image_url} target="_blank" rel="noopener noreferrer" className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+                {img.title && (
+                  <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <p className="text-white font-semibold text-center px-2">{img.title}</p>
+                  </div>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

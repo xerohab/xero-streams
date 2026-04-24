@@ -91,7 +91,7 @@ export default function Leaks() {
 
   const movies = videos.filter((v) => !v.series_id);
   const videoSeries = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
-  const imageSeries = seriesList.filter((s) => images.some((img) => img.series_id === s.id) && !videos.some((v) => v.series_id === s.id));
+  const imageSeries = seriesList.filter((s) => images.some((img) => img.series_id === s.id) && images.filter(img => img.series_id === s.id).length > 0);
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
   const imageCountBySeries = (seriesId) => images.filter((img) => img.series_id === seriesId).length;
 
