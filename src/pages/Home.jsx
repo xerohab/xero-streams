@@ -42,33 +42,41 @@ export default function Home() {
   // Latest 5 for hero banner
   const heroVideos = videos.slice(0, 5);
 
+  // Exclude adult content from main tabs
+  const safeVideos = videos.filter((v) => !v.is_adult);
+  const safeSeries = seriesList.filter((s) => !s.is_adult);
+
+  // Adult-only content
+  const adultVideos = videos.filter((v) => v.is_adult);
+  const adultSeries = seriesList.filter((s) => s.is_adult);
+
   // Movies: anything that is not a series episode (no series_id, OR explicitly typed as movie)
-  const movies = videos.filter(
+  const movies = safeVideos.filter(
     (v) => !v.series_id && (v.content_type === "movie" || v.content_type !== "episode")
   );
 
-  // Franchises with content (check ALL videos with franchise_id, not just filtered movies)
+  // Franchises with content (safe only — no adult)
   const franchisesWithContent = franchises
     .filter((f) => {
-      const hasSeries = seriesList.some((s) => s.franchise_id === f.id);
-      const hasVideos = videos.some((v) => v.franchise_id === f.id);
+      const hasSeries = safeSeries.some((s) => s.franchise_id === f.id);
+      const hasVideos = safeVideos.some((v) => v.franchise_id === f.id);
       return hasSeries || hasVideos;
     })
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
 
   const franchiseItemCount = (franchiseId) => {
-    const seriesCount = seriesList.filter((s) => s.franchise_id === franchiseId).length;
-    const videoCount = videos.filter((v) => v.franchise_id === franchiseId).length;
+    const seriesCount = safeSeries.filter((s) => s.franchise_id === franchiseId).length;
+    const videoCount = safeVideos.filter((v) => v.franchise_id === franchiseId).length;
     return seriesCount + videoCount;
   };
 
-  // Series that have episodes, sorted by sort_order then A-Z
-  const seriesWithEpisodes = seriesList
-    .filter((s) => videos.some((v) => v.series_id === s.id))
+  // Series that have episodes (safe only)
+  const seriesWithEpisodes = safeSeries
+    .filter((s) => safeVideos.some((v) => v.series_id === s.id))
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
 
   const episodeCountBySeries = (seriesId) =>
-    videos.filter((v) => v.series_id === seriesId).length;
+    safeVideos.filter((v) => v.series_id === seriesId).length;
 
   // Grouped series by franchise (for TV tab)
   const seriesByFranchise = franchisesWithContent
@@ -80,16 +88,23 @@ export default function Home() {
 
   const ungroupedSeries = seriesWithEpisodes.filter((s) => !s.franchise_id);
 
-  // Grouped movies by franchise (for Movies tab) — use ALL videos with franchise_id
+  // Grouped movies by franchise (for Movies tab)
   const moviesByFranchise = franchisesWithContent
     .map((f) => ({
       franchise: f,
-      movies: videos.filter((v) => v.franchise_id === f.id)
+      movies: safeVideos.filter((v) => v.franchise_id === f.id)
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }))
     .filter((g) => g.movies.length > 0);
 
   const ungroupedMovies = movies.filter((v) => !v.franchise_id);
+
+  // Adult content groupings
+  const adultMovies = adultVideos.filter((v) => !v.series_id);
+  const adultSeriesWithEpisodes = adultSeries
+    .filter((s) => adultVideos.some((v) => v.series_id === s.id))
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
+  const adultEpisodeCount = (seriesId) => adultVideos.filter((v) => v.series_id === seriesId).length;
 
   if (isLoading) {
     return (
@@ -197,17 +212,46 @@ export default function Home() {
 
         {/* Adult tab - only shown for age-verified users */}
         {activeTab === "adult" && user?.age_verified && (
-          <div className="mb-12">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="mb-12 space-y-10">
+            <div className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-red-400" />
               <h2 className="text-xl font-bold text-foreground">Adult Content</h2>
               <span className="text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-2 py-0.5 rounded-full font-semibold">18+</span>
             </div>
-            <div className="bg-card border border-red-500/20 rounded-xl p-8 text-center">
-              <ShieldAlert className="w-10 h-10 text-red-400 mx-auto mb-3" />
-              <p className="text-foreground font-semibold mb-1">Adult Section</p>
-              <p className="text-muted-foreground text-sm">Adult content will appear here once added by an admin. You are verified as 18+.</p>
-            </div>
+
+            {adultSeriesWithEpisodes.length > 0 && (
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Tv className="w-5 h-5 text-red-400" /> TV Series
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {adultSeriesWithEpisodes.map((s) => (
+                    <SeriesCard key={s.id} series={s} episodeCount={adultEpisodeCount(s.id)} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {adultMovies.length > 0 && (
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Film className="w-5 h-5 text-red-400" /> Movies
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {adultMovies.map((v) => (
+                    <VideoCard key={v.id} video={v} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {adultMovies.length === 0 && adultSeriesWithEpisodes.length === 0 && (
+              <div className="bg-card border border-red-500/20 rounded-xl p-8 text-center">
+                <ShieldAlert className="w-10 h-10 text-red-400 mx-auto mb-3" />
+                <p className="text-foreground font-semibold mb-1">Adult Section</p>
+                <p className="text-muted-foreground text-sm">Adult content will appear here once added by an admin.</p>
+              </div>
+            )}
           </div>
         )}
       </div>

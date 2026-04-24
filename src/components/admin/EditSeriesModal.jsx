@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -19,6 +20,7 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     category: series?.category || "",
     franchise_id: series?.franchise_id || "",
     sort_order: series?.sort_order ?? "",
+    is_adult: series?.is_adult || false,
   });
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -102,6 +104,13 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
                 {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <input type="file" accept="image/*" onChange={handleCoverUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
               </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <Switch checked={form.is_adult} onCheckedChange={(v) => update("is_adult", v)} />
+            <div>
+              <Label className="text-red-400 font-semibold">18+ Adult Content</Label>
+              <p className="text-xs text-muted-foreground">Only visible to age-verified users in the Adult tab</p>
             </div>
           </div>
           <div className="flex gap-3 pt-2">

@@ -22,6 +22,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     sort_order: video?.sort_order ?? "",
     duration: video?.duration || "",
     is_featured: video?.is_featured || false,
+    is_adult: video?.is_adult || false,
     content_type: video?.content_type || "movie",
   });
   const [saving, setSaving] = useState(false);
@@ -40,6 +41,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
         sort_order: video.sort_order ?? "",
         duration: video.duration || "",
         is_featured: video.is_featured || false,
+        is_adult: video.is_adult || false,
         content_type: video.content_type || "movie",
       });
     }
@@ -159,6 +161,13 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
           <div className="flex items-center gap-3">
             <Switch checked={form.is_featured} onCheckedChange={(v) => update("is_featured", v)} />
             <Label>Featured on homepage hero</Label>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <Switch checked={form.is_adult} onCheckedChange={(v) => update("is_adult", v)} />
+            <div>
+              <Label className="text-red-400 font-semibold">18+ Adult Content</Label>
+              <p className="text-xs text-muted-foreground">Only visible to age-verified users in the Adult tab</p>
+            </div>
           </div>
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>

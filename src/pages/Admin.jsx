@@ -248,6 +248,9 @@ export default function Admin() {
                               {s.category && (
                                 <Badge variant="outline" className="text-xs mt-0.5">{s.category}</Badge>
                               )}
+                              {s.is_adult && (
+                                <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30 mt-0.5">18+</Badge>
+                              )}
                             </div>
                           </div>
                           <div className="flex gap-1">
@@ -300,6 +303,7 @@ export default function Admin() {
                                   {v.episode_number && <span className="text-xs text-muted-foreground">EP {v.episode_number}</span>}
                                   {v.content_type === "movie" && <Badge className="text-xs bg-blue-500/20 text-blue-400">Movie</Badge>}
                                   {v.is_featured && <Badge className="text-xs bg-primary/20 text-primary">Featured</Badge>}
+                                  {v.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
                                 </div>
                               </div>
                             </div>

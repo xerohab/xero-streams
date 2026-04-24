@@ -39,6 +39,11 @@
       "default": false,
       "description": "Whether this video is featured on the hero banner"
     },
+    "is_adult": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is 18+ adult content, only shown to age-verified users"
+    },
     "content_type": {
       "type": "string",
       "enum": [

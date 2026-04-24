@@ -23,6 +23,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     episode_number: "",
     duration: "",
     is_featured: false,
+    is_adult: false,
     content_type: "movie",
   });
 
@@ -65,6 +66,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       episode_number: "",
       duration: "",
       is_featured: false,
+      is_adult: false,
       content_type: "movie",
     });
     onSuccess?.();
@@ -277,6 +279,17 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
           onCheckedChange={(v) => update("is_featured", v)}
         />
         <Label>Featured on homepage hero</Label>
+      </div>
+
+      <div className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+        <Switch
+          checked={form.is_adult}
+          onCheckedChange={(v) => update("is_adult", v)}
+        />
+        <div>
+          <Label className="text-red-400 font-semibold">18+ Adult Content</Label>
+          <p className="text-xs text-muted-foreground">Only visible to age-verified users in the Adult tab</p>
+        </div>
       </div>
 
       <Button
