@@ -10,8 +10,8 @@ import toast from "react-hot-toast";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
-export default function AdultSeriesForm({ onSuccess }) {
-  const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "" });
+export default function AdultSeriesForm({ imageCategories, videoCategories, onSuccess }) {
+  const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "", series_type: "video" });
   const [uploading, setUploading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -75,13 +75,34 @@ export default function AdultSeriesForm({ onSuccess }) {
       </div>
 
       <div className="space-y-2">
-        <Label>Category</Label>
-        <Select value={form.category} onValueChange={v => set("category", v)}>
-          <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Select category" /></SelectTrigger>
+        <Label>Series Type</Label>
+        <Select value={form.series_type} onValueChange={v => set("series_type", v)}>
+          <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+            <SelectItem value="video">Video Series</SelectItem>
+            <SelectItem value="image">Image Series</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Category</Label>
+        {form.series_type === "video" ? (
+          <Select value={form.category} onValueChange={v => set("category", v)}>
+            <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Select video category" /></SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map(c => <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="text-sm text-muted-foreground bg-secondary rounded-md p-2">
+            {imageCategories?.length > 0 ? (
+              <p>Image series use image categories during import</p>
+            ) : (
+              <p>No image categories available</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

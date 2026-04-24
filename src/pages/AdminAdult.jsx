@@ -9,7 +9,8 @@ import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import AdultVideoUploadForm from "@/components/admin/AdultVideoUploadForm";
 import AdultSeriesForm from "@/components/admin/AdultSeriesForm";
-import AdultWebScraper from "@/components/admin/AdultWebScraper";
+import AdultVideoScraper from "@/components/admin/AdultVideoScraper";
+import AdultImageScraper from "@/components/admin/AdultImageScraper";
 import AdultBulkImageUpload from "@/components/admin/AdultBulkImageUpload";
 import AdultManageSection from "@/components/admin/AdultManageSection";
 import AdultSortOrderManager from "@/components/admin/AdultSortOrderManager";
@@ -47,9 +48,22 @@ export default function AdminAdult() {
     enabled: isAdmin === true && isAdmin !== null,
   });
 
+  const { data: imageCategories = [] } = useQuery({
+    queryKey: ["image-categories"],
+    queryFn: () => base44.entities.ImageCategory.filter({ is_adult: true }),
+    enabled: isAdmin === true && isAdmin !== null,
+  });
+
+  const { data: videoCategories = [] } = useQuery({
+    queryKey: ["video-categories"],
+    queryFn: () => base44.entities.VideoCategory.filter({ is_adult: true }),
+    enabled: isAdmin === true && isAdmin !== null,
+  });
+
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-adult-videos"] });
     queryClient.invalidateQueries({ queryKey: ["admin-adult-series"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-adult-images"] });
   };
 
   if (isAdmin === null) return (
@@ -132,22 +146,34 @@ export default function AdminAdult() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AdultSeriesForm onSuccess={refresh} />
+                <AdultSeriesForm imageCategories={imageCategories} videoCategories={videoCategories} onSuccess={refresh} />
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="scraper">
-            <Card className="bg-card border-red-500/20">
-              <CardHeader>
-                <CardTitle className="text-foreground flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-red-400" /> Scrape Adult Content
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AdultWebScraper adultSeriesList={seriesList} onSuccess={refresh} />
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Card className="bg-card border-red-500/20">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-red-400" /> Scrape Adult Videos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdultVideoScraper adultSeriesList={seriesList} onSuccess={refresh} />
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-red-500/20">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-red-400" /> Scrape Adult Images
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdultImageScraper adultSeriesList={seriesList} imageCategories={imageCategories} onSuccess={refresh} />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="bulk-images">
