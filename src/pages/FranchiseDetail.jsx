@@ -28,7 +28,7 @@ export default function FranchiseDetail() {
 
   const { data: allVideos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("-created_date"),
+    queryFn: () => base44.entities.Video.list("sort_order"),
   });
 
   const franchiseSeries = allSeries

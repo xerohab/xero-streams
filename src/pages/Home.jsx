@@ -13,7 +13,7 @@ export default function Home() {
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("-created_date"),
+    queryFn: () => base44.entities.Video.list("sort_order"),
   });
 
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
