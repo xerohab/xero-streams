@@ -7,11 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Trash2, Upload, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function AdultImageScraper({ adultSeriesList, imageCategories, onSuccess }) {
+export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
   const [url, setUrl] = useState("");
   const [selectedSeries, setSelectedSeries] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [contentType, setContentType] = useState("individual");
   const [scanning, setScanning] = useState(false);
   const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -35,16 +33,14 @@ export default function AdultImageScraper({ adultSeriesList, imageCategories, on
   const removeImg = (index) => setImages(prev => prev.filter((_, i) => i !== index));
 
   const handleImport = async () => {
-    if (!selectedCategory) { toast.error("Select a category"); return; }
-    if (contentType === "series" && !selectedSeries) { toast.error("Select a series"); return; }
+    if (!selectedSeries) { toast.error("Select a series"); return; }
     if (images.length === 0) { toast.error("No images to import"); return; }
     setSaving(true);
 
     const records = images.map((img, idx) => ({
       title: img.title || `Image ${idx + 1}`,
       image_url: img.image_url,
-      category_id: selectedCategory,
-      series_id: contentType === "series" ? selectedSeries : undefined,
+      series_id: selectedSeries,
       is_adult: true,
       sort_order: idx,
     }));
@@ -53,7 +49,6 @@ export default function AdultImageScraper({ adultSeriesList, imageCategories, on
     toast.success(`Imported ${records.length} image${records.length !== 1 ? "s" : ""}!`);
     setImages([]);
     setUrl("");
-    setSelectedCategory("");
     setSelectedSeries("");
     setSaving(false);
     onSuccess?.();
@@ -61,49 +56,18 @@ export default function AdultImageScraper({ adultSeriesList, imageCategories, on
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label>Content Type</Label>
-          <Select value={contentType} onValueChange={setContentType}>
-            <SelectTrigger className="bg-secondary border-border mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="individual">Individual Images</SelectItem>
-              <SelectItem value="series">Series Images</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label>Category *</Label>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="bg-secondary border-border mt-1">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {imageCategories?.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {contentType === "series" && (
-          <div>
-            <Label>Series *</Label>
-            <Select value={selectedSeries} onValueChange={setSelectedSeries}>
-              <SelectTrigger className="bg-secondary border-border mt-1">
-                <SelectValue placeholder="Select series" />
-              </SelectTrigger>
-              <SelectContent>
-                {adultSeriesList?.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+      <div className="space-y-2">
+        <Label>Series *</Label>
+        <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+          <SelectTrigger className="bg-secondary border-border">
+            <SelectValue placeholder="Select series to add images to" />
+          </SelectTrigger>
+          <SelectContent>
+            {adultSeriesList?.map(s => (
+              <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

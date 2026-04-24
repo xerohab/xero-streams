@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import AdultVideoUploadForm from "@/components/admin/AdultVideoUploadForm";
 import AdultSeriesForm from "@/components/admin/AdultSeriesForm";
 import AdultVideoScraper from "@/components/admin/AdultVideoScraper";
@@ -16,6 +17,7 @@ import AdultManageSection from "@/components/admin/AdultManageSection";
 import AdultSortOrderManager from "@/components/admin/AdultSortOrderManager";
 import BatchNameUpdater from "@/components/admin/BatchNameUpdater";
 import ImageCategoryForm from "@/components/admin/ImageCategoryForm";
+import { AlertTriangle } from "lucide-react";
 
 export default function AdminAdult() {
   const [isAdmin, setIsAdmin] = useState(null); // null = loading
@@ -65,6 +67,15 @@ export default function AdminAdult() {
     queryClient.invalidateQueries({ queryKey: ["admin-adult-videos"] });
     queryClient.invalidateQueries({ queryKey: ["admin-adult-series"] });
     queryClient.invalidateQueries({ queryKey: ["admin-adult-images"] });
+  };
+
+  const handleDeleteAllImages = async () => {
+    if (!confirm("Delete ALL .jpg and .jpeg files from adult images? This cannot be undone.")) return;
+    const res = await base44.functions.invoke("deleteAdultImages", {});
+    if (res.data.success) {
+      toast.success(res.data.message);
+      refresh();
+    }
   };
 
   if (isAdmin === null) return (
@@ -184,8 +195,20 @@ export default function AdminAdult() {
                     <ShieldAlert className="w-5 h-5 text-red-400" /> Scrape Adult Images
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <AdultImageScraper adultSeriesList={seriesList} imageCategories={imageCategories} onSuccess={refresh} />
+                <CardContent className="space-y-4">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteAllImages}
+                      className="ml-auto"
+                    >
+                      Delete All .jpg/.jpeg Files
+                    </Button>
+                  </div>
+                  <AdultImageScraper adultSeriesList={seriesList} onSuccess={refresh} />
                 </CardContent>
               </Card>
             </div>

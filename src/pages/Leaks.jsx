@@ -97,7 +97,6 @@ export default function Leaks() {
   const seriesWithEpisodes = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
 
-  const individualImages = images.filter((img) => !img.series_id);
   const seriesWithImages = seriesList.filter((s) => images.some((img) => img.series_id === s.id));
   const imageCountBySeries = (seriesId) => images.filter((img) => img.series_id === seriesId).length;
 
@@ -121,8 +120,6 @@ export default function Leaks() {
           {[
             { id: "all", label: "All" },
             { id: "videos", label: "Videos", icon: Film },
-            { id: "images", label: "Images", icon: ImageIcon },
-            ...imageCategories.map(cat => ({ id: `img-${cat.id}`, label: cat.title, icon: ImageIcon })),
             { id: "series", label: "Series", icon: Tv },
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -162,89 +159,29 @@ export default function Leaks() {
               </div>
             )}
 
-            {/* Images - All & Images tab */}
-            {(activeTab === "all" || activeTab === "images") && (individualImages.length > 0 || seriesWithImages.length > 0) && (
+            {/* Image Series - shows as folders */}
+            {(activeTab === "all" || activeTab === "series") && seriesWithImages.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-red-400" /> Images
+                  <ImageIcon className="w-5 h-5 text-red-400" /> Image Collections
                 </h2>
-
-                {seriesWithImages.map((series) => (
-                  <div key={series.id} className="mb-8">
-                    <h3 className="text-lg font-semibold text-foreground mb-3">{series.title}</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {images.filter((img) => img.series_id === series.id).map((img) => (
-                        <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                          <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
-                          </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {seriesWithImages.map((series) => {
+                    const seriesImages = images.filter(img => img.series_id === series.id);
+                    const firstImage = seriesImages[0];
+                    return (
+                      <div key={series.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                        {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" />}
+                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center">
+                          <p className="text-white font-semibold text-center px-2 mb-2">{series.title}</p>
+                          <p className="text-white/80 text-xs">{seriesImages.length} image{seriesImages.length !== 1 ? "s" : ""}</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {individualImages.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-3">Individual</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {individualImages.map((img) => (
-                        <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                          <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
-
-            {/* Category-specific images */}
-            {activeTab.startsWith("img-") && (() => {
-              const catId = activeTab.replace("img-", "");
-              const catImages = images.filter(img => img.category_id === catId);
-              const catSeries = seriesList.filter(s => catImages.some(img => img.series_id === s.id));
-              const catIndividual = catImages.filter(img => !img.series_id);
-
-              return (catImages.length > 0) ? (
-                <div className="mb-12">
-                  {catSeries.map((series) => (
-                    <div key={series.id} className="mb-8">
-                      <h3 className="text-lg font-semibold text-foreground mb-3">{series.title}</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {catImages.filter((img) => img.series_id === series.id).map((img) => (
-                          <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                            <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {catIndividual.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground mb-3">Individual</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {catIndividual.map((img) => (
-                          <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                            <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : null;
-            })()}
 
             {/* Series */}
             {(activeTab === "all" || activeTab === "series") && seriesWithEpisodes.length > 0 && (
@@ -261,17 +198,17 @@ export default function Leaks() {
             )}
 
             {(() => {
-              const hasContent = movies.length > 0 || individualImages.length > 0 || seriesWithImages.length > 0 || seriesWithEpisodes.length > 0;
-              if (!hasContent) {
-                return (
-                  <div className="text-center py-20 text-muted-foreground">
-                    <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-red-400/50" />
-                    <p>No content yet. Check back soon.</p>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+               const hasContent = movies.length > 0 || seriesWithImages.length > 0 || seriesWithEpisodes.length > 0;
+               if (!hasContent) {
+                 return (
+                   <div className="text-center py-20 text-muted-foreground">
+                     <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-red-400/50" />
+                     <p>No content yet. Check back soon.</p>
+                   </div>
+                 );
+               }
+               return null;
+             })()}
           </>
           )}
           </div>
