@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ShieldAlert, Film, Tv, Loader2, Lock } from "lucide-react";
+import { ShieldAlert, Film, Tv, Loader2, Lock, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -27,6 +27,12 @@ export default function Leaks() {
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["leaks-series"],
     queryFn: () => base44.entities.Series.filter({ is_adult: true }),
+    enabled: !!user?.age_verified,
+  });
+
+  const { data: images = [], isLoading: loadingImages } = useQuery({
+    queryKey: ["leaks-images"],
+    queryFn: () => base44.entities.Image.filter({ is_adult: true }, "-created_date"),
     enabled: !!user?.age_verified,
   });
 
@@ -79,11 +85,15 @@ export default function Leaks() {
     );
   }
 
-  const isLoading = loadingVideos || loadingSeries;
+  const isLoading = loadingVideos || loadingSeries || loadingImages;
 
   const movies = videos.filter((v) => !v.series_id);
   const seriesWithEpisodes = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
+
+  const individualImages = images.filter((img) => !img.series_id);
+  const seriesWithImages = seriesList.filter((s) => images.some((img) => img.series_id === s.id));
+  const imageCountBySeries = (seriesId) => images.filter((img) => img.series_id === seriesId).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,7 +114,8 @@ export default function Leaks() {
         <div className="flex items-center gap-1 bg-secondary/60 rounded-full p-1 w-fit">
           {[
             { id: "all", label: "All" },
-            { id: "movies", label: "Videos & Images", icon: Film },
+            { id: "videos", label: "Videos", icon: Film },
+            { id: "images", label: "Images", icon: ImageIcon },
             { id: "series", label: "Series", icon: Tv },
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -128,7 +139,64 @@ export default function Leaks() {
           </div>
         ) : (
           <>
-            <ContinueWatchingRow isAdult />
+            <ContinueWatchingRow isAdult={true} />
+
+            {/* Videos */}
+            {(activeTab === "all" || activeTab === "videos") && movies.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Film className="w-5 h-5 text-red-400" /> Videos
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {movies.map((v) => (
+                    <VideoCard key={v.id} video={v} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Images - Individual & Series */}
+            {(activeTab === "all" || activeTab === "images") && (individualImages.length > 0 || seriesWithImages.length > 0) && (
+              <div className="mb-12">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-red-400" /> Images
+                </h2>
+
+                {/* Series with images */}
+                {seriesWithImages.map((series) => (
+                  <div key={series.id} className="mb-8">
+                    <h3 className="text-lg font-semibold text-foreground mb-3">{series.title}</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {images.filter((img) => img.series_id === series.id).map((img) => (
+                        <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                          <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Individual images */}
+                {individualImages.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">Individual</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {individualImages.map((img) => (
+                        <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                          <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Series */}
             {(activeTab === "all" || activeTab === "series") && seriesWithEpisodes.length > 0 && (
@@ -144,29 +212,15 @@ export default function Leaks() {
               </div>
             )}
 
-            {/* Movies / Images */}
-            {(activeTab === "all" || activeTab === "movies") && movies.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Film className="w-5 h-5 text-red-400" /> Videos &amp; Images
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {movies.map((v) => (
-                    <VideoCard key={v.id} video={v} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {movies.length === 0 && seriesWithEpisodes.length === 0 && (
+            {movies.length === 0 && individualImages.length === 0 && seriesWithImages.length === 0 && seriesWithEpisodes.length === 0 && (
               <div className="text-center py-20 text-muted-foreground">
                 <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-red-400/50" />
                 <p>No content yet. Check back soon.</p>
               </div>
             )}
           </>
-        )}
-      </div>
-    </div>
-  );
-}
+          )}
+          </div>
+          </div>
+          );
+          }
