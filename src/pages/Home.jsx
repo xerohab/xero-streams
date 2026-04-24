@@ -39,8 +39,8 @@ export default function Home() {
 
   const isLoading = loadingVideos || loadingSeries;
 
-  // Latest 5 for hero banner
-  const heroVideos = videos.slice(0, 5);
+  // Latest 5 for hero banner — exclude adult content
+  const heroVideos = videos.filter((v) => !v.is_adult).slice(0, 5);
 
   // Exclude adult content from main tabs
   const safeVideos = videos.filter((v) => !v.is_adult);

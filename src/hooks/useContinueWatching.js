@@ -2,7 +2,7 @@ const KEY = "xero_continue_watching";
 const MAX = 20;
 
 export function saveProgress(video, currentTime, duration) {
-  if (!video?.id || !duration || duration < 60) return;
+  if (!video?.id || !duration || duration < 60 || video.is_adult) return;
   const progress = Math.floor((currentTime / duration) * 100);
   if (progress < 2 || progress > 95) {
     // Remove if almost done or just started

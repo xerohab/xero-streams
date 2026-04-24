@@ -49,8 +49,8 @@ export default function Admin() {
 
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ["allUsers"],
-    queryFn: () => base44.entities.User.list(),
-    enabled: user?.role === "admin",
+    queryFn: () => base44.entities.User.list("-created_date", 100),
+    enabled: !!user && user?.role === "admin",
   });
 
   const setUserAgeVerified = async (userId, verified) => {
