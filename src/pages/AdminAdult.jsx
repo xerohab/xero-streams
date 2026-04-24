@@ -14,6 +14,7 @@ import AdultVideoScraper from "@/components/admin/AdultVideoScraper";
 import AdultImageScraper from "@/components/admin/AdultImageScraper";
 import AdultBulkImageUpload from "@/components/admin/AdultBulkImageUpload";
 import AdultManageSection from "@/components/admin/AdultManageSection";
+import ImprovedAdultManageSection from "@/components/admin/ImprovedAdultManageSection";
 import AdultSortOrderManager from "@/components/admin/AdultSortOrderManager";
 import BatchNameUpdater from "@/components/admin/BatchNameUpdater";
 import ImageCategoryForm from "@/components/admin/ImageCategoryForm";
@@ -280,7 +281,7 @@ export default function AdminAdult() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AdultManageSection
+                <ImprovedAdultManageSection
                   videos={videos}
                   seriesList={seriesList}
                   franchises={franchises}

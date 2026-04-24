@@ -153,7 +153,7 @@ export default function Leaks() {
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                    {movies.map((v) => (
-                     <VideoCard key={v.id} video={v} from="/leaks" />
+                     <VideoCard key={v.id} video={v} from="/leaks" isAdult={true} />
                    ))}
                  </div>
               </div>
@@ -166,20 +166,22 @@ export default function Leaks() {
                   <ImageIcon className="w-5 h-5 text-red-400" /> Image Collections
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {seriesWithImages.map((series) => {
-                    const seriesImages = images.filter(img => img.series_id === series.id);
-                    const firstImage = seriesImages[0];
-                    return (
-                      <div key={series.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                        {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" />}
-                        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center">
-                          <p className="text-white font-semibold text-center px-2 mb-2">{series.title}</p>
-                          <p className="text-white/80 text-xs">{seriesImages.length} image{seriesImages.length !== 1 ? "s" : ""}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                   {seriesWithImages.map((series) => {
+                     const seriesImages = images.filter(img => img.series_id === series.id);
+                     const firstImage = seriesImages[0];
+                     return (
+                       <Link key={series.id} to={`/series?id=${series.id}&from=/leaks`}>
+                         <div className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                           {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" />}
+                           <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center">
+                             <p className="text-white font-semibold text-center px-2 mb-2">{series.title}</p>
+                             <p className="text-white/80 text-xs">{seriesImages.length} image{seriesImages.length !== 1 ? "s" : ""}</p>
+                           </div>
+                         </div>
+                       </Link>
+                     );
+                   })}
+                 </div>
               </div>
             )}
 

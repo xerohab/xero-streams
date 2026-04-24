@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Play, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function VideoCard({ video, index, from }) {
+export default function VideoCard({ video, index, from, isAdult }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const linkPath = from ? `/watch?id=${video.id}&from=${encodeURIComponent(from)}` : `/watch?id=${video.id}`;
@@ -42,8 +42,8 @@ export default function VideoCard({ video, index, from }) {
             </div>
           )}
 
-          {/* Episode number */}
-          {video.episode_number && (
+          {/* Episode number - only for non-adult content */}
+          {!isAdult && video.episode_number && (
             <div className="absolute top-2 left-2 bg-primary/90 text-xs text-primary-foreground font-bold px-2 py-0.5 rounded">
               EP {video.episode_number}
             </div>
