@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function Navbar() {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     base44.auth.me().then(setUser).catch(() => {});
+    base44.functions.invoke("checkAdminStatus", {}).then(r => setIsAdmin(r.data?.isAdmin === true)).catch(() => {});
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -32,8 +34,6 @@ export default function Navbar() {
       setSearchQuery("");
     }
   };
-
-  const isAdmin = user?.role === "admin";
 
   return (
     <nav

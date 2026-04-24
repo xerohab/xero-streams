@@ -23,6 +23,7 @@ import { Link as RouterLink } from "react-router-dom";
 
 export default function Admin() {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(null); // null = loading
   const [editingVideo, setEditingVideo] = useState(null);
   const [editingSeries, setEditingSeries] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -30,7 +31,8 @@ export default function Admin() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser);
+    base44.auth.me().then(setUser).catch(() => {});
+    base44.functions.invoke("checkAdminStatus", {}).then(r => setIsAdmin(r.data?.isAdmin === true)).catch(() => setIsAdmin(false));
   }, []);
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
@@ -51,7 +53,7 @@ export default function Admin() {
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ["allUsers"],
     queryFn: () => base44.entities.User.list("-created_date", 100),
-    enabled: !!user && user?.role === "admin",
+    enabled: isAdmin === true,
   });
 
   const setUserAgeVerified = async (userId, verified) => {
@@ -85,7 +87,15 @@ export default function Admin() {
     setFetchingPosterFor(null);
   };
 
-  if (user && user.role !== "admin") {
+  if (isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isAdmin === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-center p-6">
         <div>

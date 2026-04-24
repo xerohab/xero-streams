@@ -15,29 +15,29 @@ import AdultManageSection from "@/components/admin/AdultManageSection";
 import AdultSortOrderManager from "@/components/admin/AdultSortOrderManager";
 
 export default function AdminAdult() {
-  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(null); // null = loading
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.functions.invoke("checkAdminStatus", {}).then(r => setIsAdmin(r.data?.isAdmin === true)).catch(() => setIsAdmin(false));
   }, []);
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["admin-adult-videos"],
     queryFn: () => base44.entities.Video.filter({ is_adult: true }, "-created_date"),
-    enabled: !!user && user.role === "admin",
+    enabled: isAdmin === true,
   });
 
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["admin-adult-series"],
     queryFn: () => base44.entities.Series.filter({ is_adult: true }),
-    enabled: !!user && user.role === "admin",
+    enabled: isAdmin === true,
   });
 
   const { data: franchises = [] } = useQuery({
     queryKey: ["franchises"],
     queryFn: () => base44.entities.Franchise.list(),
-    enabled: !!user && user.role === "admin",
+    enabled: isAdmin === true,
   });
 
   const refresh = () => {
@@ -45,13 +45,13 @@ export default function AdminAdult() {
     queryClient.invalidateQueries({ queryKey: ["admin-adult-series"] });
   };
 
-  if (!user) return (
+  if (isAdmin === null) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
     </div>
   );
 
-  if (user.role !== "admin") {
+  if (isAdmin === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-center p-6">
         <div>
