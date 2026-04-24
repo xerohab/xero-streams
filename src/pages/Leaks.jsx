@@ -121,6 +121,7 @@ export default function Leaks() {
           {[
             { id: "all", label: "All" },
             { id: "videos", label: "Videos", icon: Film },
+            { id: "images", label: "Images", icon: ImageIcon },
             ...imageCategories.map(cat => ({ id: `img-${cat.id}`, label: cat.title, icon: ImageIcon })),
             { id: "series", label: "Series", icon: Tv },
           ].map(({ id, label, icon: Icon }) => (
@@ -161,8 +162,8 @@ export default function Leaks() {
               </div>
             )}
 
-            {/* Images by Category */}
-            {activeTab === "all" && (individualImages.length > 0 || seriesWithImages.length > 0) && (
+            {/* Images - All & Images tab */}
+            {(activeTab === "all" || activeTab === "images") && (individualImages.length > 0 || seriesWithImages.length > 0) && (
               <div className="mb-12">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-red-400" /> Images
