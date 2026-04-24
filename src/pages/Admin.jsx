@@ -13,6 +13,7 @@ import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
 import WebScraper from "@/components/admin/WebScraper";
 import EditVideoModal from "@/components/admin/EditVideoModal";
 import EditSeriesModal from "@/components/admin/EditSeriesModal";
+import FranchiseForm from "@/components/admin/FranchiseForm";
 import { Toaster } from "react-hot-toast";
 
 export default function Admin() {
@@ -36,9 +37,15 @@ export default function Admin() {
     queryFn: () => base44.entities.Series.list(),
   });
 
+  const { data: franchises = [] } = useQuery({
+    queryKey: ["franchises"],
+    queryFn: () => base44.entities.Franchise.list(),
+  });
+
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["videos"] });
     queryClient.invalidateQueries({ queryKey: ["series"] });
+    queryClient.invalidateQueries({ queryKey: ["franchises"] });
   };
 
   const deleteVideo = async (id) => {
@@ -102,11 +109,12 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="bg-secondary">
+          <TabsList className="bg-secondary flex-wrap h-auto gap-1">
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
             <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
             <TabsTrigger value="series">Add Series</TabsTrigger>
+            <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
 
@@ -116,7 +124,7 @@ export default function Admin() {
                 <CardTitle className="text-foreground">Upload Movie / Standalone Video</CardTitle>
               </CardHeader>
               <CardContent>
-                <VideoUploadForm seriesList={seriesList} onSuccess={refresh} />
+                <VideoUploadForm seriesList={seriesList} franchises={franchises} onSuccess={refresh} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -149,7 +157,18 @@ export default function Admin() {
                 <CardTitle className="text-foreground">Create New Series</CardTitle>
               </CardHeader>
               <CardContent>
-                <SeriesForm onSuccess={refresh} />
+                <SeriesForm franchises={franchises} onSuccess={refresh} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="franchise">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Create New Franchise / Collection</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FranchiseForm onSuccess={refresh} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -271,6 +290,7 @@ export default function Admin() {
         <EditVideoModal
           video={editingVideo}
           seriesList={seriesList}
+          franchises={franchises}
           open={!!editingVideo}
           onClose={() => setEditingVideo(null)}
           onSaved={refresh}
@@ -279,6 +299,7 @@ export default function Admin() {
       {editingSeries && (
         <EditSeriesModal
           series={editingSeries}
+          franchises={franchises}
           open={!!editingSeries}
           onClose={() => setEditingSeries(null)}
           onSaved={refresh}

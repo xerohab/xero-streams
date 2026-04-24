@@ -22,6 +22,10 @@
       "type": "string",
       "description": "ID of the series this video belongs to"
     },
+    "franchise_id": {
+      "type": "string",
+      "description": "ID of the franchise this standalone movie belongs to"
+    },
     "episode_number": {
       "type": "number",
       "description": "Episode number within the series"

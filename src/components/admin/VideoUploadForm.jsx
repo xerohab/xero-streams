@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link as LinkIcon, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function VideoUploadForm({ seriesList, onSuccess }) {
+export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
   const [uploading, setUploading] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
   const [form, setForm] = useState({
@@ -19,6 +19,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
     video_url: "",
     thumbnail_url: "",
     series_id: "",
+    franchise_id: "",
     episode_number: "",
     duration: "",
     is_featured: false,
@@ -50,6 +51,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
       ...form,
       episode_number: form.episode_number ? Number(form.episode_number) : undefined,
       series_id: form.series_id || undefined,
+      franchise_id: form.franchise_id || undefined,
     };
     await base44.entities.Video.create(payload);
     toast.success("Video added successfully!");
@@ -59,6 +61,7 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
       video_url: "",
       thumbnail_url: "",
       series_id: "",
+      franchise_id: "",
       episode_number: "",
       duration: "",
       is_featured: false,
@@ -195,6 +198,23 @@ export default function VideoUploadForm({ seriesList, onSuccess }) {
           />
         </div>
       </div>
+
+      {franchises.length > 0 && (
+        <div className="space-y-2">
+          <Label>Franchise / Collection</Label>
+          <Select value={form.franchise_id} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
+            <SelectTrigger className="bg-secondary border-border">
+              <SelectValue placeholder="No franchise" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">No Franchise</SelectItem>
+              {franchises.map((f) => (
+                <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>Duration</Label>

@@ -11,12 +11,13 @@ import toast from "react-hot-toast";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
-export default function EditSeriesModal({ series, open, onClose, onSaved }) {
+export default function EditSeriesModal({ series, franchises = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: series?.title || "",
     description: series?.description || "",
     cover_image: series?.cover_image || "",
     category: series?.category || "",
+    franchise_id: series?.franchise_id || "",
   });
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -69,6 +70,22 @@ export default function EditSeriesModal({ series, open, onClose, onSaved }) {
               </SelectContent>
             </Select>
           </div>
+          {franchises.length > 0 && (
+            <div className="space-y-1">
+              <Label>Franchise / Collection</Label>
+              <Select value={form.franchise_id || "_none"} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="No franchise" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No Franchise</SelectItem>
+                  {franchises.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <Label>Cover Image</Label>
             <div className="flex gap-2">

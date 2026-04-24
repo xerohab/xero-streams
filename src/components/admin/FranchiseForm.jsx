@@ -1,0 +1,74 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Upload, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
+
+export default function FranchiseForm({ onSuccess }) {
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [form, setForm] = useState({ title: "", description: "", cover_image: "" });
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingCover(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm((prev) => ({ ...prev, cover_image: file_url }));
+    setUploadingCover(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await base44.entities.Franchise.create(form);
+    toast.success("Franchise created!");
+    setForm({ title: "", description: "", cover_image: "" });
+    onSuccess?.();
+  };
+
+  const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-2">
+        <Label>Franchise / Collection Title *</Label>
+        <Input
+          value={form.title}
+          onChange={(e) => update("title", e.target.value)}
+          placeholder="e.g. American Pie, Fast & Furious"
+          required
+          className="bg-secondary border-border"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Description</Label>
+        <Textarea
+          value={form.description}
+          onChange={(e) => update("description", e.target.value)}
+          placeholder="What's this franchise about?"
+          className="bg-secondary border-border h-20"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Cover Image</Label>
+        <div className="flex gap-3">
+          <Input
+            value={form.cover_image}
+            onChange={(e) => update("cover_image", e.target.value)}
+            placeholder="Cover image URL or upload →"
+            className="bg-secondary border-border flex-1"
+          />
+          <Button type="button" variant="secondary" className="relative overflow-hidden" disabled={uploadingCover}>
+            {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            <input type="file" accept="image/*" onChange={handleCoverUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+          </Button>
+        </div>
+      </div>
+      <Button type="submit" className="w-full bg-primary hover:bg-primary/90 font-bold" disabled={!form.title}>
+        Create Franchise
+      </Button>
+    </form>
+  );
+}

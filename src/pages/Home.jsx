@@ -5,7 +5,8 @@ import Navbar from "@/components/browse/Navbar";
 import HeroSection from "@/components/browse/HeroSection";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
-import { Loader2, Film, Tv } from "lucide-react";
+import FranchiseCard from "@/components/browse/FranchiseCard";
+import { Loader2, Film, Tv, Layers } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -20,6 +21,11 @@ export default function Home() {
     queryFn: () => base44.entities.Series.list(),
   });
 
+  const { data: franchises = [] } = useQuery({
+    queryKey: ["franchises"],
+    queryFn: () => base44.entities.Franchise.list(),
+  });
+
   const isLoading = loadingVideos || loadingSeries;
 
   // Latest 5 for hero banner
@@ -29,6 +35,19 @@ export default function Home() {
   const movies = videos.filter(
     (v) => v.content_type === "movie" || (!v.series_id && !v.content_type)
   );
+
+  // Franchises with content
+  const franchisesWithContent = franchises.filter((f) => {
+    const hasSeries = seriesList.some((s) => s.franchise_id === f.id);
+    const hasMovies = videos.some((v) => v.franchise_id === f.id);
+    return hasSeries || hasMovies;
+  });
+
+  const franchiseItemCount = (franchiseId) => {
+    const seriesCount = seriesList.filter((s) => s.franchise_id === franchiseId).length;
+    const movieCount = videos.filter((v) => v.franchise_id === franchiseId && !v.series_id).length;
+    return seriesCount + movieCount;
+  };
 
   // Series that have episodes, sorted A-Z
   const seriesWithEpisodes = seriesList
@@ -93,6 +112,21 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
+
+        {/* Franchises / Collections */}
+        {(activeTab === "all") && franchisesWithContent.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary" /> Collections & Franchises
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">Click a franchise to browse all its series and movies.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {franchisesWithContent.map((f) => (
+                <FranchiseCard key={f.id} franchise={f} itemCount={franchiseItemCount(f.id)} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* TV Series Grid */}
         {(activeTab === "all" || activeTab === "tv") && seriesWithEpisodes.length > 0 && (

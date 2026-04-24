@@ -10,13 +10,14 @@ import toast from "react-hot-toast";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
-export default function SeriesForm({ onSuccess }) {
+export default function SeriesForm({ franchises = [], onSuccess }) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
     cover_image: "",
     category: "",
+    franchise_id: "",
   });
 
   const handleCoverUpload = async (e) => {
@@ -30,10 +31,14 @@ export default function SeriesForm({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...form, category: form.category || undefined };
+    const payload = {
+      ...form,
+      category: form.category || undefined,
+      franchise_id: form.franchise_id || undefined,
+    };
     await base44.entities.Series.create(payload);
     toast.success("Series created!");
-    setForm({ title: "", description: "", cover_image: "", category: "" });
+    setForm({ title: "", description: "", cover_image: "", category: "", franchise_id: "" });
     onSuccess?.();
   };
 
@@ -77,6 +82,23 @@ export default function SeriesForm({ onSuccess }) {
           </SelectContent>
         </Select>
       </div>
+
+      {franchises.length > 0 && (
+        <div className="space-y-2">
+          <Label>Franchise / Collection</Label>
+          <Select value={form.franchise_id} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
+            <SelectTrigger className="bg-secondary border-border">
+              <SelectValue placeholder="No franchise" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">No Franchise</SelectItem>
+              {franchises.map((f) => (
+                <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>Cover Image</Label>

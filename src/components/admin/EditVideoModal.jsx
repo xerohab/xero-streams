@@ -10,13 +10,14 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function EditVideoModal({ video, seriesList, open, onClose, onSaved }) {
+export default function EditVideoModal({ video, seriesList, franchises = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({
     title: video?.title || "",
     description: video?.description || "",
     video_url: video?.video_url || "",
     thumbnail_url: video?.thumbnail_url || "",
     series_id: video?.series_id || "",
+    franchise_id: video?.franchise_id || "",
     episode_number: video?.episode_number || "",
     duration: video?.duration || "",
     is_featured: video?.is_featured || false,
@@ -33,6 +34,7 @@ export default function EditVideoModal({ video, seriesList, open, onClose, onSav
         video_url: video.video_url || "",
         thumbnail_url: video.thumbnail_url || "",
         series_id: video.series_id || "",
+        franchise_id: video.franchise_id || "",
         episode_number: video.episode_number || "",
         duration: video.duration || "",
         is_featured: video.is_featured || false,
@@ -58,6 +60,7 @@ export default function EditVideoModal({ video, seriesList, open, onClose, onSav
       ...form,
       episode_number: form.episode_number ? Number(form.episode_number) : undefined,
       series_id: form.series_id || undefined,
+      franchise_id: form.franchise_id || undefined,
     });
     toast.success("Video updated!");
     setSaving(false);
@@ -126,6 +129,22 @@ export default function EditVideoModal({ video, seriesList, open, onClose, onSav
               <Input type="number" value={form.episode_number} onChange={(e) => update("episode_number", e.target.value)} className="bg-secondary border-border" placeholder="1" />
             </div>
           </div>
+          {franchises.length > 0 && (
+            <div className="space-y-1">
+              <Label>Franchise / Collection</Label>
+              <Select value={form.franchise_id || "_none"} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue placeholder="No franchise" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No Franchise</SelectItem>
+                  {franchises.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <Label>Duration</Label>
             <Input value={form.duration} onChange={(e) => update("duration", e.target.value)} className="bg-secondary border-border" placeholder="e.g. 24:30" />
