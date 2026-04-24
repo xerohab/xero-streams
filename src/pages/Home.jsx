@@ -31,9 +31,9 @@ export default function Home() {
   // Latest 5 for hero banner
   const heroVideos = videos.slice(0, 5);
 
-  // Movies (standalone, not in any series)
+  // Movies: anything that is not a series episode (no series_id, OR explicitly typed as movie)
   const movies = videos.filter(
-    (v) => v.content_type === "movie" || (!v.series_id && !v.content_type)
+    (v) => !v.series_id && (v.content_type === "movie" || v.content_type !== "episode")
   );
 
   // Franchises with content

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Trash2, Upload, AlertTriangle } from "lucide-react";
+import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function WebScraper({ seriesList, onSuccess }) {
@@ -14,6 +14,7 @@ export default function WebScraper({ seriesList, onSuccess }) {
   const [episodes, setEpisodes] = useState([]);
   const [saving, setSaving] = useState(false);
   const [scanMode, setScanMode] = useState(null); // 'direct' or 'page_links'
+  const [uploadingThumbFor, setUploadingThumbFor] = useState(null);
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
@@ -36,6 +37,14 @@ export default function WebScraper({ seriesList, onSuccess }) {
     setEpisodes(prev => prev.map((ep, i) => i === index ? { ...ep, [field]: value } : ep));
   };
 
+  const handleThumbUpload = async (index, file) => {
+    if (!file) return;
+    setUploadingThumbFor(index);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    updateEp(index, "thumbnail_url", file_url);
+    setUploadingThumbFor(null);
+  };
+
   const removeEp = (index) => setEpisodes(prev => prev.filter((_, i) => i !== index));
 
   const handleImport = async () => {
@@ -49,7 +58,7 @@ export default function WebScraper({ seriesList, onSuccess }) {
       title: ep.title,
       description: ep.description || undefined,
       video_url: ep.video_url,
-      thumbnail_url: seriesCover || undefined,
+      thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
       series_id: selectedSeries,
       episode_number: ep.episode_number,
       content_type: "episode",
@@ -129,6 +138,19 @@ export default function WebScraper({ seriesList, onSuccess }) {
                       placeholder="Description (optional)"
                       className="bg-secondary border-border h-7 text-sm"
                     />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={ep.thumbnail_url || ""}
+                        onChange={e => updateEp(index, "thumbnail_url", e.target.value)}
+                        placeholder="Thumbnail URL (optional)"
+                        className="bg-secondary border-border h-7 text-sm flex-1"
+                      />
+                      <Button type="button" variant="secondary" className="relative overflow-hidden h-7 w-7 p-0 shrink-0" disabled={uploadingThumbFor === index} title="Upload thumbnail">
+                        {uploadingThumbFor === index ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
+                        <input type="file" accept="image/*" onChange={e => handleThumbUpload(index, e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </Button>
+                      {ep.thumbnail_url && <img src={ep.thumbnail_url} alt="" className="h-7 w-12 rounded object-cover shrink-0" />}
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">{ep.video_url}</p>
                   </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">

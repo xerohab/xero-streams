@@ -15,6 +15,7 @@ import EditVideoModal from "@/components/admin/EditVideoModal";
 import EditSeriesModal from "@/components/admin/EditSeriesModal";
 import FranchiseForm from "@/components/admin/FranchiseForm";
 import FranchiseMassEditor from "@/components/admin/FranchiseMassEditor";
+import SortOrderManager from "@/components/admin/SortOrderManager";
 import { Toaster } from "react-hot-toast";
 
 export default function Admin() {
@@ -117,6 +118,7 @@ export default function Admin() {
             <TabsTrigger value="series">Add Series</TabsTrigger>
             <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
             <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
+            <TabsTrigger value="sortorder">Sort Order</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
 
@@ -182,6 +184,22 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <FranchiseMassEditor
+                  franchises={franchises}
+                  videos={videos}
+                  seriesList={seriesList}
+                  onSuccess={refresh}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="sortorder">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Reorder Movies / Episodes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SortOrderManager
                   franchises={franchises}
                   videos={videos}
                   seriesList={seriesList}
