@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, AlertCircle, Camera, XCircle
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,15 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function useContinueWatching() {
   const raw = localStorage.getItem("xero_progress");
-  if (!raw) return [];
+  if (!raw) return { inProgress: [], completed: [] };
   try {
     const obj = JSON.parse(raw);
-    return Object.entries(obj)
+    const all = Object.entries(obj)
       .map(([id, data]) => ({ id, ...data }))
-      .filter((x) => x.percent < 0.95)
       .sort((a, b) => b.updatedAt - a.updatedAt);
+    return {
+      inProgress: all.filter((x) => x.percent < 0.95),
+      completed: all.filter((x) => x.percent >= 0.95),
+    };
   } catch {
-    return [];
+    return { inProgress: [], completed: [] };
   }
 }
 
@@ -36,9 +39,9 @@ export default function Dashboard() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  const continueWatching = useContinueWatching();
+  const { inProgress: continueWatching, completed: watchedHistory } = useContinueWatching();
 
-  useEffect(() => {
+  const fetchUser = () =>
     base44.auth.me().then((u) => {
       setUser(u);
       setLoadingUser(false);
@@ -47,7 +50,8 @@ export default function Dashboard() {
       setLoadingUser(false);
       base44.auth.redirectToLogin("/dashboard");
     });
-  }, []);
+
+  useEffect(() => { fetchUser(); }, []);
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
@@ -59,6 +63,10 @@ export default function Dashboard() {
   const cwVideos = continueWatching
     .map(({ id, percent, currentTime }) => ({ video: videos.find((v) => v.id === id), percent, currentTime }))
     .filter((x) => x.video);
+
+  const completedVideos = watchedHistory
+    .map(({ id }) => videos.find((v) => v.id === id))
+    .filter(Boolean);
 
   const startCamera = async () => {
     setCapturedImage(null);
@@ -92,7 +100,8 @@ export default function Dashboard() {
     const data = res.data;
     if (data.approved) {
       setVerifyResult('approved');
-      setUser((prev) => ({ ...prev, age_verified: true }));
+      // Refetch from server to get latest user data including age_verified
+      await fetchUser();
     } else {
       setVerifyResult('declined');
     }
@@ -224,6 +233,25 @@ export default function Dashboard() {
           </Card>
         )}
 
+        {/* Quick Links */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Browse All", icon: Home, to: "/" },
+            { label: "Movies", icon: Film, to: "/?tab=movies" },
+            { label: "TV Series", icon: TrendingUp, to: "/?tab=tv" },
+            ...(user.age_verified ? [{ label: "Adult (18+)", icon: Star, to: "/?tab=adult" }] : []),
+          ].map(({ label, icon: Icon, to }) => (
+            <Link key={label} to={to}>
+              <Card className="bg-card border-border hover:border-primary/50 transition-colors cursor-pointer group">
+                <CardContent className="py-4 flex flex-col items-center gap-2 text-center">
+                  <Icon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-semibold text-foreground">{label}</span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
         {/* Continue Watching */}
         {cwVideos.length > 0 && (
           <div>
@@ -298,8 +326,45 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Watched / Completed */}
+        {completedVideos.length > 0 && (
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-400" /> Watched
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {completedVideos.slice(0, 8).map((video) => (
+                <Link key={video.id} to={`/watch?id=${video.id}`}>
+                  <div className="relative rounded-lg overflow-hidden bg-secondary group cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                    <div className="aspect-video">
+                      {video.thumbnail_url ? (
+                        <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                          <Play className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                          <Play className="w-4 h-4 fill-current text-primary-foreground ml-0.5" />
+                        </div>
+                      </div>
+                      <div className="absolute top-2 right-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-400 drop-shadow" />
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs font-semibold text-foreground line-clamp-2">{video.title}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card className="bg-card border-border text-center">
             <CardContent className="py-5">
               <p className="text-3xl font-black text-primary">{favouriteVideos.length}</p>
@@ -314,8 +379,14 @@ export default function Dashboard() {
           </Card>
           <Card className="bg-card border-border text-center">
             <CardContent className="py-5">
-              <p className="text-3xl font-black text-primary">{user.age_verified ? "18+" : "—"}</p>
-              <p className="text-sm text-muted-foreground mt-1">Age Status</p>
+              <p className="text-3xl font-black text-primary">{completedVideos.length}</p>
+              <p className="text-sm text-muted-foreground mt-1">Watched</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border text-center">
+            <CardContent className="py-5">
+              <p className="text-3xl font-black text-primary">{user.age_verified ? "✓" : "—"}</p>
+              <p className="text-sm text-muted-foreground mt-1">Age 18+</p>
             </CardContent>
           </Card>
         </div>

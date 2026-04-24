@@ -13,8 +13,13 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
   const [user, setUser] = useState(null);
 
+  const refreshUser = () => base44.auth.me().then(setUser).catch(() => {});
+
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    refreshUser();
+    // Re-check user when window regains focus (e.g. after dashboard verification)
+    window.addEventListener("focus", refreshUser);
+    return () => window.removeEventListener("focus", refreshUser);
   }, []);
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
