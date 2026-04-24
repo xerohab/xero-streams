@@ -19,17 +19,26 @@ Deno.serve(async (req) => {
       return url.endsWith('.jpg') || url.endsWith('.jpeg');
     });
 
-    // Delete each image
+    // Delete each image with delay to avoid rate limits
+    let deleted = 0;
     for (const img of imagesToDelete) {
-      await base44.asServiceRole.entities.Image.delete(img.id);
+      try {
+        await base44.asServiceRole.entities.Image.delete(img.id);
+        deleted++;
+        // Add small delay between deletes
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (err) {
+        console.error(`Failed to delete image ${img.id}:`, err.message);
+      }
     }
 
     return Response.json({ 
       success: true, 
-      deletedCount: imagesToDelete.length,
-      message: `Deleted ${imagesToDelete.length} image${imagesToDelete.length !== 1 ? 's' : ''}`
+      deletedCount: deleted,
+      message: `Deleted ${deleted} image${deleted !== 1 ? 's' : ''}`
     });
   } catch (error) {
+    console.error("Delete function error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
