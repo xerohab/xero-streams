@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ShieldAlert, Film, Tv, Loader2, Lock, Image as ImageIcon } from "lucide-react";
+import { ShieldAlert, Film, Tv, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -30,17 +30,7 @@ export default function Leaks() {
     enabled: !!user?.age_verified,
   });
 
-  const { data: images = [], isLoading: loadingImages } = useQuery({
-    queryKey: ["leaks-images"],
-    queryFn: () => base44.entities.Image.filter({ is_adult: true }, "-created_date"),
-    enabled: !!user?.age_verified,
-  });
 
-  const { data: imageCategories = [] } = useQuery({
-    queryKey: ["image-categories"],
-    queryFn: () => base44.entities.ImageCategory.filter({ is_adult: true }),
-    enabled: !!user?.age_verified,
-  });
 
   if (loadingUser) {
     return (
@@ -91,14 +81,13 @@ export default function Leaks() {
     );
   }
 
-  const isLoading = loadingVideos || loadingSeries || loadingImages;
+  const isLoading = loadingVideos || loadingSeries;
 
   const movies = videos.filter((v) => !v.series_id);
   const seriesWithEpisodes = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
 
-  const seriesWithImages = seriesList.filter((s) => images.some((img) => img.series_id === s.id));
-  const imageCountBySeries = (seriesId) => images.filter((img) => img.series_id === seriesId).length;
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -159,32 +148,6 @@ export default function Leaks() {
               </div>
             )}
 
-            {/* Image Series - shows as folders */}
-            {(activeTab === "all" || activeTab === "series") && seriesWithImages.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-red-400" /> Image Collections
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                   {seriesWithImages.map((series) => {
-                     const seriesImages = images.filter(img => img.series_id === series.id);
-                     const firstImage = seriesImages[0];
-                     return (
-                       <Link key={series.id} to={`/series?id=${series.id}&from=/leaks`}>
-                         <div className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                           {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" />}
-                           <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center">
-                             <p className="text-white font-semibold text-center px-2 mb-2">{series.title}</p>
-                             <p className="text-white/80 text-xs">{seriesImages.length} image{seriesImages.length !== 1 ? "s" : ""}</p>
-                           </div>
-                         </div>
-                       </Link>
-                     );
-                   })}
-                 </div>
-              </div>
-            )}
-
             {/* Series */}
             {(activeTab === "all" || activeTab === "series") && seriesWithEpisodes.length > 0 && (
               <div className="mb-12">
@@ -200,7 +163,7 @@ export default function Leaks() {
             )}
 
             {(() => {
-               const hasContent = movies.length > 0 || seriesWithImages.length > 0 || seriesWithEpisodes.length > 0;
+               const hasContent = movies.length > 0 || seriesWithEpisodes.length > 0;
                if (!hasContent) {
                  return (
                    <div className="text-center py-20 text-muted-foreground">
