@@ -36,6 +36,12 @@ export default function Leaks() {
     enabled: !!user?.age_verified,
   });
 
+  const { data: imageCategories = [] } = useQuery({
+    queryKey: ["image-categories"],
+    queryFn: () => base44.entities.ImageCategory.filter({ is_adult: true }),
+    enabled: !!user?.age_verified,
+  });
+
   if (loadingUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -111,11 +117,11 @@ export default function Leaks() {
 
       {/* Tabs */}
       <div className="px-6 md:px-16 mb-8">
-        <div className="flex items-center gap-1 bg-secondary/60 rounded-full p-1 w-fit">
+        <div className="flex items-center gap-1 bg-secondary/60 rounded-full p-1 w-fit flex-wrap">
           {[
             { id: "all", label: "All" },
             { id: "videos", label: "Videos", icon: Film },
-            { id: "images", label: "Images", icon: ImageIcon },
+            ...imageCategories.map(cat => ({ id: `img-${cat.id}`, label: cat.title, icon: ImageIcon })),
             { id: "series", label: "Series", icon: Tv },
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -155,14 +161,13 @@ export default function Leaks() {
               </div>
             )}
 
-            {/* Images - Individual & Series */}
-            {(activeTab === "all" || activeTab === "images") && (individualImages.length > 0 || seriesWithImages.length > 0) && (
+            {/* Images by Category */}
+            {activeTab === "all" && (individualImages.length > 0 || seriesWithImages.length > 0) && (
               <div className="mb-12">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-red-400" /> Images
                 </h2>
 
-                {/* Series with images */}
                 {seriesWithImages.map((series) => (
                   <div key={series.id} className="mb-8">
                     <h3 className="text-lg font-semibold text-foreground mb-3">{series.title}</h3>
@@ -179,7 +184,6 @@ export default function Leaks() {
                   </div>
                 ))}
 
-                {/* Individual images */}
                 {individualImages.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-foreground mb-3">Individual</h3>
@@ -198,6 +202,49 @@ export default function Leaks() {
               </div>
             )}
 
+            {/* Category-specific images */}
+            {activeTab.startsWith("img-") && (() => {
+              const catId = activeTab.replace("img-", "");
+              const catImages = images.filter(img => img.category_id === catId);
+              const catSeries = seriesList.filter(s => catImages.some(img => img.series_id === s.id));
+              const catIndividual = catImages.filter(img => !img.series_id);
+
+              return (catImages.length > 0) ? (
+                <div className="mb-12">
+                  {catSeries.map((series) => (
+                    <div key={series.id} className="mb-8">
+                      <h3 className="text-lg font-semibold text-foreground mb-3">{series.title}</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {catImages.filter((img) => img.series_id === series.id).map((img) => (
+                          <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                            <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {catIndividual.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground mb-3">Individual</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {catIndividual.map((img) => (
+                          <div key={img.id} className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                            <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <p className="text-white text-xs font-semibold text-center px-2">{img.title}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null;
+            })()}
+
             {/* Series */}
             {(activeTab === "all" || activeTab === "series") && seriesWithEpisodes.length > 0 && (
               <div className="mb-12">
@@ -212,12 +259,18 @@ export default function Leaks() {
               </div>
             )}
 
-            {movies.length === 0 && individualImages.length === 0 && seriesWithImages.length === 0 && seriesWithEpisodes.length === 0 && (
-              <div className="text-center py-20 text-muted-foreground">
-                <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-red-400/50" />
-                <p>No content yet. Check back soon.</p>
-              </div>
-            )}
+            {(() => {
+              const hasContent = movies.length > 0 || individualImages.length > 0 || seriesWithImages.length > 0 || seriesWithEpisodes.length > 0;
+              if (!hasContent) {
+                return (
+                  <div className="text-center py-20 text-muted-foreground">
+                    <ShieldAlert className="w-10 h-10 mx-auto mb-3 text-red-400/50" />
+                    <p>No content yet. Check back soon.</p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </>
           )}
           </div>

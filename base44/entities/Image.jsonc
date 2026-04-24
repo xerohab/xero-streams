@@ -18,6 +18,10 @@
       "type": "string",
       "description": "ID of the series this image belongs to (optional)"
     },
+    "category_id": {
+      "type": "string",
+      "description": "ID of the image category"
+    },
     "is_adult": {
       "type": "boolean",
       "default": false,

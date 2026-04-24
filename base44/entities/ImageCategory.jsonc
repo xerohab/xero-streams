@@ -1,0 +1,22 @@
+{
+  "name": "ImageCategory",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Category name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Category description"
+    },
+    "is_adult": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is for adult content"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

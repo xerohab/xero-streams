@@ -13,6 +13,7 @@ import AdultWebScraper from "@/components/admin/AdultWebScraper";
 import AdultBulkImageUpload from "@/components/admin/AdultBulkImageUpload";
 import AdultManageSection from "@/components/admin/AdultManageSection";
 import AdultSortOrderManager from "@/components/admin/AdultSortOrderManager";
+import BatchNameUpdater from "@/components/admin/BatchNameUpdater";
 
 export default function AdminAdult() {
   const [isAdmin, setIsAdmin] = useState(null); // null = loading
@@ -37,6 +38,12 @@ export default function AdminAdult() {
   const { data: franchises = [] } = useQuery({
     queryKey: ["franchises"],
     queryFn: () => base44.entities.Franchise.list(),
+    enabled: isAdmin === true && isAdmin !== null,
+  });
+
+  const { data: images = [], isLoading: loadingImages } = useQuery({
+    queryKey: ["admin-adult-images"],
+    queryFn: () => base44.entities.Image.filter({ is_adult: true }, "-created_date"),
     enabled: isAdmin === true && isAdmin !== null,
   });
 
@@ -95,13 +102,14 @@ export default function AdminAdult() {
 
         <Tabs defaultValue="add-video" className="space-y-6">
           <TabsList className="bg-secondary flex-wrap h-auto gap-1">
-            <TabsTrigger value="add-video">Add Video / Image</TabsTrigger>
-            <TabsTrigger value="add-series">Add Series</TabsTrigger>
-            <TabsTrigger value="scraper">Scraper</TabsTrigger>
-            <TabsTrigger value="bulk-images">Bulk Images</TabsTrigger>
-            <TabsTrigger value="manage">Manage</TabsTrigger>
-            <TabsTrigger value="sort">Sort Order</TabsTrigger>
-          </TabsList>
+             <TabsTrigger value="add-video">Add Video / Image</TabsTrigger>
+             <TabsTrigger value="add-series">Add Series</TabsTrigger>
+             <TabsTrigger value="scraper">Scraper</TabsTrigger>
+             <TabsTrigger value="bulk-images">Bulk Images</TabsTrigger>
+             <TabsTrigger value="batch-names">Batch Names</TabsTrigger>
+             <TabsTrigger value="manage">Manage</TabsTrigger>
+             <TabsTrigger value="sort">Sort Order</TabsTrigger>
+           </TabsList>
 
           <TabsContent value="add-video">
             <Card className="bg-card border-red-500/20">
@@ -151,6 +159,26 @@ export default function AdminAdult() {
               </CardHeader>
               <CardContent>
                 <AdultBulkImageUpload adultSeriesList={seriesList} onSuccess={refresh} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="batch-names">
+            <Card className="bg-card border-red-500/20">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-red-400" /> Batch Name Update
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Videos</h3>
+                  <BatchNameUpdater items={videos} entityType="Video" onSuccess={refresh} />
+                </div>
+                <div className="border-t border-border pt-6">
+                  <h3 className="font-semibold text-foreground mb-3">Images</h3>
+                  <BatchNameUpdater items={images} entityType="Image" onSuccess={refresh} />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
