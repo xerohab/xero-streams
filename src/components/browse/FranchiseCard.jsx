@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Layers } from "lucide-react";
 
-export default function FranchiseCard({ franchise, itemCount }) {
+export default function FranchiseCard({ franchise, itemCount, itemLabel }) {
   return (
     <Link to={`/franchise?id=${franchise.id}`}>
       <motion.div
@@ -31,7 +31,7 @@ export default function FranchiseCard({ franchise, itemCount }) {
         </div>
         <div className="p-2">
           {itemCount > 0 && (
-            <p className="text-xs text-muted-foreground">{itemCount} title{itemCount !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-muted-foreground">{itemCount} {itemLabel || "Titles"}</p>
           )}
         </div>
       </motion.div>

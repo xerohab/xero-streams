@@ -6,7 +6,7 @@ import HeroSection from "@/components/browse/HeroSection";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
-import { Loader2, Film, Tv, Layers } from "lucide-react";
+import { Loader2, Film, Tv } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -136,134 +136,49 @@ export default function Home() {
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
 
-        {/* Franchises / Collections */}
-        {(activeTab === "all") && franchisesWithContent.length > 0 && (
+        {/* TV Series tab */}
+        {(activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (
           <div className="mb-12">
-            <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-primary" /> Collections & Franchises
+            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <Tv className="w-5 h-5 text-primary" /> TV Series
             </h2>
-            <p className="text-sm text-muted-foreground mb-4">Click a franchise to browse all its series and movies.</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {franchisesWithContent.map((f) => (
-                <FranchiseCard key={f.id} franchise={f} itemCount={franchiseItemCount(f.id)} />
+              {/* Franchise cards instead of individual series */}
+              {seriesByFranchise.map(({ franchise, series }) => (
+                <FranchiseCard key={franchise.id} franchise={franchise} itemCount={series.length} itemLabel="Series" />
+              ))}
+              {/* Standalone series not in any franchise */}
+              {ungroupedSeries.map((s) => (
+                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
               ))}
             </div>
           </div>
         )}
 
-        {/* TV Series — with franchise grouping on tv tab */}
-        {(activeTab === "all" || activeTab === "tv") && seriesWithEpisodes.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-              <Tv className="w-5 h-5 text-primary" /> TV Series
-            </h2>
-
-            {activeTab === "tv" ? (
-              <div className="space-y-10">
-                {/* Franchise groups */}
-                {seriesByFranchise.map(({ franchise, series }) => (
-                  <div key={franchise.id}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Layers className="w-4 h-4 text-primary" />
-                      <h3 className="text-base font-bold text-foreground">{franchise.title}</h3>
-                      <span className="text-xs text-muted-foreground">({series.length} series)</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {series.map((s) => (
-                        <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {/* Ungrouped */}
-                {ungroupedSeries.length > 0 && (
-                  <div>
-                    {seriesByFranchise.length > 0 && (
-                      <h3 className="text-base font-bold text-foreground mb-3">Other Series</h3>
-                    )}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {ungroupedSeries.map((s) => (
-                        <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* All tab: flat grid, limit 15 */
-              <>
-                {seriesWithEpisodes.length > 15 && (
-                  <p className="text-sm text-muted-foreground mb-4">Showing 15 of {seriesWithEpisodes.length} — <button onClick={() => setActiveTab("tv")} className="text-primary hover:underline font-medium">see all TV series</button></p>
-                )}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {seriesWithEpisodes.slice(0, 15).map((s) => (
-                    <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Movies — with franchise grouping on movies tab */}
-        {(activeTab === "all" || activeTab === "movies") && movies.length > 0 && (
+        {/* Movies tab */}
+        {(activeTab === "all" || activeTab === "movies") && (ungroupedMovies.length > 0 || moviesByFranchise.length > 0) && (
           <div className="mb-12">
             <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
               <Film className="w-5 h-5 text-primary" /> Movies
             </h2>
-
-            {activeTab === "movies" ? (
-              <div className="space-y-10">
-                {/* Franchise groups */}
-                {moviesByFranchise.map(({ franchise, movies: fMovies }) => (
-                  <div key={franchise.id}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Layers className="w-4 h-4 text-primary" />
-                      <h3 className="text-base font-bold text-foreground">{franchise.title}</h3>
-                      <span className="text-xs text-muted-foreground">({fMovies.length} movies)</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {fMovies.map((v) => (
-                        <VideoCard key={v.id} video={v} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {/* Ungrouped */}
-                {ungroupedMovies.length > 0 && (
-                  <div>
-                    {moviesByFranchise.length > 0 && (
-                      <h3 className="text-base font-bold text-foreground mb-3">Other Movies</h3>
-                    )}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {ungroupedMovies.map((v) => (
-                        <VideoCard key={v.id} video={v} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* All tab: flat grid, limit 15 */
-              <>
-                {movies.length > 15 && (
-                  <p className="text-sm text-muted-foreground mb-4">Showing 15 of {movies.length} — <button onClick={() => setActiveTab("movies")} className="text-primary hover:underline font-medium">see all movies</button></p>
-                )}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {movies.slice(0, 15).map((v) => (
-                    <VideoCard key={v.id} video={v} />
-                  ))}
-                </div>
-              </>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Franchise cards instead of individual movies */}
+              {moviesByFranchise.map(({ franchise, movies: fMovies }) => (
+                <FranchiseCard key={franchise.id} franchise={franchise} itemCount={fMovies.length} itemLabel="Titles" />
+              ))}
+              {/* Standalone movies not in any franchise */}
+              {ungroupedMovies.map((v) => (
+                <VideoCard key={v.id} video={v} />
+              ))}
+            </div>
           </div>
         )}
 
         {/* Empty states */}
-        {activeTab === "tv" && seriesWithEpisodes.length === 0 && (
+        {activeTab === "tv" && ungroupedSeries.length === 0 && seriesByFranchise.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">No TV series yet.</div>
         )}
-        {activeTab === "movies" && movies.length === 0 && (
+        {activeTab === "movies" && ungroupedMovies.length === 0 && moviesByFranchise.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">No movies yet.</div>
         )}
       </div>
