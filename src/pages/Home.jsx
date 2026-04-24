@@ -36,19 +36,19 @@ export default function Home() {
     (v) => !v.series_id && (v.content_type === "movie" || v.content_type !== "episode")
   );
 
-  // Franchises with content
+  // Franchises with content (check ALL videos with franchise_id, not just filtered movies)
   const franchisesWithContent = franchises
     .filter((f) => {
       const hasSeries = seriesList.some((s) => s.franchise_id === f.id);
-      const hasMovies = movies.some((v) => v.franchise_id === f.id);
-      return hasSeries || hasMovies;
+      const hasVideos = videos.some((v) => v.franchise_id === f.id);
+      return hasSeries || hasVideos;
     })
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
 
   const franchiseItemCount = (franchiseId) => {
     const seriesCount = seriesList.filter((s) => s.franchise_id === franchiseId).length;
-    const movieCount = movies.filter((v) => v.franchise_id === franchiseId).length;
-    return seriesCount + movieCount;
+    const videoCount = videos.filter((v) => v.franchise_id === franchiseId).length;
+    return seriesCount + videoCount;
   };
 
   // Series that have episodes, sorted by sort_order then A-Z
@@ -69,11 +69,11 @@ export default function Home() {
 
   const ungroupedSeries = seriesWithEpisodes.filter((s) => !s.franchise_id);
 
-  // Grouped movies by franchise (for Movies tab)
+  // Grouped movies by franchise (for Movies tab) — use ALL videos with franchise_id
   const moviesByFranchise = franchisesWithContent
     .map((f) => ({
       franchise: f,
-      movies: movies.filter((v) => v.franchise_id === f.id)
+      movies: videos.filter((v) => v.franchise_id === f.id)
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }))
     .filter((g) => g.movies.length > 0);
