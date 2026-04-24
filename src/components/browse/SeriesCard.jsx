@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Tv } from "lucide-react";
 
-export default function SeriesCard({ series, episodeCount }) {
+export default function SeriesCard({ series, episodeCount, from }) {
+  const linkPath = from ? `/series?id=${series.id}&from=${encodeURIComponent(from)}` : `/series?id=${series.id}`;
   return (
-    <Link to={`/series?id=${series.id}`}>
+    <Link to={linkPath}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

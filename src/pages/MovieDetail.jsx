@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clock, Film, Play, Loader2, Users, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 
 export default function MovieDetail() {
   const navigate = useNavigate();
-  const videoId = new URLSearchParams(window.location.search).get("id");
+  const [searchParams] = useSearchParams();
+  const videoId = searchParams.get("id");
+  const from = searchParams.get("from") || "/";
   const [castInfo, setCastInfo] = useState(null);
   const [loadingCast, setLoadingCast] = useState(false);
 
@@ -81,7 +83,7 @@ export default function MovieDetail() {
         <Navbar />
         <div className="flex flex-col items-center justify-center min-h-screen">
           <h2 className="text-2xl font-bold mb-2">Not found</h2>
-          <Button variant="secondary" onClick={() => navigate(-1)}>Go Back</Button>
+          <Button variant="secondary" onClick={() => navigate(from)}>Go Back</Button>
         </div>
       </div>
     );
@@ -103,7 +105,7 @@ export default function MovieDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
         <div className="relative z-10 px-6 md:px-16 pb-10 w-full">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(from)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Back

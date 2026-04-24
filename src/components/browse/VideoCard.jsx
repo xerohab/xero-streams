@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Play, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function VideoCard({ video, index }) {
+export default function VideoCard({ video, index, from }) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const linkPath = from ? `/watch?id=${video.id}&from=${encodeURIComponent(from)}` : `/watch?id=${video.id}`;
 
   return (
     <div
@@ -11,7 +13,7 @@ export default function VideoCard({ video, index }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link to={`/watch?id=${video.id}`}>
+      <Link to={linkPath}>
         <div className="relative aspect-video rounded-md overflow-hidden bg-secondary transition-shadow duration-300 hover:shadow-lg hover:shadow-black/40 w-full">
           {video.thumbnail_url ? (
             <img

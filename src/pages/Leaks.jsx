@@ -152,10 +152,10 @@ export default function Leaks() {
                   <Film className="w-5 h-5 text-red-400" /> Videos
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {movies.map((v) => (
-                    <VideoCard key={v.id} video={v} />
-                  ))}
-                </div>
+                   {movies.map((v) => (
+                     <VideoCard key={v.id} video={v} from="/leaks" />
+                   ))}
+                 </div>
               </div>
             )}
 
@@ -190,10 +190,10 @@ export default function Leaks() {
                   <Tv className="w-5 h-5 text-red-400" /> Series
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {seriesWithEpisodes.map((s) => (
-                    <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} />
-                  ))}
-                </div>
+                   {seriesWithEpisodes.map((s) => (
+                     <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
+                   ))}
+                 </div>
               </div>
             )}
 

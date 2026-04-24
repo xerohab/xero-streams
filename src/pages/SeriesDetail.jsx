@@ -1,15 +1,16 @@
 import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Clock, Film, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
 
 export default function SeriesDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const seriesId = urlParams.get("id");
+  const [searchParams] = useSearchParams();
+  const seriesId = searchParams.get("id");
+  const from = searchParams.get("from") || "/";
 
   const { data: series, isLoading: loadingSeries } = useQuery({
     queryKey: ["series", seriesId],
@@ -45,7 +46,7 @@ export default function SeriesDetail() {
         <Navbar />
         <div className="flex flex-col items-center justify-center min-h-screen">
           <h2 className="text-2xl font-bold text-foreground mb-2">Series not found</h2>
-          <Link to="/"><Button variant="secondary">Back to Home</Button></Link>
+          <Link to={from}><Button variant="secondary">Back to Browse</Button></Link>
         </div>
       </div>
     );
@@ -66,7 +67,7 @@ export default function SeriesDetail() {
       >
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
         <div className="relative z-10 px-6 md:px-16 pb-8 w-full">
-          <Link to="/">
+          <Link to={from}>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2 mb-4 -ml-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Browse
