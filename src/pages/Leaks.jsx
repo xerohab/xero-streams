@@ -176,7 +176,7 @@ export default function Leaks() {
             {(activeTab === "all" || activeTab === "images") && imageSeries.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-red-400" /> Image Collections
+                  <ImageIcon className="w-5 h-5 text-red-400" /> Image Series
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                    {imageSeries.map((series) => {
