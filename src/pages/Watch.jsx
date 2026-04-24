@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward } from "lucide-react";
+import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -25,6 +25,26 @@ export default function Watch() {
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
+  const [user, setUser] = useState(null);
+  const [isFavourited, setIsFavourited] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then((u) => {
+      setUser(u);
+      if (u && videoId) {
+        setIsFavourited(u.favourites?.includes(videoId) ?? false);
+      }
+    }).catch(() => {});
+  }, [videoId]);
+
+  const handleToggleFavourite = async () => {
+    if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    const current = user.favourites || [];
+    const updated = isFavourited ? current.filter((id) => id !== videoId) : [...current, videoId];
+    await base44.auth.updateMe({ favourites: updated });
+    setUser((prev) => ({ ...prev, favourites: updated }));
+    setIsFavourited(!isFavourited);
+  };
 
   const { data: video, isLoading } = useQuery({
     queryKey: ["video", videoId],
@@ -309,6 +329,14 @@ export default function Watch() {
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
+                <Button
+                  variant={isFavourited ? "default" : "outline"}
+                  className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600" : ""}`}
+                  onClick={handleToggleFavourite}
+                >
+                  <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+                  {isFavourited ? "Favourited" : "Favourite"}
+                </Button>
                 {prevVideo && (
                   <Button
                     variant="secondary"

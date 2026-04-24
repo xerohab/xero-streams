@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon } from "lucide-react";
+import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon, Users, ShieldCheck, ShieldAlert } from "lucide-react";
 import VideoUploadForm from "@/components/admin/VideoUploadForm";
 import SeriesForm from "@/components/admin/SeriesForm";
 import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
@@ -43,6 +43,17 @@ export default function Admin() {
     queryKey: ["franchises"],
     queryFn: () => base44.entities.Franchise.list(),
   });
+
+  const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
+    queryKey: ["allUsers"],
+    queryFn: () => base44.entities.User.list(),
+    enabled: user?.role === "admin",
+  });
+
+  const setUserAgeVerified = async (userId, verified) => {
+    await base44.entities.User.update(userId, { age_verified: verified });
+    refetchUsers();
+  };
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["videos"] });
@@ -120,6 +131,7 @@ export default function Admin() {
             <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
             <TabsTrigger value="sortorder">Sort Order</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -317,6 +329,66 @@ export default function Admin() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+          <TabsContent value="users">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <Users className="w-5 h-5" /> User Management & Age Verification
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingUsers ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                ) : allUsers.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No users yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {allUsers.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between bg-secondary rounded-lg p-3 gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-foreground text-sm truncate">{u.full_name || "—"}</p>
+                            <Badge variant="outline" className="text-xs capitalize">{u.role}</Badge>
+                            {u.age_verified && (
+                              <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">18+ Verified</Badge>
+                            )}
+                            {u.age_verification_requested && !u.age_verified && (
+                              <Badge className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Verification Pending</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">{u.email}</p>
+                          {u.date_of_birth && (
+                            <p className="text-xs text-muted-foreground">DOB: {u.date_of_birth}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          {u.age_verified ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive text-xs gap-1"
+                              onClick={() => setUserAgeVerified(u.id, false)}
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" /> Revoke 18+
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-green-400 hover:text-green-300 text-xs gap-1"
+                              onClick={() => setUserAgeVerified(u.id, true)}
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" /> Approve 18+
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

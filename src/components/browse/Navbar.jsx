@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Shield, LogOut, Search } from "lucide-react";
+import { Play, Shield, LogOut, Search, User, Heart, LogIn } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,9 +83,27 @@ export default function Navbar() {
               </Button>
             </Link>
           )}
-          {user && (
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => base44.auth.logout()}>
-              <LogOut className="w-4 h-4" />
+
+          {user ? (
+            <>
+              <Link to="/dashboard">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2">
+                  <User className="w-4 h-4" />
+                  <span className="hidden md:inline">{user.full_name?.split(" ")[0] || "Profile"}</span>
+                </Button>
+              </Link>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => base44.auth.logout()}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              className="gap-2 bg-primary hover:bg-primary/90"
+              onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
             </Button>
           )}
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/browse/Navbar";
@@ -6,11 +6,16 @@ import HeroSection from "@/components/browse/HeroSection";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
-import { Loader2, Film, Tv } from "lucide-react";
+import { Loader2, Film, Tv, ShieldAlert } from "lucide-react";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
@@ -113,19 +118,20 @@ export default function Home() {
 
       {/* Tabs */}
       <div className="relative z-10 -mt-6 px-6 md:px-16 mb-8">
-        <div className="flex items-center gap-1 bg-background/60 backdrop-blur-md border border-border rounded-full p-1 w-fit">
+        <div className="flex items-center gap-1 bg-background/60 backdrop-blur-md border border-border rounded-full p-1 w-fit flex-wrap">
           {[
             { id: "all", label: "All", icon: null },
             { id: "movies", label: "Movies", icon: Film },
             { id: "tv", label: "TV Series", icon: Tv },
+            ...(user?.age_verified ? [{ id: "adult", label: "Adult", icon: ShieldAlert }] : []),
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeTab === id
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? id === "adult" ? "bg-red-600 text-white shadow-md" : "bg-primary text-primary-foreground shadow-md"
+                  : id === "adult" ? "text-red-400 hover:text-red-300" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {Icon && <Icon className="w-3.5 h-3.5" />}
@@ -182,6 +188,22 @@ export default function Home() {
         )}
         {activeTab === "movies" && ungroupedMovies.length === 0 && moviesByFranchise.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">No movies yet.</div>
+        )}
+
+        {/* Adult tab - only shown for age-verified users */}
+        {activeTab === "adult" && user?.age_verified && (
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldAlert className="w-5 h-5 text-red-400" />
+              <h2 className="text-xl font-bold text-foreground">Adult Content</h2>
+              <span className="text-xs bg-red-600/20 text-red-400 border border-red-600/30 px-2 py-0.5 rounded-full font-semibold">18+</span>
+            </div>
+            <div className="bg-card border border-red-500/20 rounded-xl p-8 text-center">
+              <ShieldAlert className="w-10 h-10 text-red-400 mx-auto mb-3" />
+              <p className="text-foreground font-semibold mb-1">Adult Section</p>
+              <p className="text-muted-foreground text-sm">Adult content will appear here once added by an admin. You are verified as 18+.</p>
+            </div>
+          </div>
         )}
       </div>
     </div>
