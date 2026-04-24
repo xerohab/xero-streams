@@ -8,8 +8,8 @@ import toast from "react-hot-toast";
 export default function ImprovedAdultManageSection({ videos, seriesList, loadingVideos, loadingSeries, onRefresh }) {
   const [selectedSeries, setSelectedSeries] = useState(null);
   const [selectedImages, setSelectedImages] = useState(new Set());
-  const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
-  const [newCollectionName, setNewCollectionName] = useState("");
+  const [addToCategoryOpen, setAddToCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   const adultVideos = videos.filter(v => v.is_adult);
@@ -50,64 +50,64 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
     setDeleting(false);
   };
 
-  const massAddToCollection = async (collectionId) => {
+  const massAddToCategory = async (categoryId) => {
     if (selectedImages.size === 0) return;
     
     for (const id of selectedImages) {
-      await base44.entities.Video.update(id, { series_id: collectionId });
+      await base44.entities.Video.update(id, { series_id: categoryId });
     }
-    toast.success(`Added ${selectedImages.size} image(s) to collection`);
+    toast.success(`Added ${selectedImages.size} image(s) to category`);
     setSelectedImages(new Set());
     onRefresh();
   };
 
-  const createCollection = async () => {
-    if (!newCollectionName.trim()) {
-      toast.error("Collection name is required");
+  const createCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Category name is required");
       return;
     }
     
     await base44.entities.Series.create({
-      title: newCollectionName,
+      title: newCategoryName,
       is_adult: true,
     });
-    toast.success("Collection created");
-    setNewCollectionName("");
-    setAddToCollectionOpen(false);
+    toast.success("Category created");
+    setNewCategoryName("");
+    setAddToCategoryOpen(false);
     onRefresh();
   };
 
   return (
     <div className="space-y-6">
-      {/* Header with Create Collection */}
+      {/* Header with Create Category */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Manage Adult Images & Collections</h3>
-        <Button className="gap-2 bg-primary hover:bg-primary/90" onClick={() => setAddToCollectionOpen(!addToCollectionOpen)}>
+        <h3 className="text-lg font-semibold text-foreground">Manage Adult Images & Categories</h3>
+        <Button className="gap-2 bg-primary hover:bg-primary/90" onClick={() => setAddToCategoryOpen(!addToCategoryOpen)}>
           <FolderPlus className="w-4 h-4" />
-          New Collection
+          New Category
         </Button>
       </div>
 
-      {/* Create Collection Form */}
-      {addToCollectionOpen && (
+      {/* Create Category Form */}
+      {addToCategoryOpen && (
         <div className="bg-secondary rounded-lg p-4 border border-border space-y-3">
           <input
             type="text"
-            placeholder="Collection name..."
-            value={newCollectionName}
-            onChange={(e) => setNewCollectionName(e.target.value)}
+            placeholder="Category name..."
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
             className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
           />
           <div className="flex gap-2">
-            <Button onClick={createCollection} className="bg-primary hover:bg-primary/90">Create</Button>
-            <Button variant="outline" onClick={() => { setAddToCollectionOpen(false); setNewCollectionName(""); }}>Cancel</Button>
+            <Button onClick={createCategory} className="bg-primary hover:bg-primary/90">Create</Button>
+            <Button variant="outline" onClick={() => { setAddToCategoryOpen(false); setNewCategoryName(""); }}>Cancel</Button>
           </div>
         </div>
       )}
 
-      {/* Collection Filter */}
+      {/* Category Filter */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-foreground">Filter by Collection</label>
+        <label className="text-sm font-semibold text-foreground">Filter by Category</label>
         <select
           value={selectedSeries || ""}
           onChange={(e) => { setSelectedSeries(e.target.value || null); setSelectedImages(new Set()); }}
@@ -129,18 +129,18 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
               {selectedImages.size === (selectedSeries ? adultVideos.filter(v => v.series_id === selectedSeries).length : adultImages.length) ? "Deselect All" : "Select All"}
             </Button>
 
-            {/* Add to Collection Dropdown */}
+            {/* Add to Category Dropdown */}
             <div className="flex gap-1">
               <select
                 onChange={(e) => {
                   if (e.target.value) {
-                    massAddToCollection(e.target.value);
+                    massAddToCategory(e.target.value);
                     e.target.value = "";
                   }
                 }}
                 className="px-2 py-1 bg-background border border-border rounded-md text-sm text-foreground cursor-pointer"
               >
-                <option value="">Add to collection...</option>
+                <option value="">Add to category...</option>
                 {adultSeries.map(s => (
                   <option key={s.id} value={s.id}>{s.title}</option>
                 ))}
@@ -194,7 +194,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
                   )}
                 </div>
 
-                {/* Collection Label */}
+                {/* Category Label */}
                 {series && (
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                     <p className="text-white text-xs font-semibold">{series.title}</p>
