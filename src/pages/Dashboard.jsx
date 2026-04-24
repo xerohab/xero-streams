@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, Calendar, CheckCircle2, AlertCircle
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, AlertCircle, Camera, XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function useContinueWatching() {
@@ -30,9 +28,13 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
-  const [dob, setDob] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState(null); // 'approved' | 'declined' | 'error'
+  const [cameraActive, setCameraActive] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
 
   const continueWatching = useContinueWatching();
 
@@ -58,13 +60,44 @@ export default function Dashboard() {
     .map(({ id, percent, currentTime }) => ({ video: videos.find((v) => v.id === id), percent, currentTime }))
     .filter((x) => x.video);
 
-  const handleAgeVerificationRequest = async () => {
-    if (!dob) return;
-    setSubmitting(true);
-    await base44.auth.updateMe({ date_of_birth: dob, age_verification_requested: true });
-    setUser((prev) => ({ ...prev, date_of_birth: dob, age_verification_requested: true }));
-    setSubmitted(true);
-    setSubmitting(false);
+  const startCamera = async () => {
+    setCapturedImage(null);
+    setVerifyResult(null);
+    setCameraActive(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    streamRef.current = stream;
+    if (videoRef.current) videoRef.current.srcObject = stream;
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    setCapturedImage(canvas.toDataURL('image/jpeg'));
+    stopCamera();
+  };
+
+  const submitVerification = async () => {
+    setVerifying(true);
+    setVerifyResult(null);
+    const res = await base44.functions.invoke('verifyAge', { image_base64: capturedImage });
+    const data = res.data;
+    if (data.approved) {
+      setVerifyResult('approved');
+      setUser((prev) => ({ ...prev, age_verified: true }));
+    } else {
+      setVerifyResult('declined');
+    }
+    setCapturedImage(null);
+    setVerifying(false);
   };
 
   if (loadingUser) {
@@ -114,44 +147,68 @@ export default function Dashboard() {
 
         {/* Age Verification Section */}
         {!user.age_verified && (
-          <Card className="bg-card border-border border-orange-500/30">
+          <Card className="bg-card border-orange-500/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-foreground">
                 <ShieldAlert className="w-5 h-5 text-orange-400" />
-                Age Verification
+                Age Verification (18+)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {user.age_verification_requested || submitted ? (
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-                  <p>
-                    Your age verification request has been submitted and is <span className="text-yellow-400 font-semibold">pending admin review</span>. 
-                    Once approved, you'll gain access to the Adult section.
-                  </p>
+              {verifyResult === 'approved' ? (
+                <div className="flex items-center gap-3 text-sm text-green-400">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                  <p>Age verified! You now have access to all content.</p>
+                </div>
+              ) : verifyResult === 'declined' ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm text-red-400">
+                    <XCircle className="w-5 h-5 flex-shrink-0" />
+                    <p>Verification declined. You may not meet the minimum age requirement (18+) or the image quality was too low. Please try again with a clearer selfie.</p>
+                  </div>
+                  <Button variant="outline" onClick={() => { setVerifyResult(null); startCamera(); }}>
+                    <Camera className="w-4 h-4" /> Try Again
+                  </Button>
                 </div>
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    To access age-restricted content (18+), please submit your date of birth for admin verification.
-                    An admin will review and approve your request.
+                    Take a quick selfie to verify your age instantly using AI-powered age estimation. No ID required.
                   </p>
-                  <div className="flex items-end gap-3 max-w-sm">
-                    <div className="flex-1 space-y-1">
-                      <Label className="text-sm">Date of Birth</Label>
-                      <Input
-                        type="date"
-                        value={dob}
-                        onChange={(e) => setDob(e.target.value)}
-                        className="bg-secondary border-border"
-                        max={new Date(Date.now() - 18 * 365.25 * 24 * 3600 * 1000).toISOString().split("T")[0]}
-                      />
+
+                  {/* Camera / Capture UI */}
+                  {cameraActive && (
+                    <div className="space-y-3">
+                      <div className="relative rounded-lg overflow-hidden bg-black max-w-sm aspect-video">
+                        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={capturePhoto}><Camera className="w-4 h-4" /> Take Photo</Button>
+                        <Button variant="ghost" onClick={stopCamera}>Cancel</Button>
+                      </div>
                     </div>
-                    <Button onClick={handleAgeVerificationRequest} disabled={!dob || submitting}>
-                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                      Request Verification
+                  )}
+
+                  {capturedImage && (
+                    <div className="space-y-3">
+                      <img src={capturedImage} alt="Selfie preview" className="rounded-lg max-w-sm aspect-video object-cover" />
+                      <div className="flex gap-2">
+                        <Button onClick={submitVerification} disabled={verifying}>
+                          {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                          {verifying ? 'Verifying...' : 'Verify My Age'}
+                        </Button>
+                        <Button variant="ghost" onClick={() => { setCapturedImage(null); startCamera(); }}>Retake</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!cameraActive && !capturedImage && (
+                    <Button onClick={startCamera} className="gap-2">
+                      <Camera className="w-4 h-4" /> Open Camera
                     </Button>
-                  </div>
+                  )}
+
+                  <canvas ref={canvasRef} className="hidden" />
                 </>
               )}
             </CardContent>
