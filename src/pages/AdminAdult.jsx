@@ -25,19 +25,19 @@ export default function AdminAdult() {
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["admin-adult-videos"],
     queryFn: () => base44.entities.Video.filter({ is_adult: true }, "-created_date"),
-    enabled: isAdmin === true,
+    enabled: isAdmin === true && isAdmin !== null,
   });
 
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["admin-adult-series"],
     queryFn: () => base44.entities.Series.filter({ is_adult: true }),
-    enabled: isAdmin === true,
+    enabled: isAdmin === true && isAdmin !== null,
   });
 
   const { data: franchises = [] } = useQuery({
     queryKey: ["franchises"],
     queryFn: () => base44.entities.Franchise.list(),
-    enabled: isAdmin === true,
+    enabled: isAdmin === true && isAdmin !== null,
   });
 
   const refresh = () => {
