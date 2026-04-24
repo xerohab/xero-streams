@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import { Play, X, Clock } from "lucide-react";
 import { getAll, removeProgress } from "@/hooks/useContinueWatching";
 
-export default function ContinueWatchingRow() {
-  const [items, setItems] = useState(() => getAll());
+export default function ContinueWatchingRow({ isAdult = false }) {
+  const [items, setItems] = useState(() => {
+    const all = getAll();
+    return all.filter(item => item.is_adult === isAdult);
+  });
 
   if (items.length === 0) return null;
 
@@ -12,7 +15,7 @@ export default function ContinueWatchingRow() {
     e.preventDefault();
     e.stopPropagation();
     removeProgress(id);
-    setItems(getAll());
+    setItems(getAll().filter(item => item.is_adult === isAdult));
   };
 
   const formatTime = (secs) => {
