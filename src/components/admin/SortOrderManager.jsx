@@ -13,7 +13,7 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
   const [items, setItems] = useState([]);
   const [saving, setSaving] = useState(false);
 
-  // Rebuild items list when selection changes
+  // Rebuild items list only when selection or mode changes (not on videos refetch)
   useEffect(() => {
     if (!selectedId) { setItems([]); return; }
     if (mode === "franchise_movies") {
@@ -27,7 +27,7 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
         .sort((a, b) => (a.episode_number || a.sort_order || 0) - (b.episode_number || b.sort_order || 0));
       setItems(sorted);
     }
-  }, [selectedId, mode, videos]);
+  }, [selectedId, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
@@ -46,7 +46,6 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
     );
     toast.success("Order saved!");
     setSaving(false);
-    onSuccess?.();
   };
 
   const selectOptions = mode === "franchise_movies"
