@@ -11,6 +11,9 @@ export default function AdultManageSection({ videos, seriesList, franchises, loa
   const [editingVideo, setEditingVideo] = useState(null);
   const [editingSeries, setEditingSeries] = useState(null);
   const [fetchingPosterFor, setFetchingPosterFor] = useState(null);
+  const [selectedVideos, setSelectedVideos] = useState(new Set());
+  const [selectedSeries, setSelectedSeries] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const adultVideos = videos.filter(v => v.is_adult);
   const adultSeries = seriesList.filter(s => s.is_adult);
@@ -36,13 +39,71 @@ export default function AdultManageSection({ videos, seriesList, franchises, loa
     setFetchingPosterFor(null);
   };
 
+  const toggleVideoSelect = (id) => {
+    setSelectedVideos(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSeriesSelect = (id) => {
+    setSelectedSeries(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const massDeleteVideos = async () => {
+    if (selectedVideos.size === 0) return;
+    if (!confirm(`Delete ${selectedVideos.size} video(s)? This cannot be undone.`)) return;
+    
+    setDeleting(true);
+    for (const id of selectedVideos) {
+      await base44.entities.Video.delete(id);
+    }
+    toast.success(`Deleted ${selectedVideos.size} video(s)`);
+    setSelectedVideos(new Set());
+    onRefresh();
+    setDeleting(false);
+  };
+
+  const massDeleteSeries = async () => {
+    if (selectedSeries.size === 0) return;
+    if (!confirm(`Delete ${selectedSeries.size} series? This cannot be undone.`)) return;
+    
+    setDeleting(true);
+    for (const id of selectedSeries) {
+      await base44.entities.Series.delete(id);
+    }
+    toast.success(`Deleted ${selectedSeries.size} series`);
+    setSelectedSeries(new Set());
+    onRefresh();
+    setDeleting(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Adult Series */}
       <div>
-        <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-3">
-          <Tv className="w-5 h-5 text-red-400" /> Adult Series
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Tv className="w-5 h-5 text-red-400" /> Adult Series
+          </h3>
+          {selectedSeries.size > 0 && (
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              className="gap-2"
+              onClick={massDeleteSeries}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              Delete {selectedSeries.size}
+            </Button>
+          )}
+        </div>
         {loadingSeries ? (
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         ) : adultSeries.length === 0 ? (
@@ -50,8 +111,20 @@ export default function AdultManageSection({ videos, seriesList, franchises, loa
         ) : (
           <div className="space-y-2">
             {adultSeries.map(s => (
-              <div key={s.id} className="flex items-center justify-between bg-secondary rounded-lg p-3 border border-red-500/10">
-                <div className="flex items-center gap-3">
+              <div key={s.id} className={`flex items-center justify-between bg-secondary rounded-lg p-3 border transition-colors ${selectedSeries.has(s.id) ? 'border-red-500 bg-red-500/5' : 'border-red-500/10'}`}>
+                <div className="flex items-center gap-3 flex-1">
+                  <button 
+                    onClick={() => toggleSeriesSelect(s.id)}
+                    className="flex-shrink-0 p-1 hover:bg-accent rounded"
+                  >
+                    {selectedSeries.has(s.id) ? (
+                      <div className="w-4 h-4 bg-red-500 rounded border border-red-500 flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    ) : (
+                      <div className="w-4 h-4 border border-border rounded" />
+                    )}
+                  </button>
                   {s.cover_image && <img src={s.cover_image} alt="" className="w-12 h-8 rounded object-cover" />}
                   <div>
                     <p className="font-semibold text-foreground text-sm">{s.title}</p>
@@ -75,9 +148,23 @@ export default function AdultManageSection({ videos, seriesList, franchises, loa
 
       {/* Adult Videos */}
       <div>
-        <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-3">
-          <Film className="w-5 h-5 text-red-400" /> Adult Videos &amp; Images
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Film className="w-5 h-5 text-red-400" /> Adult Videos &amp; Images
+          </h3>
+          {selectedVideos.size > 0 && (
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              className="gap-2"
+              onClick={massDeleteVideos}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              Delete {selectedVideos.size}
+            </Button>
+          )}
+        </div>
         {loadingVideos ? (
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         ) : adultVideos.length === 0 ? (
@@ -87,8 +174,20 @@ export default function AdultManageSection({ videos, seriesList, franchises, loa
             {adultVideos.map(v => {
               const series = seriesList.find(s => s.id === v.series_id);
               return (
-                <div key={v.id} className="flex items-center justify-between bg-secondary rounded-lg p-3 border border-red-500/10">
+                <div key={v.id} className={`flex items-center justify-between bg-secondary rounded-lg p-3 border transition-colors ${selectedVideos.has(v.id) ? 'border-red-500 bg-red-500/5' : 'border-red-500/10'}`}>
                   <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button 
+                      onClick={() => toggleVideoSelect(v.id)}
+                      className="flex-shrink-0 p-1 hover:bg-accent rounded"
+                    >
+                      {selectedVideos.has(v.id) ? (
+                        <div className="w-4 h-4 bg-red-500 rounded border border-red-500 flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 border border-border rounded" />
+                      )}
+                    </button>
                     <div className="w-16 h-10 rounded bg-muted flex-shrink-0 overflow-hidden">
                       {v.thumbnail_url ? (
                         <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
