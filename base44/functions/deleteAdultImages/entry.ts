@@ -10,10 +10,11 @@ Deno.serve(async (req) => {
     }
 
     // Fetch all adult images
-    const allAdultImages = await base44.asServiceRole.entities.Image.filter({ is_adult: true }, "", 1000);
+    const allAdultImages = await base44.asServiceRole.entities.Image.list("-created_date", 1000);
     
     // Filter for .jpg and .jpeg files
     const imagesToDelete = allAdultImages.filter(img => {
+      if (!img.is_adult) return false;
       const url = img.image_url?.toLowerCase() || '';
       return url.endsWith('.jpg') || url.endsWith('.jpeg');
     });
