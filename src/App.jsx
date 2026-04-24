@@ -11,6 +11,7 @@ import Admin from '@/pages/Admin';
 import SeriesDetail from '@/pages/SeriesDetail';
 import Search from '@/pages/Search';
 import FranchiseDetail from '@/pages/FranchiseDetail';
+import MovieDetail from '@/pages/MovieDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
       <Route path="/series" element={<SeriesDetail />} />
       <Route path="/search" element={<Search />} />
       <Route path="/franchise" element={<FranchiseDetail />} />
+      <Route path="/movie" element={<MovieDetail />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

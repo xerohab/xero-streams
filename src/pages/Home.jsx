@@ -7,6 +7,7 @@ import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
 import { Loader2, Film, Tv } from "lucide-react";
+import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -135,6 +136,7 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
+        <ContinueWatchingRow />
 
         {/* TV Series tab */}
         {(activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (

@@ -1,12 +1,13 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, SkipBack, SkipForward } from "lucide-react";
+import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
+import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
 
 function getEmbedUrl(url) {
   if (!url) return null;
@@ -36,7 +37,7 @@ export default function Watch() {
 
   const { data: allVideos = [] } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("-created_date"),
+    queryFn: () => base44.entities.Video.list("sort_order"),
   });
 
   const { data: seriesList = [] } = useQuery({
@@ -52,26 +53,45 @@ export default function Watch() {
         .sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0))
     : [];
 
-  const currentIndex = seriesEpisodes.findIndex((v) => v.id === videoId);
-  const nextEpisode = currentIndex >= 0 && currentIndex < seriesEpisodes.length - 1
-    ? seriesEpisodes[currentIndex + 1]
+  // Franchise movies for "Up Next" on standalone movies
+  const franchiseMovies = video?.franchise_id
+    ? allVideos
+        .filter((v) => v.franchise_id === video.franchise_id)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    : [];
+
+  const currentSeriesIndex = seriesEpisodes.findIndex((v) => v.id === videoId);
+  const currentFranchiseIndex = franchiseMovies.findIndex((v) => v.id === videoId);
+
+  const nextEpisode = currentSeriesIndex >= 0 && currentSeriesIndex < seriesEpisodes.length - 1
+    ? seriesEpisodes[currentSeriesIndex + 1]
     : null;
-  const prevEpisode = currentIndex > 0
-    ? seriesEpisodes[currentIndex - 1]
+  const prevEpisode = currentSeriesIndex > 0
+    ? seriesEpisodes[currentSeriesIndex - 1]
     : null;
 
-  const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id).slice(0, 15);
+  const nextFranchiseMovie = currentFranchiseIndex >= 0 && currentFranchiseIndex < franchiseMovies.length - 1
+    ? franchiseMovies[currentFranchiseIndex + 1]
+    : null;
+  const prevFranchiseMovie = currentFranchiseIndex > 0
+    ? franchiseMovies[currentFranchiseIndex - 1]
+    : null;
 
-  // Autoplay next episode countdown
+  const nextVideo = nextEpisode || nextFranchiseMovie;
+  const prevVideo = prevEpisode || prevFranchiseMovie;
+
+  const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id).slice(0, 15);
+
+  // Autoplay next countdown
   const startCountdown = () => {
-    if (!nextEpisode) return;
+    if (!nextVideo) return;
     setAutoplayCountdown(10);
   };
 
   useEffect(() => {
     if (autoplayCountdown === null) return;
     if (autoplayCountdown === 0) {
-      navigate(`/watch?id=${nextEpisode.id}`);
+      navigate(`/watch?id=${nextVideo.id}`);
       return;
     }
     countdownRef.current = setTimeout(() => setAutoplayCountdown((c) => c - 1), 1000);
@@ -87,6 +107,47 @@ export default function Watch() {
   const cancelAutoplay = () => {
     setAutoplayCountdown(null);
     clearTimeout(countdownRef.current);
+  };
+
+  // Resume from saved position
+  useEffect(() => {
+    if (!videoRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const t = parseInt(params.get("t"));
+    if (t > 0) {
+      videoRef.current.currentTime = t;
+    } else {
+      const saved = getProgress(videoId);
+      if (saved?.currentTime > 0) {
+        videoRef.current.currentTime = saved.currentTime;
+      }
+    }
+  }, [video]);
+
+  // Save progress periodically
+  const handleTimeUpdate = useCallback(() => {
+    if (!videoRef.current || !video) return;
+    saveProgress(video, videoRef.current.currentTime, videoRef.current.duration);
+  }, [video]);
+
+  // Remove from continue watching when finished
+  const handleEnded = () => {
+    if (video?.id) removeProgress(video.id);
+    startCountdown();
+  };
+
+  // Picture-in-Picture
+  const handlePiP = async () => {
+    if (!videoRef.current) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch {
+      alert("Picture-in-Picture is not supported by your browser.");
+    }
   };
 
   // Cast to TV
@@ -162,31 +223,43 @@ export default function Watch() {
                   onContextMenu={(e) => e.preventDefault()}
                   className="w-full h-full"
                   poster={video.thumbnail_url}
-                  onEnded={startCountdown}
+                  onEnded={handleEnded}
+                  onTimeUpdate={handleTimeUpdate}
                 >
                   <source src={video.video_url} />
                   Your browser does not support this video format.
                 </video>
               )}
 
-              {/* Cast button overlay */}
-              <button
-                onClick={handleCast}
-                className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
-                title="Cast to TV"
-              >
-                <Cast className="w-5 h-5" />
-              </button>
+              {/* Top-right controls */}
+              <div className="absolute top-3 right-3 z-20 flex gap-2">
+                {!embedUrl && !isMkv && (
+                  <button
+                    onClick={handlePiP}
+                    className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
+                    title="Picture in Picture"
+                  >
+                    <PictureInPicture2 className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={handleCast}
+                  className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
+                  title="Cast to TV"
+                >
+                  <Cast className="w-5 h-5" />
+                </button>
+              </div>
 
               {/* Autoplay countdown overlay */}
-              {autoplayCountdown !== null && nextEpisode && (
+              {autoplayCountdown !== null && nextVideo && (
                 <div className="absolute bottom-16 right-4 bg-black/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-end gap-2 z-20">
                   <p className="text-white text-sm font-semibold">Up Next</p>
-                  <p className="text-muted-foreground text-xs max-w-[180px] truncate">{nextEpisode.title}</p>
+                  <p className="text-muted-foreground text-xs max-w-[180px] truncate">{nextVideo.title}</p>
                   <div className="flex items-center gap-2">
                     <button onClick={cancelAutoplay} className="text-xs text-muted-foreground hover:text-white transition-colors">Cancel</button>
                     <button
-                      onClick={() => navigate(`/watch?id=${nextEpisode.id}`)}
+                      onClick={() => navigate(`/watch?id=${nextVideo.id}`)}
                       className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
                     >
                       Play in {autoplayCountdown}s
@@ -236,26 +309,34 @@ export default function Watch() {
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
-                {prevEpisode && (
+                {prevVideo && (
                   <Button
                     variant="secondary"
                     className="gap-2"
-                    onClick={() => navigate(`/watch?id=${prevEpisode.id}`)}
+                    onClick={() => navigate(`/watch?id=${prevVideo.id}`)}
                   >
                     <SkipBack className="w-4 h-4" />
-                    Previous Episode
+                    {prevEpisode ? "Previous Episode" : "Previous Movie"}
                   </Button>
                 )}
-                {nextEpisode && (
+                {nextVideo && (
                   <Button
                     variant="secondary"
                     className="gap-2"
-                    onClick={() => navigate(`/watch?id=${nextEpisode.id}`)}
+                    onClick={() => navigate(`/watch?id=${nextVideo.id}`)}
                   >
                     <SkipForward className="w-4 h-4" />
-                    Next Episode
+                    {nextEpisode ? "Next Episode" : "Next Movie"}
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => navigate(`/movie?id=${video.id}`)}
+                >
+                  <Film className="w-4 h-4" />
+                  More Info
+                </Button>
               </div>
             </div>
           </div>
