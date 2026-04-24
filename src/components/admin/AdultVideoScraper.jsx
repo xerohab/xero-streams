@@ -9,8 +9,6 @@ import toast from "react-hot-toast";
 
 export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
   const [url, setUrl] = useState("");
-  const [selectedSeries, setSelectedSeries] = useState("");
-  const [contentType, setContentType] = useState("episode");
   const [scanning, setScanning] = useState(false);
   const [episodes, setEpisodes] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -46,20 +44,15 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
   const removeEp = (index) => setEpisodes(prev => prev.filter((_, i) => i !== index));
 
   const handleImport = async () => {
-    if (contentType === "episode" && !selectedSeries) { toast.error("Select a series first"); return; }
     if (episodes.length === 0) { toast.error("No items to import"); return; }
     setSaving(true);
-
-    const seriesCover = adultSeriesList?.find(s => s.id === selectedSeries)?.cover_image;
 
     const records = episodes.map(ep => ({
       title: ep.title,
       description: ep.description || undefined,
       video_url: ep.video_url,
-      thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
-      series_id: contentType === "episode" ? selectedSeries : undefined,
-      episode_number: contentType === "episode" ? ep.episode_number : undefined,
-      content_type: contentType === "episode" ? "episode" : "movie",
+      thumbnail_url: ep.thumbnail_url || undefined,
+      content_type: "movie",
       is_adult: true,
       is_featured: false,
     }));
@@ -68,43 +61,12 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
     toast.success(`Imported ${records.length} video${records.length !== 1 ? "s" : ""}!`);
     setEpisodes([]);
     setUrl("");
-    setSelectedSeries("");
     setSaving(false);
     onSuccess?.();
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4 flex-wrap">
-        <div className="flex-1 min-w-48">
-          <Label>Content Type</Label>
-          <Select value={contentType} onValueChange={setContentType}>
-            <SelectTrigger className="bg-secondary border-border mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="episode">Episode (part of a series)</SelectItem>
-              <SelectItem value="movie">Standalone Video</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {contentType === "episode" && (
-          <div className="flex-1 min-w-48">
-            <Label>Adult Series *</Label>
-            <Select value={selectedSeries} onValueChange={setSelectedSeries}>
-              <SelectTrigger className="bg-secondary border-border mt-1">
-                <SelectValue placeholder="Select adult series" />
-              </SelectTrigger>
-              <SelectContent>
-                {adultSeriesList?.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
 
       <div className="space-y-2">
         <Label>Directory URL</Label>
@@ -137,7 +99,6 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
               {episodes.map((ep, index) => (
                 <div key={index} className="bg-secondary/50 border border-red-500/20 rounded-lg px-3 py-2 flex gap-3">
-                  <span className="text-xs font-mono text-muted-foreground w-6 text-center pt-1.5">{ep.episode_number}</span>
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <Input value={ep.title} onChange={e => updateEp(index, "title", e.target.value)} placeholder="Title" className="bg-secondary border-border h-7 text-sm" />
                     <Input value={ep.description || ""} onChange={e => updateEp(index, "description", e.target.value)} placeholder="Description (optional)" className="bg-secondary border-border h-7 text-sm" />
@@ -151,14 +112,9 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{ep.video_url}</p>
                   </div>
-                  <div className="flex flex-col gap-1 items-end shrink-0">
-                    {contentType === "episode" && (
-                      <Input type="number" value={ep.episode_number} onChange={e => updateEp(index, "episode_number", Number(e.target.value))} className="bg-secondary border-border h-7 text-sm w-16" />
-                    )}
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeEp(index)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive shrink-0" onClick={() => removeEp(index)}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
               ))}
             </div>

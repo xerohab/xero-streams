@@ -200,8 +200,6 @@ export default function AdultManageSection({ videos, seriesList, franchises, loa
                     <div className="min-w-0">
                       <p className="font-semibold text-foreground text-sm truncate">{v.title}</p>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {series && <span className="text-xs text-red-400">{series.title}</span>}
-                        {v.episode_number && <span className="text-xs text-muted-foreground">EP {v.episode_number}</span>}
                         <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>
                         {v.is_featured && <Badge className="text-xs bg-primary/20 text-primary">Featured</Badge>}
                       </div>

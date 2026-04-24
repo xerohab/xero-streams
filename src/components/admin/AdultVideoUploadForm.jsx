@@ -15,8 +15,6 @@ export default function AdultVideoUploadForm({ adultSeriesList, onSuccess }) {
     description: "",
     video_url: "",
     thumbnail_url: "",
-    series_id: "",
-    episode_number: "",
     content_type: "movie",
     is_featured: false,
     is_adult: true,
@@ -84,12 +82,10 @@ export default function AdultVideoUploadForm({ adultSeriesList, onSuccess }) {
     const record = {
       ...form,
       is_adult: true,
-      episode_number: form.episode_number ? Number(form.episode_number) : undefined,
-      series_id: form.series_id || undefined,
     };
     await base44.entities.Video.create(record);
     toast.success("Adult video added!");
-    setForm({ title: "", description: "", video_url: "", thumbnail_url: "", series_id: "", episode_number: "", content_type: "movie", is_featured: false, is_adult: true });
+    setForm({ title: "", description: "", video_url: "", thumbnail_url: "", content_type: "movie", is_featured: false, is_adult: true });
     setSaving(false);
     onSuccess?.();
   };
@@ -117,34 +113,7 @@ export default function AdultVideoUploadForm({ adultSeriesList, onSuccess }) {
           <Textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Description" className="bg-secondary border-border" rows={3} />
         </div>
 
-        <div className="space-y-2">
-          <Label>Content Type</Label>
-          <Select value={form.content_type} onValueChange={v => set("content_type", v)}>
-            <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="movie">Standalone Video / Image</SelectItem>
-              <SelectItem value="episode">Episode</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
-        {form.content_type === "episode" && (
-          <>
-            <div className="space-y-2">
-              <Label>Adult Series</Label>
-              <Select value={form.series_id} onValueChange={v => set("series_id", v)}>
-                <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="Select series" /></SelectTrigger>
-                <SelectContent>
-                  {adultSeriesList?.map(s => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Episode Number</Label>
-              <Input type="number" value={form.episode_number} onChange={e => set("episode_number", e.target.value)} placeholder="1" className="bg-secondary border-border" />
-            </div>
-          </>
-        )}
 
         <div className="space-y-2">
           <Label>Video / Image URL</Label>
