@@ -43,6 +43,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
     setDeleting(true);
     for (const id of selectedImages) {
       await base44.entities.Video.delete(id);
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between deletes
     }
     toast.success(`Deleted ${selectedImages.size} image(s)`);
     setSelectedImages(new Set());
@@ -55,6 +56,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
     
     for (const id of selectedImages) {
       await base44.entities.Video.update(id, { series_id: categoryId });
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between updates
     }
     toast.success(`Added ${selectedImages.size} image(s) to category`);
     setSelectedImages(new Set());
