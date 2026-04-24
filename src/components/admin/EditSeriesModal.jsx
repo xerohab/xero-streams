@@ -18,6 +18,7 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     cover_image: series?.cover_image || "",
     category: series?.category || "",
     franchise_id: series?.franchise_id || "",
+    sort_order: series?.sort_order ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -35,7 +36,10 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Series.update(series.id, form);
+    await base44.entities.Series.update(series.id, {
+      ...form,
+      sort_order: form.sort_order !== "" ? Number(form.sort_order) : 0,
+    });
     toast.success("Series updated!");
     setSaving(false);
     onSaved?.();
@@ -69,6 +73,10 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Sort Order <span className="text-muted-foreground font-normal">(within franchise)</span></Label>
+            <Input type="number" value={form.sort_order} onChange={(e) => update("sort_order", e.target.value)} className="bg-secondary border-border" placeholder="0 = first" />
           </div>
           {franchises.length > 0 && (
             <div className="space-y-1">

@@ -19,6 +19,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     series_id: video?.series_id || "",
     franchise_id: video?.franchise_id || "",
     episode_number: video?.episode_number || "",
+    sort_order: video?.sort_order ?? "",
     duration: video?.duration || "",
     is_featured: video?.is_featured || false,
     content_type: video?.content_type || "movie",
@@ -36,6 +37,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
         series_id: video.series_id || "",
         franchise_id: video.franchise_id || "",
         episode_number: video.episode_number || "",
+        sort_order: video.sort_order ?? "",
         duration: video.duration || "",
         is_featured: video.is_featured || false,
         content_type: video.content_type || "movie",
@@ -59,6 +61,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     await base44.entities.Video.update(video.id, {
       ...form,
       episode_number: form.episode_number ? Number(form.episode_number) : undefined,
+      sort_order: form.sort_order !== "" ? Number(form.sort_order) : 0,
       series_id: form.series_id || undefined,
       franchise_id: form.franchise_id || undefined,
     });
@@ -111,23 +114,27 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Series</Label>
-              <Select value={form.series_id || " "} onValueChange={(v) => update("series_id", v.trim() ? v : "")}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="No series" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">No Series</SelectItem>
-                  {seriesList?.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
               <Label>Episode #</Label>
               <Input type="number" value={form.episode_number} onChange={(e) => update("episode_number", e.target.value)} className="bg-secondary border-border" placeholder="1" />
             </div>
+            <div className="space-y-1">
+              <Label>Sort Order</Label>
+              <Input type="number" value={form.sort_order} onChange={(e) => update("sort_order", e.target.value)} className="bg-secondary border-border" placeholder="0" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Series</Label>
+            <Select value={form.series_id || " "} onValueChange={(v) => update("series_id", v.trim() ? v : "")}>
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue placeholder="No series" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value=" ">No Series</SelectItem>
+                {seriesList?.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {franchises.length > 0 && (
             <div className="space-y-1">
