@@ -14,6 +14,7 @@ import WebScraper from "@/components/admin/WebScraper";
 import EditVideoModal from "@/components/admin/EditVideoModal";
 import EditSeriesModal from "@/components/admin/EditSeriesModal";
 import FranchiseForm from "@/components/admin/FranchiseForm";
+import FranchiseMassEditor from "@/components/admin/FranchiseMassEditor";
 import { Toaster } from "react-hot-toast";
 
 export default function Admin() {
@@ -115,6 +116,7 @@ export default function Admin() {
             <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
             <TabsTrigger value="series">Add Series</TabsTrigger>
             <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
+            <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
 
@@ -169,6 +171,22 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <FranchiseForm onSuccess={refresh} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="franchiseedit">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Bulk Assign to Franchise</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FranchiseMassEditor
+                  franchises={franchises}
+                  videos={videos}
+                  seriesList={seriesList}
+                  onSuccess={refresh}
+                />
               </CardContent>
             </Card>
           </TabsContent>
