@@ -24,17 +24,17 @@ export default function Home() {
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("sort_order"),
+    queryFn: () => base44.entities.Video.list("-created_date"),
   });
 
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(),
+    queryFn: () => base44.entities.Series.list("-created_date"),
   });
 
   const { data: franchises = [] } = useQuery({
     queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list(),
+    queryFn: () => base44.entities.Franchise.list("-created_date"),
   });
 
   const isLoading = loadingVideos || loadingSeries;
@@ -55,14 +55,13 @@ export default function Home() {
     (v) => !v.series_id && (v.content_type === "movie" || v.content_type !== "episode")
   );
 
-  // Franchises with content (safe only — no adult)
+  // Franchises with content (safe only — no adult), newest first
   const franchisesWithContent = franchises
     .filter((f) => {
       const hasSeries = safeSeries.some((s) => s.franchise_id === f.id);
       const hasVideos = safeVideos.some((v) => v.franchise_id === f.id);
       return hasSeries || hasVideos;
-    })
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
+    });
 
   const franchiseItemCount = (franchiseId) => {
     const seriesCount = safeSeries.filter((s) => s.franchise_id === franchiseId).length;
@@ -70,10 +69,9 @@ export default function Home() {
     return seriesCount + videoCount;
   };
 
-  // Series that have episodes (safe only)
+  // Series that have episodes (safe only), newest first
   const seriesWithEpisodes = safeSeries
-    .filter((s) => safeVideos.some((v) => v.series_id === s.id))
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
+    .filter((s) => safeVideos.some((v) => v.series_id === s.id));
 
   const episodeCountBySeries = (seriesId) =>
     safeVideos.filter((v) => v.series_id === seriesId).length;
@@ -102,8 +100,7 @@ export default function Home() {
   // Adult content groupings
   const adultMovies = adultVideos.filter((v) => !v.series_id);
   const adultSeriesWithEpisodes = adultSeries
-    .filter((s) => adultVideos.some((v) => v.series_id === s.id))
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
+    .filter((s) => adultVideos.some((v) => v.series_id === s.id));
   const adultEpisodeCount = (seriesId) => adultVideos.filter((v) => v.series_id === seriesId).length;
 
   if (isLoading) {
