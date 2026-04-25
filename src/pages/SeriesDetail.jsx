@@ -117,8 +117,8 @@ export default function SeriesDetail() {
           <h2 className="text-xl font-bold text-foreground mb-6">Images</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {images.map((img) => (
-              <a key={img.id} href={img.image_url} target="_blank" rel="noopener noreferrer" className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" />
+              <a key={img.id} href={img.image_url} target="_blank" rel="noopener noreferrer" className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity" onContextMenu={e => e.preventDefault()}>
+                <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" onContextMenu={e => e.preventDefault()} />
                 {img.title && (
                   <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <p className="text-white font-semibold text-center px-2">{img.title}</p>

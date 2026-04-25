@@ -14,7 +14,6 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
   const [assigning, setAssigning] = useState(false);
 
   const adultVideos = videos.filter(v => v.is_adult);
-  const adultImages = videos.filter(v => v.is_adult && !v.series_id); // Standalone images without series
   const adultSeries = seriesList.filter(s => s.is_adult);
 
   const toggleImageSelect = (id) => {
@@ -25,10 +24,14 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
     });
   };
 
+  const currentImages = selectedSeries
+    ? adultVideos.filter(v => v.series_id === selectedSeries)
+    : adultVideos;
+
   const toggleSelectAll = () => {
     const currentImages = selectedSeries
       ? adultVideos.filter(v => v.series_id === selectedSeries)
-      : adultImages;
+      : adultVideos;
     
     if (selectedImages.size === currentImages.length) {
       setSelectedImages(new Set());
@@ -123,7 +126,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
           onChange={(e) => { setSelectedSeries(e.target.value || null); setSelectedImages(new Set()); }}
           className="w-full px-3 py-2 bg-secondary border border-border rounded-md text-foreground"
         >
-          <option value="">All Uncategorized Images</option>
+          <option value="">All Images</option>
           {adultSeries.map(s => (
             <option key={s.id} value={s.id}>{s.title}</option>
           ))}
@@ -136,7 +139,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
           <span className="text-sm font-semibold text-foreground">{selectedImages.size} selected</span>
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={toggleSelectAll}>
-              {selectedImages.size === (selectedSeries ? adultVideos.filter(v => v.series_id === selectedSeries).length : adultImages.length) ? "Deselect All" : "Select All"}
+              {selectedImages.size === currentImages.length ? "Deselect All" : "Select All"}
             </Button>
 
             {/* Add to Category Dropdown */}
@@ -174,7 +177,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {(selectedSeries ? adultVideos.filter(v => v.series_id === selectedSeries) : adultImages).map(v => {
+          {currentImages.map(v => {
             const series = seriesList.find(s => s.id === v.series_id);
             return (
               <div
@@ -198,7 +201,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
                 {/* Image */}
                 <div className="aspect-video bg-secondary overflow-hidden">
                   {v.thumbnail_url || v.image_url ? (
-                    <img src={v.thumbnail_url || v.image_url} alt="" className="w-full h-full object-cover" />
+                    <img src={v.thumbnail_url || v.image_url} alt="" className="w-full h-full object-cover" onContextMenu={e => e.preventDefault()} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary">
                       <Plus className="w-6 h-6 text-muted-foreground" />

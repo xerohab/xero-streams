@@ -87,6 +87,16 @@
   }
 }
 
+/* Disable right-click on images */
+img {
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: auto;
+}
+img:not([data-allow-context]) {
+  -webkit-touch-callout: none;
+}
+
 /* Custom scrollbar for video rows */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
