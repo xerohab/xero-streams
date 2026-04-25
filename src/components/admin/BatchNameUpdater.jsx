@@ -30,7 +30,8 @@ export default function BatchNameUpdater({ items = [], entityType = "Image", onS
     setLoading(true);
     setProgress(0);
     const selectedItems = items.filter(item => selected.includes(item.id));
-    const CHUNK = 10; // parallel per batch
+    const CHUNK = 3; // small parallel batches to avoid rate limiting
+    const DELAY = 600; // ms between batches
     
     try {
       for (let i = 0; i < selectedItems.length; i += CHUNK) {
@@ -40,6 +41,9 @@ export default function BatchNameUpdater({ items = [], entityType = "Image", onS
           return base44.entities[entityType].update(item.id, { title: newTitle });
         }));
         setProgress(Math.round(((i + batch.length) / selectedItems.length) * 100));
+        if (i + CHUNK < selectedItems.length) {
+          await new Promise(r => setTimeout(r, DELAY));
+        }
       }
       toast.success(`Updated ${selected.length} item(s)!`);
       setSelected([]);
