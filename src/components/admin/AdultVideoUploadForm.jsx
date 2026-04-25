@@ -15,6 +15,8 @@ export default function AdultVideoUploadForm({ adultSeriesList, onSuccess }) {
     description: "",
     video_url: "",
     thumbnail_url: "",
+    series_id: "",
+    episode_number: "",
     content_type: "movie",
     is_featured: false,
     is_adult: true,
@@ -82,10 +84,13 @@ export default function AdultVideoUploadForm({ adultSeriesList, onSuccess }) {
     const record = {
       ...form,
       is_adult: true,
+      series_id: form.series_id || undefined,
+      episode_number: form.episode_number ? Number(form.episode_number) : undefined,
+      content_type: form.series_id ? "episode" : "movie",
     };
     await base44.entities.Video.create(record);
     toast.success("Adult video added!");
-    setForm({ title: "", description: "", video_url: "", thumbnail_url: "", content_type: "movie", is_featured: false, is_adult: true });
+    setForm({ title: "", description: "", video_url: "", thumbnail_url: "", series_id: "", episode_number: "", content_type: "movie", is_featured: false, is_adult: true });
     setSaving(false);
     onSuccess?.();
   };
@@ -137,6 +142,35 @@ export default function AdultVideoUploadForm({ adultSeriesList, onSuccess }) {
           </div>
           {form.thumbnail_url && <img src={form.thumbnail_url} alt="" className="h-16 w-28 rounded object-cover" />}
         </div>
+
+        <div className="space-y-2">
+          <Label>Series (optional)</Label>
+          <Select value={form.series_id} onValueChange={v => set("series_id", v === "none" ? "" : v)}>
+            <SelectTrigger className="bg-secondary border-border">
+              <SelectValue placeholder="No series (standalone)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No series (standalone)</SelectItem>
+              {(adultSeriesList || []).map(s => (
+                <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {form.series_id && (
+          <div className="space-y-2">
+            <Label>Episode Number</Label>
+            <Input
+              type="number"
+              value={form.episode_number}
+              onChange={e => set("episode_number", e.target.value)}
+              placeholder="e.g. 1"
+              className="bg-secondary border-border"
+              min={1}
+            />
+          </div>
+        )}
 
         <div className="flex items-center gap-3 md:col-span-2">
           <Switch checked={form.is_featured} onCheckedChange={v => set("is_featured", v)} id="featured" />
