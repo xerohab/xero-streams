@@ -36,6 +36,12 @@ export default function Leaks() {
     enabled: !!user?.age_verified,
   });
 
+  const { data: franchises = [] } = useQuery({
+    queryKey: ["leaks-franchises"],
+    queryFn: () => base44.entities.Franchise.list(),
+    enabled: !!user?.age_verified,
+  });
+
 
 
   if (loadingUser) {
@@ -90,10 +96,18 @@ export default function Leaks() {
   const isLoading = loadingVideos || loadingSeries || loadingImages;
 
   const movies = videos.filter((v) => !v.series_id);
-  const videoSeries = seriesList.filter((s) => videos.some((v) => v.series_id === s.id));
-  const imageSeries = seriesList.filter((s) => images.some((img) => img.series_id === s.id) && images.filter(img => img.series_id === s.id).length > 0);
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
-  const imageCountBySeries = (seriesId) => images.filter((img) => img.series_id === seriesId).length;
+
+  // Franchise-grouped series (have franchise_id)
+  const adultFranchises = franchises.filter(f =>
+    seriesList.some(s => s.franchise_id === f.id)
+  );
+  const seriesInFranchise = (franchiseId) => seriesList.filter(s => s.franchise_id === franchiseId);
+
+  // Standalone series (no franchise_id)
+  const standaloneSeries = seriesList.filter(s => !s.franchise_id);
+  const videoSeries = standaloneSeries.filter((s) => videos.some((v) => v.series_id === s.id));
+  const imageSeries = standaloneSeries.filter((s) => images.some((img) => img.series_id === s.id));
 
 
 
@@ -141,6 +155,44 @@ export default function Leaks() {
         ) : (
           <>
             <ContinueWatchingRow isAdult={true} />
+
+            {/* Franchises */}
+            {(activeTab === "all" || activeTab === "videos") && adultFranchises.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Tv className="w-5 h-5 text-red-400" /> Collections
+                </h2>
+                <div className="space-y-8">
+                  {adultFranchises.map(franchise => {
+                    const fSeries = seriesInFranchise(franchise.id);
+                    return (
+                      <div key={franchise.id}>
+                        <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                          <span className="text-red-400">▸</span> {franchise.title}
+                          <span className="text-xs text-muted-foreground font-normal">{fSeries.length} series</span>
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {fSeries.map(s => (
+                            <Link key={s.id} to={`/series?id=${s.id}&from=/leaks`}>
+                              <div className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
+                                {s.cover_image
+                                  ? <img src={s.cover_image} alt={s.title} className="w-full h-full object-cover" onContextMenu={e => e.preventDefault()} />
+                                  : <div className="w-full h-full bg-gradient-to-br from-red-900/30 to-secondary flex items-center justify-center"><Film className="w-8 h-8 text-muted-foreground" /></div>
+                                }
+                                <div className="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex flex-col items-end justify-end p-2">
+                                  <p className="text-white font-semibold text-sm text-right">{s.title}</p>
+                                  {episodeCount(s.id) > 0 && <p className="text-white/70 text-xs">{episodeCount(s.id)} video{episodeCount(s.id) !== 1 ? "s" : ""}</p>}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Videos */}
             {(activeTab === "all" || activeTab === "videos") && (movies.length > 0 || videoSeries.length > 0) && (

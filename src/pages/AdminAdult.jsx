@@ -70,6 +70,7 @@ export default function AdminAdult() {
     queryClient.invalidateQueries({ queryKey: ["admin-adult-videos"] });
     queryClient.invalidateQueries({ queryKey: ["admin-adult-series"] });
     queryClient.invalidateQueries({ queryKey: ["admin-adult-images"] });
+    queryClient.invalidateQueries({ queryKey: ["franchises"] });
   };
 
   const handleDeleteAllImages = async () => {
@@ -144,6 +145,7 @@ export default function AdminAdult() {
           <TabsList className="bg-secondary flex-wrap h-auto gap-1">
              <TabsTrigger value="add-video">Add Video / Image</TabsTrigger>
              <TabsTrigger value="add-series">Add Series</TabsTrigger>
+             <TabsTrigger value="franchises">Franchises</TabsTrigger>
              <TabsTrigger value="scraper">Scraper</TabsTrigger>
              <TabsTrigger value="bulk-images">Bulk Images</TabsTrigger>
              <TabsTrigger value="batch-names">Batch Names</TabsTrigger>
@@ -186,6 +188,31 @@ export default function AdminAdult() {
                 </CardHeader>
                 <CardContent>
                   <AdultSeriesForm imageCategories={imageCategories} videoCategories={videoCategories} onSuccess={refresh} />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="franchises">
+            <div className="space-y-6">
+              <Card className="bg-card border-red-500/20">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-red-400" /> Create Adult Franchise
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdultFranchiseForm onSuccess={refresh} />
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-red-500/20">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-red-400" /> Assign Series to Franchise
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdultSeriesFranchiseManager seriesList={seriesList} franchises={franchises} onSuccess={refresh} />
                 </CardContent>
               </Card>
             </div>
