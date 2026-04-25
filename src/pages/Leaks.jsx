@@ -156,23 +156,28 @@ export default function Leaks() {
           <>
             <ContinueWatchingRow isAdult={true} />
 
-            {/* Franchises */}
+            {/* Franchises / Collections */}
             {(activeTab === "all" || activeTab === "videos") && adultFranchises.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Tv className="w-5 h-5 text-red-400" /> Collections
-                </h2>
+                <Link to="/leaks/section?section=collections" className="group flex items-center gap-2 mb-4 w-fit hover:opacity-80 transition-opacity">
+                  <Tv className="w-5 h-5 text-red-400" />
+                  <h2 className="text-xl font-bold text-foreground">Collections</h2>
+                  <span className="text-sm text-muted-foreground font-normal">({adultFranchises.length})</span>
+                  <span className="text-xs text-red-400 font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
+                </Link>
                 <div className="space-y-8">
-                  {adultFranchises.map(franchise => {
+                  {adultFranchises.slice(0, 6).map(franchise => {
                     const fSeries = seriesInFranchise(franchise.id);
                     return (
                       <div key={franchise.id}>
-                        <h3 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
-                          <span className="text-red-400">▸</span> {franchise.title}
-                          <span className="text-xs text-muted-foreground font-normal">{fSeries.length} series</span>
-                        </h3>
+                        <Link to={`/leaks/section?section=collections&franchise=${franchise.id}`} className="group flex items-center gap-2 mb-3 w-fit hover:opacity-80 transition-opacity">
+                          <span className="text-red-400">▸</span>
+                          <span className="font-bold text-foreground">{franchise.title}</span>
+                          <span className="text-xs text-muted-foreground font-normal">({fSeries.length} series)</span>
+                          <span className="text-xs text-red-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
+                        </Link>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {fSeries.map(s => (
+                          {fSeries.slice(0, 6).map(s => (
                             <Link key={s.id} to={`/series?id=${s.id}&from=/leaks`}>
                               <div className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
                                 {s.cover_image
@@ -211,11 +216,14 @@ export default function Leaks() {
                 )}
                 {videoSeries.length > 0 && (
                   <div className="mb-12">
-                    <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                      <Tv className="w-5 h-5 text-red-400" /> Series
-                    </h2>
+                    <Link to="/leaks/section?section=series" className="group flex items-center gap-2 mb-4 w-fit hover:opacity-80 transition-opacity">
+                      <Tv className="w-5 h-5 text-red-400" />
+                      <h2 className="text-xl font-bold text-foreground">Series</h2>
+                      <span className="text-sm text-muted-foreground font-normal">({videoSeries.length})</span>
+                      <span className="text-xs text-red-400 font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
+                    </Link>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                       {videoSeries.map((s) => (
+                       {videoSeries.slice(0, 6).map((s) => (
                          <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
                        ))}
                      </div>
@@ -227,17 +235,20 @@ export default function Leaks() {
             {/* Images */}
             {(activeTab === "all" || activeTab === "images") && imageSeries.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-red-400" /> Image Series
-                </h2>
+                <Link to="/leaks/section?section=image-series" className="group flex items-center gap-2 mb-4 w-fit hover:opacity-80 transition-opacity">
+                  <ImageIcon className="w-5 h-5 text-red-400" />
+                  <h2 className="text-xl font-bold text-foreground">Image Series</h2>
+                  <span className="text-sm text-muted-foreground font-normal">({imageSeries.length})</span>
+                  <span className="text-xs text-red-400 font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
+                </Link>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                   {imageSeries.map((series) => {
+                   {imageSeries.slice(0, 6).map((series) => {
                      const seriesImages = images.filter(img => img.series_id === series.id);
                      const firstImage = seriesImages[0];
                      return (
                        <Link key={series.id} to={`/series?id=${series.id}&from=/leaks`}>
                          <div className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity">
-                           {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" />}
+                           {firstImage?.image_url && <img src={firstImage.image_url} alt={series.title} className="w-full h-full object-cover" onContextMenu={e => e.preventDefault()} />}
                            <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex flex-col items-center justify-center">
                              <p className="text-white font-semibold text-center px-2 mb-2">{series.title}</p>
                              <p className="text-white/80 text-xs">{seriesImages.length} image{seriesImages.length !== 1 ? "s" : ""}</p>

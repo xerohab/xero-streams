@@ -16,6 +16,7 @@ import Dashboard from '@/pages/Dashboard';
 import Donate from '@/pages/Donate';
 import Leaks from '@/pages/Leaks';
 import AdminAdult from '@/pages/AdminAdult';
+import LeaksSection from '@/pages/LeaksSection';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
       <Route path="/donate" element={<Donate />} />
       <Route path="/leaks" element={<Leaks />} />
       <Route path="/admin/adult" element={<AdminAdult />} />
+      <Route path="/leaks/section" element={<LeaksSection />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
