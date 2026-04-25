@@ -75,14 +75,7 @@ export default function Navbar() {
             </Button>
           )}
 
-          {user?.age_verified && (
-            <Link to="/leaks">
-              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 gap-2">
-                <ShieldAlert className="w-4 h-4" />
-                <span className="hidden md:inline">Leaks</span>
-              </Button>
-            </Link>
-          )}
+          {/* Leaks link hidden */}
 
           {isAdmin && (
             <Link to="/admin">

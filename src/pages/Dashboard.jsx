@@ -140,11 +140,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs capitalize">{user.role}</Badge>
-              {user.age_verified && (
-                <Badge className="text-xs bg-green-500/20 text-green-400 border-green-500/30">
-                  <CheckCircle2 className="w-3 h-3 mr-1" /> Age Verified 18+
-                </Badge>
-              )}
+              {/* Age verified badge hidden */}
             </div>
           </div>
           <div className="ml-auto">
@@ -154,84 +150,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Age Verification Section */}
-        {!user.age_verified && (
-          <Card className="bg-card border-orange-500/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-foreground">
-                <ShieldAlert className="w-5 h-5 text-orange-400" />
-                Age Verification (18+)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {verifyResult === 'approved' ? (
-                <div className="flex items-center gap-3 text-sm text-green-400">
-                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                  <p>Age verified! You now have access to all content.</p>
-                </div>
-              ) : verifyResult === 'declined' ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-red-400">
-                    <XCircle className="w-5 h-5 flex-shrink-0" />
-                    <p>Verification declined. You may not meet the minimum age requirement (18+) or the image quality was too low. Please try again with a clearer selfie.</p>
-                  </div>
-                  <Button variant="outline" onClick={() => { setVerifyResult(null); startCamera(); }}>
-                    <Camera className="w-4 h-4" /> Try Again
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Take a quick selfie to verify your age instantly using AI-powered age estimation. No ID required.
-                  </p>
-
-                  {/* Camera / Capture UI */}
-                  {cameraActive && (
-                    <div className="space-y-3">
-                      <div className="relative rounded-lg overflow-hidden bg-black max-w-sm aspect-video">
-                        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button onClick={capturePhoto}><Camera className="w-4 h-4" /> Take Photo</Button>
-                        <Button variant="ghost" onClick={stopCamera}>Cancel</Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {capturedImage && (
-                    <div className="space-y-3">
-                      <img src={capturedImage} alt="Selfie preview" className="rounded-lg max-w-sm aspect-video object-cover" />
-                      <div className="flex gap-2">
-                        <Button onClick={submitVerification} disabled={verifying}>
-                          {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                          {verifying ? 'Verifying...' : 'Verify My Age'}
-                        </Button>
-                        <Button variant="ghost" onClick={() => { setCapturedImage(null); startCamera(); }}>Retake</Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {!cameraActive && !capturedImage && (
-                    <Button onClick={startCamera} className="gap-2">
-                      <Camera className="w-4 h-4" /> Open Camera
-                    </Button>
-                  )}
-
-                  <canvas ref={canvasRef} className="hidden" />
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {user.age_verified && (
-          <Card className="bg-card border-green-500/30">
-            <CardContent className="py-4 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
-              <p className="text-sm text-foreground">You are age-verified and have full access to all content including the <span className="text-primary font-semibold">Adult</span> section.</p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Age verification & adult links hidden */}
 
         {/* Quick Links */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -239,7 +158,6 @@ export default function Dashboard() {
             { label: "Browse All", icon: Home, to: "/" },
             { label: "Movies", icon: Film, to: "/?tab=movies" },
             { label: "TV Series", icon: TrendingUp, to: "/?tab=tv" },
-            ...(user.age_verified ? [{ label: "Adult (18+)", icon: Star, to: "/?tab=adult" }] : []),
           ].map(({ label, icon: Icon, to }) => (
             <Link key={label} to={to}>
               <Card className="bg-card border-border hover:border-primary/50 transition-colors cursor-pointer group">
@@ -383,12 +301,7 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground mt-1">Watched</p>
             </CardContent>
           </Card>
-          <Card className="bg-card border-border text-center">
-            <CardContent className="py-5">
-              <p className="text-3xl font-black text-primary">{user.age_verified ? "✓" : "—"}</p>
-              <p className="text-sm text-muted-foreground mt-1">Age 18+</p>
-            </CardContent>
-          </Card>
+          {/* Age 18+ stat hidden */}
         </div>
 
       </div>
