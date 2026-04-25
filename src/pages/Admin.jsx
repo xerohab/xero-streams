@@ -132,11 +132,7 @@ export default function Admin() {
             <Badge variant="secondary" className="gap-1.5">
               <Video className="w-3 h-3" />{videos.length} Videos
             </Badge>
-            <RouterLink to="/admin/adult">
-              <Badge className="gap-1.5 bg-red-600/20 text-red-400 border border-red-500/30 cursor-pointer hover:bg-red-600/30">
-                <ShieldAlert className="w-3 h-3" /> Adult Admin
-              </Badge>
-            </RouterLink>
+            {/* Adult Admin link hidden */}
           </div>
         </div>
 
