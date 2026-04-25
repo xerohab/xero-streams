@@ -18,6 +18,8 @@ import ImprovedAdultManageSection from "@/components/admin/ImprovedAdultManageSe
 import AdultSortOrderManager from "@/components/admin/AdultSortOrderManager";
 import BatchNameUpdater from "@/components/admin/BatchNameUpdater";
 import ImageCategoryForm from "@/components/admin/ImageCategoryForm";
+import AdultFranchiseForm from "@/components/admin/AdultFranchiseForm";
+import AdultSeriesFranchiseManager from "@/components/admin/AdultSeriesFranchiseManager";
 import { AlertTriangle } from "lucide-react";
 
 export default function AdminAdult() {
