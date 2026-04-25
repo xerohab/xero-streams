@@ -166,7 +166,7 @@ export default function Leaks() {
                   <span className="text-xs text-red-400 font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
                 </Link>
                 <div className="space-y-8">
-                  {adultFranchises.slice(0, 6).map(franchise => {
+                  {(activeTab === "all" ? adultFranchises.slice(0, 8) : adultFranchises).map(franchise => {
                     const fSeries = seriesInFranchise(franchise.id);
                     return (
                       <div key={franchise.id}>
@@ -223,7 +223,7 @@ export default function Leaks() {
                       <span className="text-xs text-red-400 font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
                     </Link>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                       {videoSeries.slice(0, 6).map((s) => (
+                       {(activeTab === "all" ? videoSeries.slice(0, 8) : videoSeries).map((s) => (
                          <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
                        ))}
                      </div>
@@ -242,7 +242,7 @@ export default function Leaks() {
                   <span className="text-xs text-red-400 font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">See all →</span>
                 </Link>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                   {imageSeries.slice(0, 6).map((series) => {
+                   {(activeTab === "all" ? imageSeries.slice(0, 8) : imageSeries).map((series) => {
                      const seriesImages = images.filter(img => img.series_id === series.id);
                      const firstImage = seriesImages[0];
                      return (

@@ -167,18 +167,27 @@ export default function Home() {
         {/* TV Series tab */}
         {(activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (
           <div className="mb-12">
-            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-              <Tv className="w-5 h-5 text-primary" /> TV Series
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Tv className="w-5 h-5 text-primary" /> TV Series
+              </h2>
+              {activeTab === "all" && (seriesByFranchise.length + ungroupedSeries.length) > 8 && (
+                <button onClick={() => setActiveTab("tv")} className="text-sm text-primary hover:underline font-semibold">
+                  See all →
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* Franchise cards instead of individual series */}
-              {seriesByFranchise.map(({ franchise, series }) => (
-                <FranchiseCard key={franchise.id} franchise={franchise} itemCount={series.length} itemLabel="Series" />
-              ))}
-              {/* Standalone series not in any franchise */}
-              {ungroupedSeries.map((s) => (
-                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
-              ))}
+              {(() => {
+                const allFranchiseCards = seriesByFranchise.map(({ franchise, series }) => (
+                  <FranchiseCard key={franchise.id} franchise={franchise} itemCount={series.length} itemLabel="Series" />
+                ));
+                const allSeriesCards = ungroupedSeries.map((s) => (
+                  <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
+                ));
+                const combined = [...allFranchiseCards, ...allSeriesCards];
+                return activeTab === "all" ? combined.slice(0, 8) : combined;
+              })()}
             </div>
           </div>
         )}
@@ -186,18 +195,27 @@ export default function Home() {
         {/* Movies tab */}
         {(activeTab === "all" || activeTab === "movies") && (ungroupedMovies.length > 0 || moviesByFranchise.length > 0) && (
           <div className="mb-12">
-            <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-              <Film className="w-5 h-5 text-primary" /> Movies
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Film className="w-5 h-5 text-primary" /> Movies
+              </h2>
+              {activeTab === "all" && (moviesByFranchise.length + ungroupedMovies.length) > 8 && (
+                <button onClick={() => setActiveTab("movies")} className="text-sm text-primary hover:underline font-semibold">
+                  See all →
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* Franchise cards instead of individual movies */}
-              {moviesByFranchise.map(({ franchise, movies: fMovies }) => (
-                <FranchiseCard key={franchise.id} franchise={franchise} itemCount={fMovies.length} itemLabel="Titles" />
-              ))}
-              {/* Standalone movies not in any franchise */}
-              {ungroupedMovies.map((v) => (
-                <VideoCard key={v.id} video={v} />
-              ))}
+              {(() => {
+                const allFranchiseCards = moviesByFranchise.map(({ franchise, movies: fMovies }) => (
+                  <FranchiseCard key={franchise.id} franchise={franchise} itemCount={fMovies.length} itemLabel="Titles" />
+                ));
+                const allMovieCards = ungroupedMovies.map((v) => (
+                  <VideoCard key={v.id} video={v} />
+                ));
+                const combined = [...allFranchiseCards, ...allMovieCards];
+                return activeTab === "all" ? combined.slice(0, 8) : combined;
+              })()}
             </div>
           </div>
         )}
