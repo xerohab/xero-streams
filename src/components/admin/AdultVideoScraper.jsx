@@ -14,6 +14,7 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
   const [saving, setSaving] = useState(false);
   const [scanMode, setScanMode] = useState(null);
   const [uploadingThumbFor, setUploadingThumbFor] = useState(null);
+  const [selectedSeriesId, setSelectedSeriesId] = useState("");
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
@@ -52,7 +53,8 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
       description: ep.description || undefined,
       video_url: ep.video_url,
       thumbnail_url: ep.thumbnail_url || undefined,
-      content_type: "movie",
+      content_type: selectedSeriesId ? "episode" : "movie",
+      series_id: selectedSeriesId || undefined,
       is_adult: true,
       is_featured: false,
     }));
@@ -61,12 +63,27 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
     toast.success(`Imported ${records.length} video${records.length !== 1 ? "s" : ""}!`);
     setEpisodes([]);
     setUrl("");
+    setSelectedSeriesId("");
     setSaving(false);
     onSuccess?.();
   };
 
   return (
     <div className="space-y-6">
+
+      <div className="space-y-2">
+        <Label>Series (optional)</Label>
+        <select
+          value={selectedSeriesId}
+          onChange={e => setSelectedSeriesId(e.target.value)}
+          className="w-full px-3 py-2 bg-secondary border border-border rounded-md text-foreground text-sm"
+        >
+          <option value="">No series (standalone videos)</option>
+          {adultSeriesList.map(s => (
+            <option key={s.id} value={s.id}>{s.title}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="space-y-2">
         <Label>Directory URL</Label>

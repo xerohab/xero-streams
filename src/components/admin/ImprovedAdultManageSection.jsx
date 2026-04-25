@@ -11,6 +11,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
   const [addToCategoryOpen, setAddToCategoryOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [assigning, setAssigning] = useState(false);
 
   const adultVideos = videos.filter(v => v.is_adult);
   const adultImages = videos.filter(v => v.is_adult && !v.series_id); // Standalone images without series
@@ -52,15 +53,22 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
   };
 
   const massAddToCategory = async (categoryId) => {
-    if (selectedImages.size === 0) return;
-    
-    for (const id of selectedImages) {
-      await base44.entities.Video.update(id, { series_id: categoryId });
-      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between updates
+    if (selectedImages.size === 0 || !categoryId) return;
+    const count = selectedImages.size;
+    setAssigning(true);
+    try {
+      for (const id of selectedImages) {
+        await base44.entities.Video.update(id, { series_id: categoryId });
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      toast.success(`✓ Moved ${count} item(s) to category`);
+      setSelectedImages(new Set());
+      onRefresh();
+    } catch (err) {
+      toast.error("Failed to assign category: " + (err.message || "Unknown error"));
+    } finally {
+      setAssigning(false);
     }
-    toast.success(`Added ${selectedImages.size} image(s) to category`);
-    setSelectedImages(new Set());
-    onRefresh();
   };
 
   const createCategory = async () => {
@@ -132,17 +140,19 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
             </Button>
 
             {/* Add to Category Dropdown */}
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1">
+              {assigning && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
               <select
+                disabled={assigning}
                 onChange={(e) => {
                   if (e.target.value) {
                     massAddToCategory(e.target.value);
                     e.target.value = "";
                   }
                 }}
-                className="px-2 py-1 bg-background border border-border rounded-md text-sm text-foreground cursor-pointer"
+                className="px-2 py-1 bg-background border border-border rounded-md text-sm text-foreground cursor-pointer disabled:opacity-50"
               >
-                <option value="">Add to category...</option>
+                <option value="">Move to category...</option>
                 {adultSeries.map(s => (
                   <option key={s.id} value={s.id}>{s.title}</option>
                 ))}
