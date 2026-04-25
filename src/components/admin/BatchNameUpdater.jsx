@@ -11,6 +11,7 @@ export default function BatchNameUpdater({ items = [], entityType = "Image", onS
   const [selected, setSelected] = useState([]);
   const [baseName, setBaseName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(null);
 
   const toggleSelect = (id) => {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -27,21 +28,28 @@ export default function BatchNameUpdater({ items = [], entityType = "Image", onS
     }
 
     setLoading(true);
+    setProgress(0);
     const selectedItems = items.filter(item => selected.includes(item.id));
+    const CHUNK = 10; // parallel per batch
     
     try {
-      for (let i = 0; i < selectedItems.length; i++) {
-        const newTitle = selected.length > 1 ? `${baseName.trim()} (${i + 1})` : baseName.trim();
-        await base44.entities[entityType].update(selectedItems[i].id, { title: newTitle });
+      for (let i = 0; i < selectedItems.length; i += CHUNK) {
+        const batch = selectedItems.slice(i, i + CHUNK);
+        await Promise.all(batch.map((item, j) => {
+          const newTitle = selectedItems.length > 1 ? `${baseName.trim()} ${i + j + 1}` : baseName.trim();
+          return base44.entities[entityType].update(item.id, { title: newTitle });
+        }));
+        setProgress(Math.round(((i + batch.length) / selectedItems.length) * 100));
       }
       toast.success(`Updated ${selected.length} item(s)!`);
       setSelected([]);
       setBaseName("");
       onSuccess?.();
     } catch (error) {
-      toast.error("Failed to update items");
+      toast.error("Failed to update some items");
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -93,6 +101,17 @@ export default function BatchNameUpdater({ items = [], entityType = "Image", onS
           )}
         </div>
       </div>
+
+      {progress !== null && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Updating...</span><span>{progress}%</span>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2">
+            <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      )}
 
       <Button
         onClick={handleUpdate}
