@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Trash2, Upload, AlertTriangle } from "lucide-react";
+import { Loader2, Search, Trash2, Upload, AlertTriangle, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
@@ -13,6 +13,9 @@ export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
   const [scanning, setScanning] = useState(false);
   const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [massBaseName, setMassBaseName] = useState("");
+  const [massStartNum, setMassStartNum] = useState(1);
+  const [saveProgress, setSaveProgress] = useState(null);
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
@@ -32,10 +35,17 @@ export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
 
   const removeImg = (index) => setImages(prev => prev.filter((_, i) => i !== index));
 
+  const applyMassRename = () => {
+    if (!massBaseName.trim()) { toast.error("Enter a base name"); return; }
+    setImages(prev => prev.map((img, i) => ({ ...img, title: `${massBaseName.trim()} ${massStartNum + i}` })));
+    toast.success(`Renamed ${images.length} items`);
+  };
+
   const handleImport = async () => {
     if (!selectedSeries) { toast.error("Select a series"); return; }
     if (images.length === 0) { toast.error("No images to import"); return; }
     setSaving(true);
+    setSaveProgress(0);
 
     const records = images.map((img, idx) => ({
       title: img.title || `Image ${idx + 1}`,
@@ -45,12 +55,21 @@ export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
       sort_order: idx,
     }));
 
-    await base44.entities.Image.bulkCreate(records);
+    // Chunk into batches of 100 to safely handle 500+ items
+    const CHUNK = 100;
+    let done = 0;
+    for (let i = 0; i < records.length; i += CHUNK) {
+      await base44.entities.Image.bulkCreate(records.slice(i, i + CHUNK));
+      done += Math.min(CHUNK, records.length - i);
+      setSaveProgress(Math.round((done / records.length) * 100));
+    }
+
     toast.success(`Imported ${records.length} image${records.length !== 1 ? "s" : ""}!`);
     setImages([]);
     setUrl("");
     setSelectedSeries("");
     setSaving(false);
+    setSaveProgress(null);
     onSuccess?.();
   };
 
@@ -89,6 +108,31 @@ export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
 
       {images.length > 0 && (
         <>
+          {/* Mass Rename */}
+          <div className="bg-secondary/60 border border-border rounded-lg p-3 space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mass Rename All</Label>
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                value={massBaseName}
+                onChange={e => setMassBaseName(e.target.value)}
+                placeholder="Base name (e.g. Photo)"
+                className="bg-secondary border-border h-8 text-sm flex-1 min-w-32"
+              />
+              <Input
+                type="number"
+                value={massStartNum}
+                onChange={e => setMassStartNum(Number(e.target.value))}
+                placeholder="Start #"
+                className="bg-secondary border-border h-8 text-sm w-20"
+                min={0}
+              />
+              <Button type="button" onClick={applyMassRename} size="sm" variant="outline" className="gap-1.5 h-8 shrink-0">
+                <RefreshCw className="w-3 h-3" /> Apply to All
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Renames all items as "Base name 1", "Base name 2", etc.</p>
+          </div>
+
           <div className="space-y-2">
             <Label>Found {images.length} image{images.length !== 1 ? "s" : ""}</Label>
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
@@ -107,6 +151,16 @@ export default function AdultImageScraper({ adultSeriesList, onSuccess }) {
             </div>
           </div>
 
+          {saveProgress !== null && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Importing...</span><span>{saveProgress}%</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2">
+                <div className="bg-red-600 h-2 rounded-full transition-all" style={{ width: `${saveProgress}%` }} />
+              </div>
+            </div>
+          )}
           <Button onClick={handleImport} disabled={saving} className="w-full bg-red-600 hover:bg-red-700 font-bold gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             Import {images.length} Image{images.length !== 1 ? "s" : ""}

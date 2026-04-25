@@ -3,8 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon } from "lucide-react";
+import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
@@ -15,6 +14,8 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
   const [scanMode, setScanMode] = useState(null);
   const [uploadingThumbFor, setUploadingThumbFor] = useState(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
+  const [massBaseName, setMassBaseName] = useState("");
+  const [massStartNum, setMassStartNum] = useState(1);
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
@@ -44,6 +45,12 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
 
   const removeEp = (index) => setEpisodes(prev => prev.filter((_, i) => i !== index));
 
+  const applyMassRename = () => {
+    if (!massBaseName.trim()) { toast.error("Enter a base name"); return; }
+    setEpisodes(prev => prev.map((ep, i) => ({ ...ep, title: `${massBaseName.trim()} ${massStartNum + i}` })));
+    toast.success(`Renamed ${episodes.length} items`);
+  };
+
   const handleImport = async () => {
     if (episodes.length === 0) { toast.error("No items to import"); return; }
     setSaving(true);
@@ -59,7 +66,11 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
       is_featured: false,
     }));
 
-    await base44.entities.Video.bulkCreate(records);
+    // Chunk into batches of 100 to safely handle 500+ items
+    const CHUNK = 100;
+    for (let i = 0; i < records.length; i += CHUNK) {
+      await base44.entities.Video.bulkCreate(records.slice(i, i + CHUNK));
+    }
     toast.success(`Imported ${records.length} video${records.length !== 1 ? "s" : ""}!`);
     setEpisodes([]);
     setUrl("");
@@ -110,6 +121,31 @@ export default function AdultVideoScraper({ adultSeriesList, onSuccess }) {
               <span>These are download page links, not direct video files. Edit URLs before importing.</span>
             </div>
           )}
+
+          {/* Mass Rename */}
+          <div className="bg-secondary/60 border border-border rounded-lg p-3 space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mass Rename All</Label>
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                value={massBaseName}
+                onChange={e => setMassBaseName(e.target.value)}
+                placeholder="Base name (e.g. Video)"
+                className="bg-secondary border-border h-8 text-sm flex-1 min-w-32"
+              />
+              <Input
+                type="number"
+                value={massStartNum}
+                onChange={e => setMassStartNum(Number(e.target.value))}
+                placeholder="Start #"
+                className="bg-secondary border-border h-8 text-sm w-20"
+                min={0}
+              />
+              <Button type="button" onClick={applyMassRename} size="sm" variant="outline" className="gap-1.5 h-8 shrink-0">
+                <RefreshCw className="w-3 h-3" /> Apply to All
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Renames all items as "Base name 1", "Base name 2", etc.</p>
+          </div>
 
           <div className="space-y-2">
             <Label>Found {episodes.length} video{episodes.length !== 1 ? "s" : ""}</Label>
