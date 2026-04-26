@@ -9,6 +9,7 @@ import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
 import { getCastWindow, isCastWindowOpen } from "@/components/browse/Navbar";
+import { useCast } from "@/lib/CastContext";
 
 function getEmbedUrl(url) {
   if (!url) return null;
@@ -23,6 +24,7 @@ export default function Watch() {
   const navigate = useNavigate();
   const location = useLocation();
   const videoId = new URLSearchParams(location.search).get("id");
+  const { openCast } = useCast();
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
@@ -150,7 +152,8 @@ export default function Watch() {
 
   // Auto-cast to open cast window when video loads
   useEffect(() => {
-    if (!video?.video_url || !isCastWindowOpen()) return;
+    if (!video?.video_url) return;
+    if (!isCastWindowOpen()) return;
     const castWin = getCastWindow();
     // Build queue from current video onwards
     const queue = fullQueue.length > 0
@@ -326,9 +329,9 @@ export default function Watch() {
     }
     const castUrl = `/cast?${params.toString()}`;
 
-    // On mobile, postMessage doesn't work across tabs — navigate directly
+    // On mobile, use in-page overlay instead of popup
     if (isMobile()) {
-      window.location.href = castUrl;
+      openCast(video.video_url, video.title || "", queueItems, currentTime);
       return;
     }
 

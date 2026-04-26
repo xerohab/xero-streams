@@ -91,11 +91,11 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Cast Mode */}
+          {/* Cast Mode — desktop only (mobile uses in-player overlay) */}
           <Button
             variant="ghost"
             size="icon"
-            className={`h-8 w-8 transition-colors ${castActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            className={`hidden md:flex h-8 w-8 transition-colors ${castActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
             title={castActive ? "Cast mode active — click to stop" : "Start Cast Mode"}
             onClick={castActive ? handleCloseCast : handleOpenCast}
           >
