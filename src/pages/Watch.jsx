@@ -171,33 +171,44 @@ export default function Watch() {
     }
   };
 
-  // Cast to TV — pause local playback and open a bare video page
+  // Cast to TV — fully stop local video to free bandwidth, open standalone player
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
+
+    // Fully pause and unload local video to save bandwidth & prevent double-play
     if (videoRef.current) {
       videoRef.current.pause();
-      videoRef.current.muted = true;
+      videoRef.current.src = "";
+      videoRef.current.load();
     }
+
     const params = new URLSearchParams({
       src: video.video_url,
       title: video.title || "",
       t: currentTime,
     });
-    const popup = window.open(`/cast?${params.toString()}`, "_blank");
-    // If popup was blocked, just open in same tab
+    const castUrl = `/cast?${params.toString()}`;
+    const popup = window.open(castUrl, "_blank");
+
     if (!popup) {
-      window.location.href = `/cast?${params.toString()}`;
+      // Popup blocked — navigate this tab instead
+      window.location.href = castUrl;
       return;
     }
+
     setIsCasting(true);
+
     // When cast tab closes, restore local player
     const timer = setInterval(() => {
       if (popup.closed) {
         clearInterval(timer);
         setIsCasting(false);
+        // Restore video src so player works again
         if (videoRef.current) {
-          videoRef.current.muted = false;
+          videoRef.current.src = video.video_url;
+          videoRef.current.load();
+          videoRef.current.currentTime = currentTime;
         }
       }
     }, 500);
@@ -205,8 +216,9 @@ export default function Watch() {
 
   const handleStopCasting = () => {
     setIsCasting(false);
-    if (videoRef.current) {
-      videoRef.current.muted = false;
+    if (videoRef.current && video?.video_url) {
+      videoRef.current.src = video.video_url;
+      videoRef.current.load();
       videoRef.current.play();
     }
   };
@@ -280,16 +292,20 @@ export default function Watch() {
                   </video>
                   {isCasting && (
                     <div
-                      className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-3"
+                      className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-3 cursor-none select-none"
                       onContextMenu={(e) => e.preventDefault()}
+                      onMouseMove={(e) => e.stopPropagation()}
                     >
-                      <Cast className="w-10 h-10 text-white animate-pulse" />
-                      <p className="text-white font-semibold text-lg">Casting to TV…</p>
+                      <Cast className="w-10 h-10 text-white animate-pulse pointer-events-none" />
+                      <p className="text-white font-semibold text-lg pointer-events-none">Playing in Cast Window</p>
+                      <p className="text-muted-foreground text-xs text-center max-w-xs pointer-events-none">
+                        Use your browser's Cast / AirPlay button in the cast window to send to your TV or screen
+                      </p>
                       <button
                         onClick={handleStopCasting}
-                        className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors"
+                        className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors cursor-pointer"
                       >
-                        Stop Casting
+                        Close & Return Here
                       </button>
                     </div>
                   )}
