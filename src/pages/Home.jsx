@@ -176,13 +176,18 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(() => {
-                const allFranchiseCards = seriesByFranchise.map(({ franchise, series }) => (
-                  <FranchiseCard key={franchise.id} franchise={franchise} itemCount={series.length} itemLabel="Series" />
-                ));
-                const allSeriesCards = ungroupedSeries.map((s) => (
-                  <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
-                ));
-                const combined = [...allFranchiseCards, ...allSeriesCards];
+                // Merge franchises and standalone series, sorted by newest created_date
+                const franchiseItems = seriesByFranchise.map(({ franchise, series }) => ({
+                  date: franchise.created_date,
+                  el: <FranchiseCard key={franchise.id} franchise={franchise} itemCount={series.length} itemLabel="Series" />,
+                }));
+                const seriesItems = ungroupedSeries.map((s) => ({
+                  date: s.created_date,
+                  el: <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />,
+                }));
+                const combined = [...franchiseItems, ...seriesItems]
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .map((item) => item.el);
                 return activeTab === "all" ? combined.slice(0, 8) : combined;
               })()}
             </div>
@@ -204,13 +209,18 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(() => {
-                const allFranchiseCards = moviesByFranchise.map(({ franchise, movies: fMovies }) => (
-                  <FranchiseCard key={franchise.id} franchise={franchise} itemCount={fMovies.length} itemLabel="Titles" />
-                ));
-                const allMovieCards = ungroupedMovies.map((v) => (
-                  <VideoCard key={v.id} video={v} />
-                ));
-                const combined = [...allFranchiseCards, ...allMovieCards];
+                // Merge franchises and standalone movies, sorted by newest created_date
+                const franchiseItems = moviesByFranchise.map(({ franchise, movies: fMovies }) => ({
+                  date: franchise.created_date,
+                  el: <FranchiseCard key={franchise.id} franchise={franchise} itemCount={fMovies.length} itemLabel="Titles" />,
+                }));
+                const movieItems = ungroupedMovies.map((v) => ({
+                  date: v.created_date,
+                  el: <VideoCard key={v.id} video={v} />,
+                }));
+                const combined = [...franchiseItems, ...movieItems]
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .map((item) => item.el);
                 return activeTab === "all" ? combined.slice(0, 8) : combined;
               })()}
             </div>
