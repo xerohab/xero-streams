@@ -28,6 +28,16 @@ export default function Watch() {
   const [user, setUser] = useState(null);
   const [isFavourited, setIsFavourited] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
+  // Track whether user explicitly paused so we don't fight the browser
+  const userPausedRef = useRef(false);
+  const lastSaveRef = useRef(0);
+  // Track current video id being played (for seamless next-episode without navigate)
+  const [currentVideoId, setCurrentVideoId] = useState(videoId);
+  const nextVideoRef = useRef(null);
+
+  useEffect(() => {
+    setCurrentVideoId(videoId);
+  }, [videoId]);
 
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -70,30 +80,57 @@ export default function Watch() {
     staleTime: Infinity,
   });
 
+  const { data: franchises = [] } = useQuery({
+    queryKey: ["franchises"],
+    queryFn: () => base44.entities.Franchise.list(),
+    staleTime: Infinity,
+  });
+
   const series = video?.series_id ? seriesList.find((s) => s.id === video.series_id) : null;
 
+  // All episodes in this series sorted by episode number
   const seriesEpisodes = series
     ? [...allVideos]
         .filter((v) => v.series_id === series.id)
         .sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0))
     : [];
 
+  // Build full playable queue: if series belongs to a franchise, chain all series episodes in order
+  // Series in the same franchise sorted by sort_order
+  const franchiseSeries = series?.franchise_id
+    ? [...seriesList]
+        .filter((s) => s.franchise_id === series.franchise_id)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    : [];
+
+  const fullQueue = franchiseSeries.length > 1
+    ? franchiseSeries.flatMap((s) =>
+        [...allVideos]
+          .filter((v) => v.series_id === s.id)
+          .sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0))
+      )
+    : seriesEpisodes;
+
   // Franchise movies for "Up Next" on standalone movies
-  const franchiseMovies = video?.franchise_id
+  const franchiseMovies = video?.franchise_id && !series
     ? allVideos
         .filter((v) => v.franchise_id === video.franchise_id)
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     : [];
 
-  const currentSeriesIndex = seriesEpisodes.findIndex((v) => v.id === videoId);
+  const currentQueueIndex = fullQueue.findIndex((v) => v.id === videoId);
   const currentFranchiseIndex = franchiseMovies.findIndex((v) => v.id === videoId);
 
-  const nextEpisode = currentSeriesIndex >= 0 && currentSeriesIndex < seriesEpisodes.length - 1
-    ? seriesEpisodes[currentSeriesIndex + 1]
+  const nextEpisode = currentQueueIndex >= 0 && currentQueueIndex < fullQueue.length - 1
+    ? fullQueue[currentQueueIndex + 1]
     : null;
-  const prevEpisode = currentSeriesIndex > 0
-    ? seriesEpisodes[currentSeriesIndex - 1]
+  const prevEpisode = currentQueueIndex > 0
+    ? fullQueue[currentQueueIndex - 1]
     : null;
+
+  // For display in buttons — still use series episodes for prev/next labels
+  const currentSeriesIndex = seriesEpisodes.findIndex((v) => v.id === videoId);
+  const prevSeriesEpisode = currentSeriesIndex > 0 ? seriesEpisodes[currentSeriesIndex - 1] : null;
 
   const nextFranchiseMovie = currentFranchiseIndex >= 0 && currentFranchiseIndex < franchiseMovies.length - 1
     ? franchiseMovies[currentFranchiseIndex + 1]
@@ -103,30 +140,36 @@ export default function Watch() {
     : null;
 
   const nextVideo = nextEpisode || nextFranchiseMovie;
-  const prevVideo = prevEpisode || prevFranchiseMovie;
+  const prevVideo = prevSeriesEpisode || prevEpisode || prevFranchiseMovie;
+
+  // Keep nextVideoRef in sync for use inside event handlers
+  useEffect(() => {
+    nextVideoRef.current = nextVideo;
+  }, [nextVideo]);
 
   const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
 
-  // Autoplay next countdown
-  const startCountdown = () => {
-    if (!nextVideo) return;
+  // Autoplay countdown
+  const startCountdown = useCallback(() => {
+    if (!nextVideoRef.current) return;
     setAutoplayCountdown(10);
-  };
+  }, []);
 
   useEffect(() => {
     if (autoplayCountdown === null) return;
     if (autoplayCountdown === 0) {
-      navigate(`/watch?id=${nextVideo.id}`);
+      // Seamlessly navigate to next video
+      navigate(`/watch?id=${nextVideoRef.current.id}`);
       return;
     }
     countdownRef.current = setTimeout(() => setAutoplayCountdown((c) => c - 1), 1000);
     return () => clearTimeout(countdownRef.current);
   }, [autoplayCountdown]);
 
-  // Reset countdown on video change
   useEffect(() => {
     setAutoplayCountdown(null);
     clearTimeout(countdownRef.current);
+    userPausedRef.current = false;
   }, [videoId]);
 
   const cancelAutoplay = () => {
@@ -136,7 +179,7 @@ export default function Watch() {
 
   // Resume from saved position
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !video) return;
     const params = new URLSearchParams(window.location.search);
     const t = parseInt(params.get("t"));
     if (t > 0) {
@@ -149,8 +192,64 @@ export default function Watch() {
     }
   }, [video]);
 
-  // Save progress every 10 seconds to avoid frequent localStorage writes
-  const lastSaveRef = useRef(0);
+  // Prevent accidental pauses — if something pauses the video and user didn't press pause, resume it
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    const handlePause = () => {
+      // Only auto-resume if this wasn't triggered by user pressing pause
+      if (!userPausedRef.current) {
+        // Small timeout to let legitimate pauses (end of video, seeking) settle
+        setTimeout(() => {
+          if (el.paused && !el.ended && !userPausedRef.current) {
+            el.play().catch(() => {});
+          }
+        }, 300);
+      }
+    };
+
+    // Intercept native pause button via play/pause events
+    const handlePlay = () => {
+      userPausedRef.current = false;
+    };
+
+    el.addEventListener("pause", handlePause);
+    el.addEventListener("play", handlePlay);
+    return () => {
+      el.removeEventListener("pause", handlePause);
+      el.removeEventListener("play", handlePlay);
+    };
+  }, [video]);
+
+  // We need to allow user to deliberately pause via the native controls
+  // Track clicks on the video to detect deliberate pause
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const onClick = () => {
+      // Toggle: if playing → user wants to pause; if paused → user wants to play
+      if (!el.paused) {
+        userPausedRef.current = true;
+      } else {
+        userPausedRef.current = false;
+      }
+    };
+    el.addEventListener("click", onClick);
+    // Also handle keyboard space bar pause
+    const onKey = (e) => {
+      if (e.code === "Space" && document.activeElement === el) {
+        userPausedRef.current = !el.paused;
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      el.removeEventListener("click", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [video]);
+
+  // Save progress every 10 seconds
   const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current || !video) return;
     const now = Date.now();
@@ -159,11 +258,11 @@ export default function Watch() {
     saveProgress(video, videoRef.current.currentTime, videoRef.current.duration);
   }, [video]);
 
-  // Remove from continue watching when finished
-  const handleEnded = () => {
+  const handleEnded = useCallback(() => {
     if (video?.id) removeProgress(video.id);
+    userPausedRef.current = false;
     startCountdown();
-  };
+  }, [video, startCountdown]);
 
   // Picture-in-Picture
   const handlePiP = async () => {
@@ -179,12 +278,20 @@ export default function Watch() {
     }
   };
 
-  // Cast to TV — fully stop local video to free bandwidth, open standalone player
+  // Cast to TV — open standalone player with full episode queue for autoplay
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
 
-    // Fully pause and unload local video to save bandwidth & prevent double-play
+    // Build the queue starting from the current video onwards
+    const queue = nextVideo
+      ? (fullQueue.length > 0
+          ? fullQueue.slice(currentQueueIndex)
+          : franchiseMovies.slice(currentFranchiseIndex))
+      : [];
+
+    // Fully pause and unload local video to save bandwidth
+    userPausedRef.current = true;
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.src = "";
@@ -196,23 +303,28 @@ export default function Watch() {
       title: video.title || "",
       t: currentTime,
     });
+
+    // Pass queue as JSON (only url + title to keep URL short)
+    if (queue.length > 1) {
+      const queueData = queue.slice(1).map((v) => ({ src: v.video_url, title: v.title || "" }));
+      params.set("queue", JSON.stringify(queueData));
+    }
+
     const castUrl = `/cast?${params.toString()}`;
     const popup = window.open(castUrl, "_blank");
 
     if (!popup) {
-      // Popup blocked — navigate this tab instead
       window.location.href = castUrl;
       return;
     }
 
     setIsCasting(true);
 
-    // When cast tab closes, restore local player
     const timer = setInterval(() => {
       if (popup.closed) {
         clearInterval(timer);
         setIsCasting(false);
-        // Restore video src so player works again
+        userPausedRef.current = false;
         if (videoRef.current) {
           videoRef.current.src = video.video_url;
           videoRef.current.load();
@@ -224,6 +336,7 @@ export default function Watch() {
 
   const handleStopCasting = () => {
     setIsCasting(false);
+    userPausedRef.current = false;
     if (videoRef.current && video?.video_url) {
       videoRef.current.src = video.video_url;
       videoRef.current.load();
@@ -286,8 +399,8 @@ export default function Watch() {
                     ref={videoRef}
                     controls={!isCasting}
                     autoPlay
+                    playsInline
                     controlsList="nodownload"
-                    muted={isCasting}
                     onContextMenu={(e) => e.preventDefault()}
                     className="w-full h-full"
                     style={isCasting ? { visibility: "hidden" } : {}}
@@ -302,12 +415,11 @@ export default function Watch() {
                     <div
                       className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-3 cursor-none select-none"
                       onContextMenu={(e) => e.preventDefault()}
-                      onMouseMove={(e) => e.stopPropagation()}
                     >
                       <Cast className="w-10 h-10 text-white animate-pulse pointer-events-none" />
                       <p className="text-white font-semibold text-lg pointer-events-none">Playing in Cast Window</p>
                       <p className="text-muted-foreground text-xs text-center max-w-xs pointer-events-none">
-                        Use your browser's Cast / AirPlay button in the cast window to send to your TV or screen
+                        Use your browser's Cast / AirPlay button in the cast window to send to your TV
                       </p>
                       <button
                         onClick={handleStopCasting}
@@ -331,13 +443,15 @@ export default function Watch() {
                     <PictureInPicture2 className="w-5 h-5" />
                   </button>
                 )}
-                <button
-                  onClick={handleCast}
-                  className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
-                  title="Cast to TV"
-                >
-                  <Cast className="w-5 h-5" />
-                </button>
+                {!embedUrl && !isMkv && (
+                  <button
+                    onClick={handleCast}
+                    className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
+                    title="Cast to TV"
+                  >
+                    <Cast className="w-5 h-5" />
+                  </button>
+                )}
               </div>
 
               {/* Autoplay countdown overlay */}
@@ -413,7 +527,7 @@ export default function Watch() {
                     onClick={() => navigate(`/watch?id=${prevVideo.id}`)}
                   >
                     <SkipBack className="w-4 h-4" />
-                    {prevEpisode ? "Previous Episode" : "Previous Movie"}
+                    {prevSeriesEpisode ? "Previous Episode" : prevFranchiseMovie ? "Previous Movie" : "Previous Episode"}
                   </Button>
                 )}
                 {nextVideo && (
