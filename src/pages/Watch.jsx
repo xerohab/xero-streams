@@ -54,16 +54,20 @@ export default function Watch() {
       return videos[0];
     },
     enabled: !!videoId,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 
   const { data: allVideos = [] } = useQuery({
     queryKey: ["videos"],
     queryFn: () => base44.entities.Video.list("sort_order"),
+    staleTime: Infinity,
   });
 
   const { data: seriesList = [] } = useQuery({
     queryKey: ["series"],
     queryFn: () => base44.entities.Series.list(),
+    staleTime: Infinity,
   });
 
   const series = video?.series_id ? seriesList.find((s) => s.id === video.series_id) : null;
@@ -145,9 +149,13 @@ export default function Watch() {
     }
   }, [video]);
 
-  // Save progress periodically
+  // Save progress every 10 seconds to avoid frequent localStorage writes
+  const lastSaveRef = useRef(0);
   const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current || !video) return;
+    const now = Date.now();
+    if (now - lastSaveRef.current < 10000) return;
+    lastSaveRef.current = now;
     saveProgress(video, videoRef.current.currentTime, videoRef.current.duration);
   }, [video]);
 
