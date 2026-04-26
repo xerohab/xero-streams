@@ -170,18 +170,34 @@ export default function Watch() {
     }
   };
 
-  // Cast to TV
-  const handleCast = async () => {
+  // Cast to TV via Google Cast SDK
+  const handleCast = () => {
     if (!video?.video_url) return;
-    if ("presentation" in navigator) {
-      try {
-        const request = new PresentationRequest([video.video_url]);
-        request.start();
-      } catch (e) {
-        alert("Cast not available on this device/browser.");
+    const cast = window.cast;
+    const chrome = window.chrome;
+    if (!cast || !chrome?.cast) {
+      alert("Cast is not available. Make sure you're using Chrome and have a Chromecast on the same network.");
+      return;
+    }
+    const session = cast.framework?.CastContext?.getInstance()?.getCurrentSession();
+    if (session) {
+      // Already have a session — load the media
+      const mediaInfo = new chrome.cast.media.MediaInfo(video.video_url, "video/mp4");
+      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+      mediaInfo.metadata.title = video.title;
+      if (video.thumbnail_url) mediaInfo.metadata.images = [{ url: video.thumbnail_url }];
+      const request = new chrome.cast.media.LoadRequest(mediaInfo);
+      // Seek to current position
+      if (videoRef.current) {
+        request.currentTime = videoRef.current.currentTime;
+        videoRef.current.pause();
       }
+      session.loadMedia(request).catch(() => alert("Failed to load media on Chromecast."));
     } else {
-      alert("Casting is not supported by your browser. Try Chrome on desktop.");
+      // Request a new cast session
+      cast.framework.CastContext.getInstance().requestSession().then(() => {
+        handleCast(); // retry once session is established
+      }).catch(() => alert("Cast session cancelled or unavailable."));
     }
   };
 
