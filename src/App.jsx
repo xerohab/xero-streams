@@ -17,6 +17,7 @@ import Donate from '@/pages/Donate';
 import Leaks from '@/pages/Leaks';
 import AdminAdult from '@/pages/AdminAdult';
 import LeaksSection from '@/pages/LeaksSection';
+import CastPlayer from '@/pages/CastPlayer';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
       <Route path="/leaks" element={<Leaks />} />
       <Route path="/admin/adult" element={<AdminAdult />} />
       <Route path="/leaks/section" element={<LeaksSection />} />
+      <Route path="/cast" element={<CastPlayer />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

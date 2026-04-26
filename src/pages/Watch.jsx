@@ -170,35 +170,18 @@ export default function Watch() {
     }
   };
 
-  // Cast to TV via Google Cast SDK
+  // Cast to TV — pause local playback and open a bare video page
+  // that Chrome can natively cast to Chromecast without lag
   const handleCast = () => {
     if (!video?.video_url) return;
-    const cast = window.cast;
-    const chrome = window.chrome;
-    if (!cast || !chrome?.cast) {
-      alert("Cast is not available. Make sure you're using Chrome and have a Chromecast on the same network.");
-      return;
-    }
-    const session = cast.framework?.CastContext?.getInstance()?.getCurrentSession();
-    if (session) {
-      // Already have a session — load the media
-      const mediaInfo = new chrome.cast.media.MediaInfo(video.video_url, "video/mp4");
-      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-      mediaInfo.metadata.title = video.title;
-      if (video.thumbnail_url) mediaInfo.metadata.images = [{ url: video.thumbnail_url }];
-      const request = new chrome.cast.media.LoadRequest(mediaInfo);
-      // Seek to current position
-      if (videoRef.current) {
-        request.currentTime = videoRef.current.currentTime;
-        videoRef.current.pause();
-      }
-      session.loadMedia(request).catch(() => alert("Failed to load media on Chromecast."));
-    } else {
-      // Request a new cast session
-      cast.framework.CastContext.getInstance().requestSession().then(() => {
-        handleCast(); // retry once session is established
-      }).catch(() => alert("Cast session cancelled or unavailable."));
-    }
+    const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
+    if (videoRef.current) videoRef.current.pause();
+    const params = new URLSearchParams({
+      src: video.video_url,
+      title: video.title || "",
+      t: currentTime,
+    });
+    window.open(`/cast?${params.toString()}`, "_blank");
   };
 
   if (isLoading) {

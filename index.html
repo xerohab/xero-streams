@@ -6,18 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <title>Base44 APP</title>
-    <!-- Google Cast SDK -->
-    <script>
-      window.__onGCastApiAvailable = function(isAvailable) {
-        if (isAvailable && window.cast && window.cast.framework) {
-          cast.framework.CastContext.getInstance().setOptions({
-            receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-            autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
-          });
-        }
-      };
-    </script>
-    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
   </head>
   <body>
     <div id="root"></div>
