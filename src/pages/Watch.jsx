@@ -305,6 +305,8 @@ export default function Watch() {
     }
   };
 
+  const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   // Cast to TV — send to existing cast window or open new one
   const handleCast = () => {
     if (!video?.video_url) return;
@@ -313,6 +315,22 @@ export default function Watch() {
     const queueItems = fullQueue.length > 0
       ? fullQueue.slice(currentQueueIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
       : franchiseMovies.slice(currentFranchiseIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
+
+    const params = new URLSearchParams({
+      src: video.video_url,
+      title: video.title || "",
+      t: currentTime,
+    });
+    if (queueItems.length > 0) {
+      params.set("queue", JSON.stringify(queueItems));
+    }
+    const castUrl = `/cast?${params.toString()}`;
+
+    // On mobile, postMessage doesn't work across tabs — navigate directly
+    if (isMobile()) {
+      window.location.href = castUrl;
+      return;
+    }
 
     // Pause and unload local video
     userPausedRef.current = true;
@@ -332,19 +350,8 @@ export default function Watch() {
       return;
     }
 
-    // Otherwise open a new cast window
-    const params = new URLSearchParams({
-      src: video.video_url,
-      title: video.title || "",
-      t: currentTime,
-    });
-    if (queueItems.length > 0) {
-      params.set("queue", JSON.stringify(queueItems));
-    }
-
-    const castUrl = `/cast?${params.toString()}`;
+    // Otherwise open a new popup
     const popup = window.open(castUrl, "_blank");
-
     if (!popup) {
       window.location.href = castUrl;
       return;

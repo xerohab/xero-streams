@@ -41,9 +41,14 @@ export default function Navbar() {
     if (searchOpen) inputRef.current?.focus();
   }, [searchOpen]);
 
+  const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   const handleOpenCast = () => {
+    if (isMobile()) {
+      alert("Cast Mode works best on desktop. On mobile, use the Cast button inside the video player to open it directly.");
+      return;
+    }
     if (isCastWindowOpen()) {
-      // Focus existing window
       _castWindow.focus();
       return;
     }
