@@ -172,7 +172,6 @@ export default function Watch() {
   };
 
   // Cast to TV — pause local playback and open a bare video page
-  // that Chrome can natively cast to Chromecast without lag
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
@@ -180,21 +179,36 @@ export default function Watch() {
       videoRef.current.pause();
       videoRef.current.muted = true;
     }
-    setIsCasting(true);
     const params = new URLSearchParams({
       src: video.video_url,
       title: video.title || "",
       t: currentTime,
     });
     const popup = window.open(`/cast?${params.toString()}`, "_blank");
+    // If popup was blocked, just open in same tab
+    if (!popup) {
+      window.location.href = `/cast?${params.toString()}`;
+      return;
+    }
+    setIsCasting(true);
     // When cast tab closes, restore local player
     const timer = setInterval(() => {
-      if (!popup || popup.closed) {
+      if (popup.closed) {
         clearInterval(timer);
         setIsCasting(false);
-        if (videoRef.current) videoRef.current.muted = false;
+        if (videoRef.current) {
+          videoRef.current.muted = false;
+        }
       }
     }, 500);
+  };
+
+  const handleStopCasting = () => {
+    setIsCasting(false);
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.play();
+    }
   };
 
   if (isLoading) {
@@ -256,7 +270,7 @@ export default function Watch() {
                     muted={isCasting}
                     onContextMenu={(e) => e.preventDefault()}
                     className="w-full h-full"
-                    style={isCasting ? { opacity: 0.4, pointerEvents: "none" } : {}}
+                    style={isCasting ? { visibility: "hidden" } : {}}
                     poster={video.thumbnail_url}
                     onEnded={handleEnded}
                     onTimeUpdate={handleTimeUpdate}
@@ -265,11 +279,14 @@ export default function Watch() {
                     Your browser does not support this video format.
                   </video>
                   {isCasting && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10 gap-3">
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-3"
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
                       <Cast className="w-10 h-10 text-white animate-pulse" />
                       <p className="text-white font-semibold text-lg">Casting to TV…</p>
                       <button
-                        onClick={() => { setIsCasting(false); if (videoRef.current) { videoRef.current.muted = false; videoRef.current.play(); } }}
+                        onClick={handleStopCasting}
                         className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors"
                       >
                         Stop Casting
