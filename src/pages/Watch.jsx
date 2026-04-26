@@ -27,6 +27,7 @@ export default function Watch() {
   const countdownRef = useRef(null);
   const [user, setUser] = useState(null);
   const [isFavourited, setIsFavourited] = useState(false);
+  const [isCasting, setIsCasting] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then((u) => {
@@ -175,13 +176,25 @@ export default function Watch() {
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
-    if (videoRef.current) videoRef.current.pause();
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.muted = true;
+    }
+    setIsCasting(true);
     const params = new URLSearchParams({
       src: video.video_url,
       title: video.title || "",
       t: currentTime,
     });
-    window.open(`/cast?${params.toString()}`, "_blank");
+    const popup = window.open(`/cast?${params.toString()}`, "_blank");
+    // When cast tab closes, restore local player
+    const timer = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(timer);
+        setIsCasting(false);
+        if (videoRef.current) videoRef.current.muted = false;
+      }
+    }, 500);
   };
 
   if (isLoading) {
@@ -234,20 +247,36 @@ export default function Watch() {
                   </div>
                 </div>
               ) : (
-                <video
-                  ref={videoRef}
-                  controls
-                  autoPlay
-                  controlsList="nodownload"
-                  onContextMenu={(e) => e.preventDefault()}
-                  className="w-full h-full"
-                  poster={video.thumbnail_url}
-                  onEnded={handleEnded}
-                  onTimeUpdate={handleTimeUpdate}
-                >
-                  <source src={video.video_url} />
-                  Your browser does not support this video format.
-                </video>
+                <>
+                  <video
+                    ref={videoRef}
+                    controls={!isCasting}
+                    autoPlay
+                    controlsList="nodownload"
+                    muted={isCasting}
+                    onContextMenu={(e) => e.preventDefault()}
+                    className="w-full h-full"
+                    style={isCasting ? { opacity: 0.4, pointerEvents: "none" } : {}}
+                    poster={video.thumbnail_url}
+                    onEnded={handleEnded}
+                    onTimeUpdate={handleTimeUpdate}
+                  >
+                    <source src={video.video_url} />
+                    Your browser does not support this video format.
+                  </video>
+                  {isCasting && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-10 gap-3">
+                      <Cast className="w-10 h-10 text-white animate-pulse" />
+                      <p className="text-white font-semibold text-lg">Casting to TV…</p>
+                      <button
+                        onClick={() => { setIsCasting(false); if (videoRef.current) { videoRef.current.muted = false; videoRef.current.play(); } }}
+                        className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors"
+                      >
+                        Stop Casting
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Top-right controls */}

@@ -10,12 +10,15 @@ export default function CastPlayer() {
   if (!src) return <div style={{ background: "#000", color: "#fff", padding: 40 }}>No video source.</div>;
 
   return (
-    <div style={{ margin: 0, padding: 0, background: "#000", width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ margin: 0, padding: 0, background: "#000", width: "100vw", height: "100vh" }}>
       <video
         src={src}
         controls
         autoPlay
-        style={{ width: "100%", height: "100%", background: "#000" }}
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture
+        style={{ width: "100%", height: "100%", background: "#000", display: "block" }}
+        onContextMenu={(e) => e.preventDefault()}
         onLoadedMetadata={(e) => { if (t > 0) e.target.currentTime = t; }}
         title={title}
       />
