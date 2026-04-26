@@ -8,6 +8,7 @@ import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
+import { getCastWindow, isCastWindowOpen } from "@/components/browse/Navbar";
 
 function getEmbedUrl(url) {
   if (!url) return null;
@@ -147,6 +148,32 @@ export default function Watch() {
     nextVideoRef.current = nextVideo;
   }, [nextVideo]);
 
+  // Auto-cast to open cast window when video loads
+  useEffect(() => {
+    if (!video?.video_url || !isCastWindowOpen()) return;
+    const castWin = getCastWindow();
+    // Build queue from current video onwards
+    const queue = fullQueue.length > 0
+      ? fullQueue.slice(Math.max(currentQueueIndex, 0) + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
+      : franchiseMovies.slice(Math.max(currentFranchiseIndex, 0) + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
+
+    castWin.postMessage({
+      type: "CAST_PLAY",
+      src: video.video_url,
+      title: video.title || "",
+      queue,
+    }, "*");
+
+    // Pause local video since it's casting
+    userPausedRef.current = true;
+    setIsCasting(true);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.src = "";
+      videoRef.current.load();
+    }
+  }, [video?.id]);
+
   const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
 
   // Autoplay countdown
@@ -278,19 +305,16 @@ export default function Watch() {
     }
   };
 
-  // Cast to TV — open standalone player with full episode queue for autoplay
+  // Cast to TV — send to existing cast window or open new one
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
 
-    // Build the queue starting from the current video onwards
-    const queue = nextVideo
-      ? (fullQueue.length > 0
-          ? fullQueue.slice(currentQueueIndex)
-          : franchiseMovies.slice(currentFranchiseIndex))
-      : [];
+    const queueItems = fullQueue.length > 0
+      ? fullQueue.slice(currentQueueIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
+      : franchiseMovies.slice(currentFranchiseIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
 
-    // Fully pause and unload local video to save bandwidth
+    // Pause and unload local video
     userPausedRef.current = true;
     if (videoRef.current) {
       videoRef.current.pause();
@@ -298,16 +322,24 @@ export default function Watch() {
       videoRef.current.load();
     }
 
+    setIsCasting(true);
+
+    // If a cast window is already open, send video to it
+    if (isCastWindowOpen()) {
+      const castWin = getCastWindow();
+      castWin.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems }, "*");
+      castWin.focus();
+      return;
+    }
+
+    // Otherwise open a new cast window
     const params = new URLSearchParams({
       src: video.video_url,
       title: video.title || "",
       t: currentTime,
     });
-
-    // Pass queue as JSON (only url + title to keep URL short)
-    if (queue.length > 1) {
-      const queueData = queue.slice(1).map((v) => ({ src: v.video_url, title: v.title || "" }));
-      params.set("queue", JSON.stringify(queueData));
+    if (queueItems.length > 0) {
+      params.set("queue", JSON.stringify(queueItems));
     }
 
     const castUrl = `/cast?${params.toString()}`;
@@ -318,13 +350,14 @@ export default function Watch() {
       return;
     }
 
-    setIsCasting(true);
+    import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(popup));
 
     const timer = setInterval(() => {
       if (popup.closed) {
         clearInterval(timer);
         setIsCasting(false);
         userPausedRef.current = false;
+        import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(null));
         if (videoRef.current) {
           videoRef.current.src = video.video_url;
           videoRef.current.load();
@@ -343,6 +376,23 @@ export default function Watch() {
       videoRef.current.play();
     }
   };
+
+  // If casting via the global cast window, monitor its closure
+  useEffect(() => {
+    if (!isCasting) return;
+    const timer = setInterval(() => {
+      if (!isCastWindowOpen()) {
+        clearInterval(timer);
+        setIsCasting(false);
+        userPausedRef.current = false;
+        if (videoRef.current && video?.video_url) {
+          videoRef.current.src = video.video_url;
+          videoRef.current.load();
+        }
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isCasting]);
 
   if (isLoading) {
     return (
