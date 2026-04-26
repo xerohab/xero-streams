@@ -31,8 +31,6 @@ export default function Watch() {
   const [user, setUser] = useState(null);
   const [isFavourited, setIsFavourited] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
-  // Track whether user explicitly paused so we don't fight the browser
-  const userPausedRef = useRef(false);
   const lastSaveRef = useRef(0);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
@@ -168,7 +166,6 @@ export default function Watch() {
     }, "*");
 
     // Pause local video since it's casting
-    userPausedRef.current = true;
     setIsCasting(true);
     if (videoRef.current) {
       videoRef.current.pause();
@@ -199,7 +196,6 @@ export default function Watch() {
   useEffect(() => {
     setAutoplayCountdown(null);
     clearTimeout(countdownRef.current);
-    userPausedRef.current = false;
   }, [videoId]);
 
   const cancelAutoplay = () => {
@@ -222,62 +218,7 @@ export default function Watch() {
     }
   }, [video]);
 
-  // Prevent accidental pauses — if something pauses the video and user didn't press pause, resume it
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-
-    const handlePause = () => {
-      // Only auto-resume if this wasn't triggered by user pressing pause
-      if (!userPausedRef.current) {
-        // Small timeout to let legitimate pauses (end of video, seeking) settle
-        setTimeout(() => {
-          if (el.paused && !el.ended && !userPausedRef.current) {
-            el.play().catch(() => {});
-          }
-        }, 300);
-      }
-    };
-
-    // Intercept native pause button via play/pause events
-    const handlePlay = () => {
-      userPausedRef.current = false;
-    };
-
-    el.addEventListener("pause", handlePause);
-    el.addEventListener("play", handlePlay);
-    return () => {
-      el.removeEventListener("pause", handlePause);
-      el.removeEventListener("play", handlePlay);
-    };
-  }, [video]);
-
-  // We need to allow user to deliberately pause via the native controls
-  // Track clicks on the video to detect deliberate pause
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    const onClick = () => {
-      // Toggle: if playing → user wants to pause; if paused → user wants to play
-      if (!el.paused) {
-        userPausedRef.current = true;
-      } else {
-        userPausedRef.current = false;
-      }
-    };
-    el.addEventListener("click", onClick);
-    // Also handle keyboard space bar pause
-    const onKey = (e) => {
-      if (e.code === "Space" && document.activeElement === el) {
-        userPausedRef.current = !el.paused;
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      el.removeEventListener("click", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [video]);
+  // No auto-resume logic — let the native video controls handle play/pause normally
 
   // Save progress every 10 seconds
   const handleTimeUpdate = useCallback(() => {
@@ -290,7 +231,6 @@ export default function Watch() {
 
   const handleEnded = useCallback(() => {
     if (video?.id) removeProgress(video.id);
-    userPausedRef.current = false;
     startCountdown();
   }, [video, startCountdown]);
 
@@ -336,7 +276,6 @@ export default function Watch() {
     }
 
     // Pause and unload local video
-    userPausedRef.current = true;
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.src = "";
@@ -366,7 +305,6 @@ export default function Watch() {
       if (popup.closed) {
         clearInterval(timer);
         setIsCasting(false);
-        userPausedRef.current = false;
         import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(null));
         if (videoRef.current) {
           videoRef.current.src = video.video_url;
@@ -379,7 +317,6 @@ export default function Watch() {
 
   const handleStopCasting = () => {
     setIsCasting(false);
-    userPausedRef.current = false;
     if (videoRef.current && video?.video_url) {
       videoRef.current.src = video.video_url;
       videoRef.current.load();
@@ -394,7 +331,6 @@ export default function Watch() {
       if (!isCastWindowOpen()) {
         clearInterval(timer);
         setIsCasting(false);
-        userPausedRef.current = false;
         if (videoRef.current && video?.video_url) {
           videoRef.current.src = video.video_url;
           videoRef.current.load();
@@ -460,6 +396,7 @@ export default function Watch() {
                     controls={!isCasting}
                     autoPlay
                     playsInline
+                    webkit-playsinline="true"
                     controlsList="nodownload"
                     onContextMenu={(e) => e.preventDefault()}
                     className="w-full h-full"
@@ -516,7 +453,7 @@ export default function Watch() {
 
               {/* Autoplay countdown overlay */}
               {autoplayCountdown !== null && nextVideo && (
-                <div className="absolute bottom-16 right-4 bg-black/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-end gap-2 z-20">
+                <div className="absolute bottom-20 right-4 bg-black/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-end gap-2 z-20">
                   <p className="text-white text-sm font-semibold">Up Next</p>
                   <p className="text-muted-foreground text-xs max-w-[180px] truncate">{nextVideo.title}</p>
                   <div className="flex items-center gap-2">
