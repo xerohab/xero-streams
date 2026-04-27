@@ -79,7 +79,7 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
           <SelectTrigger className="bg-secondary border-border">
             <SelectValue placeholder={`Choose a ${mode === "franchise_movies" ? "franchise" : "series"}...`} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-72 overflow-y-auto" position="popper" sideOffset={4} side="bottom">
             {selectOptions.map(o => (
               <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
             ))}
