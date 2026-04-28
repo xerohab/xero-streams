@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
+import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 
 export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
   const [uploading, setUploading] = useState(false);
@@ -248,45 +249,26 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Series</Label>
-          <Select
-            value={form.series_id}
-            onValueChange={(v) => {
-              const seriesId = v.trim() ? v : "";
-              setForm((prev) => ({
-                ...prev,
-                series_id: seriesId,
-                // Auto-set content_type when series is selected/deselected
-                content_type: seriesId ? "episode" : "movie",
-              }));
-            }}
-          >
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="Select series" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value=" ">No Series</SelectItem>
-              {seriesList?.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <SeriesSearchSelect
+        seriesList={seriesList}
+        value={form.series_id}
+        onChange={(id) => setForm(prev => ({
+          ...prev,
+          series_id: id,
+          content_type: id ? "episode" : "movie",
+        }))}
+        label="Series"
+      />
 
-        <div className="space-y-2">
-          <Label>Episode #</Label>
-          <Input
-            type="number"
-            value={form.episode_number}
-            onChange={(e) => update("episode_number", e.target.value)}
-            placeholder="1"
-            className="bg-secondary border-border"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label>Episode #</Label>
+        <Input
+          type="number"
+          value={form.episode_number}
+          onChange={(e) => update("episode_number", e.target.value)}
+          placeholder="1"
+          className="bg-secondary border-border"
+        />
       </div>
 
       {franchises.length > 0 && (

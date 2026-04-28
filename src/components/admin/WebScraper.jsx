@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon, Sparkles, Film, Tv } from "lucide-react";
 import toast from "react-hot-toast";
+import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 
 export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [url, setUrl] = useState("");
@@ -208,19 +209,13 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
         <>
           {/* Assignment */}
           {isTV ? (
-            <div className="space-y-2">
-              <Label>Assign to Series *</Label>
-              <Select value={selectedSeries} onValueChange={setSelectedSeries}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="Select a series" />
-                </SelectTrigger>
-                <SelectContent>
-                  {seriesList?.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SeriesSearchSelect
+              seriesList={seriesList}
+              value={selectedSeries}
+              onChange={setSelectedSeries}
+              label="Assign to Series"
+              required
+            />
           ) : (
             <div className="space-y-2">
               <Label>Assign to Franchise (optional)</Label>

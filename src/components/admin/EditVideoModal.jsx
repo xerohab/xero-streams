@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload, Sparkles, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
+import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 
 export default function EditVideoModal({ video, seriesList, franchises = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -184,20 +185,12 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
               <Input type="number" value={form.sort_order} onChange={(e) => update("sort_order", e.target.value)} className="bg-secondary border-border" placeholder="0" />
             </div>
           </div>
-          <div className="space-y-1">
-            <Label>Series</Label>
-            <Select value={form.series_id || " "} onValueChange={(v) => update("series_id", v.trim() ? v : "")}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="No series" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value=" ">No Series</SelectItem>
-                {seriesList?.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <SeriesSearchSelect
+            seriesList={seriesList}
+            value={form.series_id}
+            onChange={(id) => update("series_id", id)}
+            label="Series"
+          />
           {franchises.length > 0 && (
             <div className="space-y-1">
               <Label>Franchise / Collection</Label>
