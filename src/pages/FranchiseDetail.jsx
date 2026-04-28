@@ -36,7 +36,7 @@ export default function FranchiseDetail() {
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
 
   const franchiseMovies = allVideos
-    .filter((v) => v.franchise_id === franchiseId)
+    .filter((v) => v.franchise_id === franchiseId && !v.series_id && v.content_type !== "episode" && !v.episode_number)
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
   const episodeCountBySeries = (seriesId) =>
