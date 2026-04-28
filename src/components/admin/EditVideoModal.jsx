@@ -32,15 +32,21 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
   const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
   const [fetchingPoster, setFetchingPoster] = useState(false);
 
-  const handleAiDescription = async () => {
-    if (!form.title) return;
+  const handleAiFetch = async () => {
     setFetchingAiInfo(true);
     try {
       const type = form.content_type === "episode" ? "episode" : "movie";
-      const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type });
-      if (res.data?.description) {
-        update("description", res.data.description);
-        toast.success("AI description applied!");
+      const seriesName = seriesList?.find((s) => s.id === form.series_id)?.title;
+      const res = await base44.functions.invoke("aiMediaInfo", {
+        title: form.title || "",
+        type,
+        seriesName,
+        episodeNumber: form.episode_number,
+      });
+      if (res.data?.title || res.data?.description) {
+        if (res.data.title) update("title", res.data.title);
+        if (res.data.description) update("description", res.data.description);
+        toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
@@ -129,9 +135,9 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label>Description</Label>
-              <Button type="button" variant="ghost" size="sm" onClick={handleAiDescription} disabled={fetchingAiInfo || !form.title} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
+              <Button type="button" variant="ghost" size="sm" onClick={handleAiFetch} disabled={fetchingAiInfo} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
                 {fetchingAiInfo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                AI Auto-Fill
+                {fetchingAiInfo ? "Searching..." : "AI Auto-Fill"}
               </Button>
             </div>
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />

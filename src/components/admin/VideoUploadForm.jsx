@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Link as LinkIcon, Loader2, Wand2 } from "lucide-react";
+import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
@@ -80,6 +80,31 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
   };
 
   const [fetchingPoster, setFetchingPoster] = useState(false);
+  const [fetchingAi, setFetchingAi] = useState(false);
+
+  const handleAiFetch = async () => {
+    setFetchingAi(true);
+    try {
+      const type = form.series_id ? "episode" : "movie";
+      const seriesName = seriesList?.find((s) => s.id === form.series_id)?.title;
+      const res = await base44.functions.invoke("aiMediaInfo", {
+        title: form.title || "",
+        type,
+        seriesName,
+        episodeNumber: form.episode_number,
+      });
+      if (res.data?.title || res.data?.description) {
+        if (res.data.title) update("title", res.data.title);
+        if (res.data.description) update("description", res.data.description);
+        toast.success("AI info applied!");
+      } else {
+        toast.error("Couldn't find info for that title");
+      }
+    } catch (e) {
+      toast.error("AI info failed");
+    }
+    setFetchingAi(false);
+  };
 
   const handleAutoFetchPoster = async () => {
     if (!form.title) return;
@@ -115,11 +140,24 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       </div>
 
       <div className="space-y-2">
-        <Label>Description</Label>
+        <div className="flex items-center justify-between">
+          <Label>Description</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleAiFetch}
+            disabled={fetchingAi}
+            className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7"
+          >
+            {fetchingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            {fetchingAi ? "Searching..." : "AI Auto-Fill"}
+          </Button>
+        </div>
         <Textarea
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
-          placeholder="What's this video about?"
+          placeholder="What's this video about? Or use AI Auto-Fill →"
           className="bg-secondary border-border h-20"
         />
       </div>
