@@ -83,26 +83,33 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       ? seriesList?.find(s => s.id === selectedSeries)?.title
       : undefined;
 
-    for (let i = 0; i < items.length; i++) {
-      try {
-        const item = items[i];
-        const res = await base44.functions.invoke("aiMediaInfo", {
+    // Run all requests in parallel
+    const results = await Promise.allSettled(
+      items.map((item, i) =>
+        base44.functions.invoke("aiMediaInfo", {
           title: item.title || "",
           type,
           seriesName,
           episodeNumber: item.episode_number,
-        });
-        if (res.data?.title || res.data?.description) {
-          setItems(prev => prev.map((ep, idx) => idx === i ? {
-            ...ep,
-            ...(res.data.title ? { title: res.data.title } : {}),
-            ...(res.data.description ? { description: res.data.description } : {}),
-          } : ep));
+        }).then(res => ({ index: i, data: res.data }))
+      )
+    );
+
+    setItems(prev => {
+      const updated = [...prev];
+      results.forEach(result => {
+        if (result.status === "fulfilled" && result.value?.data) {
+          const { index, data } = result.value;
+          updated[index] = {
+            ...updated[index],
+            ...(data.title ? { title: data.title } : {}),
+            ...(data.description ? { description: data.description } : {}),
+          };
         }
-      } catch (e) {
-        // skip failed items silently
-      }
-    }
+      });
+      return updated;
+    });
+
     setFetchingAiAll(false);
     toast.success("AI info applied to all items!");
   };
