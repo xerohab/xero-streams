@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, Film, Play, Loader2, Users, Star } from "lucide-react";
+import { ArrowLeft, CalendarClock, Clock, Film, Play, Loader2, Users, Star } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 
@@ -140,12 +141,20 @@ export default function MovieDetail() {
           </div>
 
           <div className="flex gap-3">
-            <Button
-              onClick={() => navigate(`/watch?id=${video.id}`)}
-              className="gap-2"
-            >
-              <Play className="w-4 h-4 fill-current" /> Play Now
-            </Button>
+            {(video.coming_soon || !video.video_url) && (
+              <div className="flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-sm font-semibold px-4 py-2 rounded-lg">
+                <CalendarClock className="w-4 h-4" />
+                Coming Soon{video.release_date ? ` — ${format(new Date(video.release_date), "d MMM yyyy")}` : ""}
+              </div>
+            )}
+            {!video.coming_soon && video.video_url && (
+              <Button
+                onClick={() => navigate(`/watch?id=${video.id}`)}
+                className="gap-2"
+              >
+                <Play className="w-4 h-4 fill-current" /> Play Now
+              </Button>
+            )}
             {!castInfo && (
               <Button
                 variant="secondary"

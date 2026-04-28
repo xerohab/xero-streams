@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Calendar, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart } from "lucide-react";
+import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart } from "lucide-react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -360,8 +361,9 @@ export default function Watch() {
     );
   }
 
-  const embedUrl = getEmbedUrl(video.video_url);
-  const isMkv = video.video_url?.toLowerCase().endsWith(".mkv");
+  const isComingSoon = video.coming_soon || !video.video_url;
+  const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
+  const isMkv = !isComingSoon && video.video_url?.toLowerCase().endsWith(".mkv");
 
   return (
     <div className="min-h-screen bg-background">
@@ -371,7 +373,26 @@ export default function Watch() {
         <div className="w-full bg-black">
           <div className="max-w-7xl mx-auto">
             <div className="relative aspect-video">
-              {embedUrl ? (
+              {isComingSoon ? (
+                <div
+                  className="w-full h-full flex flex-col items-center justify-center gap-4 bg-black"
+                  style={video.thumbnail_url ? { backgroundImage: `url(${video.thumbnail_url})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
+                >
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                  <div className="relative z-10 flex flex-col items-center gap-3 text-center px-6">
+                    <CalendarClock className="w-14 h-14 text-amber-400" />
+                    <h2 className="text-white text-2xl md:text-3xl font-black">Coming Soon</h2>
+                    {video.release_date && (
+                      <p className="text-amber-400 text-base font-semibold">
+                        {format(new Date(video.release_date), "d MMMM yyyy")}
+                      </p>
+                    )}
+                    <p className="text-white/60 text-sm max-w-xs">
+                      This content isn't available yet. Check back soon!
+                    </p>
+                  </div>
+                </div>
+              ) : embedUrl ? (
                 <iframe
                   src={embedUrl}
                   className="w-full h-full"
@@ -429,9 +450,9 @@ export default function Watch() {
                 </>
               )}
 
-              {/* Top-right controls */}
+              {/* Top-right controls — hidden when coming soon */}
               <div className="absolute top-3 right-3 z-20 flex gap-2">
-                {!embedUrl && !isMkv && (
+                {!isComingSoon && !embedUrl && !isMkv && (
                   <button
                     onClick={handlePiP}
                     className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
@@ -440,7 +461,7 @@ export default function Watch() {
                     <PictureInPicture2 className="w-5 h-5" />
                   </button>
                 )}
-                {!embedUrl && !isMkv && (
+                {!isComingSoon && !embedUrl && !isMkv && (
                   <button
                     onClick={handleCast}
                     className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
@@ -507,16 +528,26 @@ export default function Watch() {
                 <p className="text-muted-foreground leading-relaxed max-w-3xl mb-4">{video.description}</p>
               )}
 
+              {/* Coming Soon badge on info panel */}
+              {isComingSoon && (
+                <div className="flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-sm font-semibold px-4 py-2 rounded-lg w-fit mb-2">
+                  <CalendarClock className="w-4 h-4" />
+                  Coming Soon{video.release_date ? ` — ${format(new Date(video.release_date), "d MMMM yyyy")}` : ""}
+                </div>
+              )}
+
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
-                <Button
-                  variant={isFavourited ? "default" : "outline"}
-                  className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600" : ""}`}
-                  onClick={handleToggleFavourite}
-                >
-                  <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
-                  {isFavourited ? "Favourited" : "Favourite"}
-                </Button>
+                {!isComingSoon && (
+                  <Button
+                    variant={isFavourited ? "default" : "outline"}
+                    className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600" : ""}`}
+                    onClick={handleToggleFavourite}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+                    {isFavourited ? "Favourited" : "Favourite"}
+                  </Button>
+                )}
                 {prevVideo && (
                   <Button
                     variant="secondary"
