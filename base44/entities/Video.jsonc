@@ -57,10 +57,19 @@
       "type": "number",
       "default": 0,
       "description": "Display order within franchise or series"
+    },
+    "coming_soon": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mark as coming soon \u2014 hides play button until video_url is added"
+    },
+    "release_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Planned release date for coming soon content"
     }
   },
   "required": [
-    "title",
-    "video_url"
+    "title"
   ]
 }

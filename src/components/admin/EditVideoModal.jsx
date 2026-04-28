@@ -24,6 +24,8 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     is_featured: video?.is_featured || false,
     is_adult: video?.is_adult || false,
     content_type: video?.content_type || "movie",
+    coming_soon: video?.coming_soon || false,
+    release_date: video?.release_date || "",
   });
   const [saving, setSaving] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
@@ -81,6 +83,8 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
         is_featured: video.is_featured || false,
         is_adult: video.is_adult || false,
         content_type: video.content_type || "movie",
+        coming_soon: video.coming_soon || false,
+        release_date: video.release_date || "",
       });
     }
   }, [video?.id]);
@@ -208,6 +212,19 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
             <Label>Duration</Label>
             <Input value={form.duration} onChange={(e) => update("duration", e.target.value)} className="bg-secondary border-border" placeholder="e.g. 24:30" />
           </div>
+          <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <Switch checked={form.coming_soon} onCheckedChange={(v) => update("coming_soon", v)} />
+            <div className="flex-1">
+              <Label className="text-amber-400 font-semibold">Coming Soon</Label>
+              <p className="text-xs text-muted-foreground">Hides play button until a video file is added</p>
+            </div>
+          </div>
+          {form.coming_soon && (
+            <div className="space-y-1">
+              <Label>Release Date</Label>
+              <Input type="date" value={form.release_date} onChange={(e) => update("release_date", e.target.value)} className="bg-secondary border-border" />
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <Switch checked={form.is_featured} onCheckedChange={(v) => update("is_featured", v)} />
             <Label>Featured on homepage hero</Label>

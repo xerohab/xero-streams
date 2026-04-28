@@ -25,6 +25,8 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     is_featured: false,
     is_adult: false,
     content_type: "movie",
+    coming_soon: false,
+    release_date: "",
   });
 
   const handleFileUpload = async (e) => {
@@ -68,6 +70,8 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       is_featured: false,
       is_adult: false,
       content_type: "movie",
+      coming_soon: false,
+      release_date: "",
     });
     onSuccess?.();
   };
@@ -273,6 +277,20 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         </Select>
       </div>
 
+      <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+        <Switch checked={form.coming_soon} onCheckedChange={(v) => update("coming_soon", v)} />
+        <div className="flex-1">
+          <Label className="text-amber-400 font-semibold">Coming Soon</Label>
+          <p className="text-xs text-muted-foreground">Add title/description now, add video file later</p>
+        </div>
+      </div>
+      {form.coming_soon && (
+        <div className="space-y-2">
+          <Label>Release Date</Label>
+          <Input type="date" value={form.release_date} onChange={(e) => update("release_date", e.target.value)} className="bg-secondary border-border" />
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <Switch
           checked={form.is_featured}
@@ -295,7 +313,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       <Button
         type="submit"
         className="w-full bg-primary hover:bg-primary/90 font-bold"
-        disabled={!form.title || !form.video_url || uploading}
+        disabled={!form.title || (!form.video_url && !form.coming_soon) || uploading}
       >
         Add Video
       </Button>
