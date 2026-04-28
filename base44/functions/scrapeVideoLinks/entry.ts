@@ -11,11 +11,25 @@ Deno.serve(async (req) => {
     const { url } = await req.json();
     if (!url) return Response.json({ error: 'No URL provided' }, { status: 400 });
 
-    const baseUrl = url.endsWith('/') ? url : url + '/';
+    let baseUrl = url.endsWith('/') ? url : url + '/';
 
-    const res = await fetch(baseUrl, {
+    const doFetch = (u) => fetch(u, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
     });
+
+    let res;
+    try {
+      res = await doFetch(baseUrl);
+    } catch (fetchErr) {
+      // If HTTPS fails (e.g. bad SSL cert), retry with HTTP
+      if (baseUrl.startsWith('https://')) {
+        const httpUrl = baseUrl.replace('https://', 'http://');
+        res = await doFetch(httpUrl);
+        baseUrl = httpUrl;
+      } else {
+        throw fetchErr;
+      }
+    }
 
     if (!res.ok) {
       return Response.json({ error: `Failed to fetch page: ${res.status} ${res.statusText}` }, { status: 400 });
