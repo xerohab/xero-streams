@@ -6,13 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Layers } from "lucide-react";
 import toast from "react-hot-toast";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
 export default function SeriesForm({ franchises = [], onSuccess }) {
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -21,6 +23,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
     franchise_id: "",
     is_adult: false,
   });
+  const [bulkCount, setBulkCount] = useState(2);
 
   const handleCoverUpload = async (e) => {
     const file = e.target.files[0];
@@ -33,14 +36,31 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-      ...form,
+    setSubmitting(true);
+    const base = {
+      description: form.description || undefined,
+      cover_image: form.cover_image || undefined,
       category: form.category || undefined,
       franchise_id: form.franchise_id || undefined,
+      is_adult: form.is_adult,
     };
-    await base44.entities.Series.create(payload);
-    toast.success("Series created!");
-    setForm({ title: "", description: "", cover_image: "", category: "", franchise_id: "" });
+
+    if (bulkMode) {
+      const seriesArray = Array.from({ length: bulkCount }, (_, i) => ({
+        ...base,
+        title: `${form.title} Season ${i + 1}`,
+        sort_order: i + 1,
+      }));
+      await base44.entities.Series.bulkCreate(seriesArray);
+      toast.success(`Created ${bulkCount} series for "${form.title}"!`);
+    } else {
+      await base44.entities.Series.create({ ...base, title: form.title });
+      toast.success("Series created!");
+    }
+
+    setForm({ title: "", description: "", cover_image: "", category: "", franchise_id: "", is_adult: false });
+    setBulkCount(2);
+    setSubmitting(false);
     onSuccess?.();
   };
 
@@ -48,16 +68,42 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Mode toggle */}
+      <div className="flex gap-2">
+        <Button type="button" size="sm" variant={!bulkMode ? "default" : "secondary"} onClick={() => setBulkMode(false)} className="flex-1">
+          Single Series
+        </Button>
+        <Button type="button" size="sm" variant={bulkMode ? "default" : "secondary"} onClick={() => setBulkMode(true)} className="flex-1 gap-1.5">
+          <Layers className="w-3.5 h-3.5" /> Bulk Create (Multiple Seasons)
+        </Button>
+      </div>
       <div className="space-y-2">
-        <Label>Series Title *</Label>
+        <Label>{bulkMode ? "Show Name *" : "Series Title *"}</Label>
         <Input
           value={form.title}
           onChange={(e) => update("title", e.target.value)}
-          placeholder="Series name"
+          placeholder={bulkMode ? "e.g. Breaking Bad" : "Series name"}
           required
           className="bg-secondary border-border"
         />
+        {bulkMode && form.title && (
+          <p className="text-xs text-muted-foreground">Will create: {form.title} Season 1, {form.title} Season 2…</p>
+        )}
       </div>
+
+      {bulkMode && (
+        <div className="space-y-2">
+          <Label>Number of Seasons *</Label>
+          <Input
+            type="number"
+            min={1}
+            max={20}
+            value={bulkCount}
+            onChange={(e) => setBulkCount(Math.max(1, Number(e.target.value)))}
+            className="bg-secondary border-border w-32"
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>Description</Label>
@@ -137,9 +183,9 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       <Button
         type="submit"
         className="w-full bg-primary hover:bg-primary/90 font-bold"
-        disabled={!form.title}
+        disabled={!form.title || submitting}
       >
-        Create Series
+        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : bulkMode ? `Create ${bulkCount} Seasons` : "Create Series"}
       </Button>
     </form>
   );
