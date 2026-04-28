@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
@@ -26,6 +26,8 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
   const [uploadingCover, setUploadingCover] = useState(false);
   const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
   const [fetchingPoster, setFetchingPoster] = useState(false);
+  const [generatingCover, setGeneratingCover] = useState(false);
+  const [aiNaming, setAiNaming] = useState(false);
 
   const handleAiDescription = async () => {
     if (!form.title) return;
@@ -44,6 +46,41 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
       toast.error("AI info failed");
     }
     setFetchingAiInfo(false);
+  };
+
+  const handleGenerateCover = async () => {
+    if (!form.title) return;
+    setGeneratingCover(true);
+    try {
+      const { url } = await base44.integrations.Core.GenerateImage({
+        prompt: `Professional TV series / movie cover poster for "${form.title}". Cinematic, dramatic lighting, high quality, dark moody aesthetic, suitable for a streaming platform. No text overlays.`,
+      });
+      update("cover_image", url);
+      toast.success("AI cover generated!");
+    } catch (e) {
+      toast.error("Failed to generate cover");
+    }
+    setGeneratingCover(false);
+  };
+
+  const handleAiName = async () => {
+    if (!form.title) return;
+    setAiNaming(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `The user has a TV series called "${form.title}". If this is part of an anthology series (like American Horror Story, True Detective, American Crime Story, etc.), identify the correct subtitle for this season/entry. For example "American Horror Story Season 5" should return "American Horror Story: Hotel". If it already has the correct subtitle, return it as-is. If it's not an anthology, return the title as-is. Only return the corrected/confirmed title, nothing else.`,
+      });
+      const suggested = (res || "").trim().replace(/^["']|["']$/g, "");
+      if (suggested && suggested !== form.title) {
+        update("title", suggested);
+        toast.success(`Title corrected to: ${suggested}`);
+      } else {
+        toast("Title looks correct!", { icon: "✓" });
+      }
+    } catch (e) {
+      toast.error("AI naming failed");
+    }
+    setAiNaming(false);
   };
 
   const handleAutoFetchPoster = async () => {
@@ -94,7 +131,13 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div className="space-y-1">
-            <Label>Title</Label>
+            <div className="flex items-center justify-between">
+              <Label>Title</Label>
+              <Button type="button" variant="ghost" size="sm" onClick={handleAiName} disabled={aiNaming || !form.title} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
+                {aiNaming ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                AI Correct Name
+              </Button>
+            </div>
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} className="bg-secondary border-border" />
           </div>
           <div className="space-y-1">
@@ -144,8 +187,11 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
             <Label>Cover Image</Label>
             <div className="flex gap-2">
               <Input value={form.cover_image} onChange={(e) => update("cover_image", e.target.value)} className="bg-secondary border-border flex-1" placeholder="URL or upload →" />
-              <Button type="button" variant="secondary" onClick={handleAutoFetchPoster} disabled={fetchingPoster || !form.title} title="Auto-fetch poster">
+              <Button type="button" variant="secondary" onClick={handleAutoFetchPoster} disabled={fetchingPoster || !form.title} title="Auto-fetch poster from TMDB">
                 {fetchingPoster ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+              </Button>
+              <Button type="button" variant="secondary" onClick={handleGenerateCover} disabled={generatingCover || !form.title} title="AI Generate Cover Image">
+                {generatingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
               </Button>
               <Button type="button" variant="secondary" className="relative overflow-hidden" disabled={uploadingCover}>
                 {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
