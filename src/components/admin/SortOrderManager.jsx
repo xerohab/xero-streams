@@ -8,7 +8,7 @@ import { GripVertical, Loader2, Save } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SortOrderManager({ franchises, videos, seriesList, onSuccess }) {
-  const [mode, setMode] = useState("franchise_movies"); // franchise_movies | series_episodes
+  const [mode, setMode] = useState("franchise_movies"); // franchise_movies | series_episodes | franchise_series
   const [selectedId, setSelectedId] = useState("");
   const [items, setItems] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -21,10 +21,15 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
         .filter(v => v.franchise_id === selectedId && !v.series_id)
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       setItems(sorted);
-    } else {
+    } else if (mode === "series_episodes") {
       const sorted = videos
         .filter(v => v.series_id === selectedId)
         .sort((a, b) => (a.episode_number || a.sort_order || 0) - (b.episode_number || b.sort_order || 0));
+      setItems(sorted);
+    } else if (mode === "franchise_series") {
+      const sorted = seriesList
+        .filter(s => s.franchise_id === selectedId)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       setItems(sorted);
     }
   }, [selectedId, mode]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -39,29 +44,46 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
 
   const handleSave = async () => {
     setSaving(true);
-    await Promise.all(
-      items.map((item, idx) =>
-        base44.entities.Video.update(item.id, { sort_order: idx + 1 })
-      )
-    );
+    if (mode === "franchise_series") {
+      await Promise.all(
+        items.map((item, idx) =>
+          base44.entities.Series.update(item.id, { sort_order: idx + 1 })
+        )
+      );
+    } else {
+      await Promise.all(
+        items.map((item, idx) =>
+          base44.entities.Video.update(item.id, { sort_order: idx + 1 })
+        )
+      );
+    }
     toast.success("Order saved!");
     setSaving(false);
   };
 
   const selectOptions = mode === "franchise_movies"
     ? franchises.filter(f => videos.some(v => v.franchise_id === f.id && !v.series_id))
+    : mode === "franchise_series"
+    ? franchises.filter(f => seriesList.some(s => s.franchise_id === f.id))
     : seriesList.filter(s => videos.some(v => v.series_id === s.id));
 
   return (
     <div className="space-y-4">
       {/* Mode toggle */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           variant={mode === "franchise_movies" ? "default" : "secondary"}
           size="sm"
           onClick={() => { setMode("franchise_movies"); setSelectedId(""); }}
         >
           Franchise Movies
+        </Button>
+        <Button
+          variant={mode === "franchise_series" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => { setMode("franchise_series"); setSelectedId(""); }}
+        >
+          Franchise Series
         </Button>
         <Button
           variant={mode === "series_episodes" ? "default" : "secondary"}
@@ -74,10 +96,10 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
 
       {/* Selector */}
       <div className="space-y-1">
-        <Label>{mode === "franchise_movies" ? "Select Franchise" : "Select Series"}</Label>
+        <Label>{mode === "series_episodes" ? "Select Series" : "Select Franchise"}</Label>
         <Select value={selectedId} onValueChange={setSelectedId}>
           <SelectTrigger className="bg-secondary border-border">
-            <SelectValue placeholder={`Choose a ${mode === "franchise_movies" ? "franchise" : "series"}...`} />
+            <SelectValue placeholder={`Choose a ${mode === "series_episodes" ? "series" : "franchise"}...`} />
           </SelectTrigger>
           <SelectContent className="max-h-72 overflow-y-auto" position="popper" sideOffset={4} side="bottom">
             {selectOptions.map(o => (
@@ -107,8 +129,8 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
                             <GripVertical className="w-4 h-4" />
                           </div>
                           <span className="text-xs text-muted-foreground w-5 text-center">{index + 1}</span>
-                          {item.thumbnail_url && (
-                            <img src={item.thumbnail_url} alt="" className="w-12 h-7 rounded object-cover shrink-0" />
+                          {(item.thumbnail_url || item.cover_image) && (
+                            <img src={item.thumbnail_url || item.cover_image} alt="" className="w-12 h-7 rounded object-cover shrink-0" />
                           )}
                           <span className="text-sm text-foreground font-medium flex-1 truncate">{item.title}</span>
                           {item.episode_number && (
