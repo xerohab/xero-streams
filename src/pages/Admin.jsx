@@ -178,7 +178,7 @@ export default function Admin() {
                 <CardTitle className="text-foreground">Scrape Video Links from URL</CardTitle>
               </CardHeader>
               <CardContent>
-                <WebScraper seriesList={seriesList} onSuccess={refresh} />
+                <WebScraper seriesList={seriesList} franchises={franchises} onSuccess={refresh} />
               </CardContent>
             </Card>
           </TabsContent>
