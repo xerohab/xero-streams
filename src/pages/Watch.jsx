@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart } from "lucide-react";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
