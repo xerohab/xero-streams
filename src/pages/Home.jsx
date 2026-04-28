@@ -50,9 +50,10 @@ export default function Home() {
   const adultVideos = videos.filter((v) => v.is_adult);
   const adultSeries = seriesList.filter((s) => s.is_adult);
 
-  // Movies: standalone movies only — must not be a series episode
+  // Movies: standalone movies only
+  // Exclude anything with a series_id, typed as episode, or has an episode_number (coming soon episodes)
   const movies = safeVideos.filter(
-    (v) => !v.series_id && v.content_type !== "episode"
+    (v) => !v.series_id && v.content_type !== "episode" && !v.episode_number
   );
 
   // Franchises with content (safe only — no adult), newest first

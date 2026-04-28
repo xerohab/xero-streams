@@ -50,11 +50,14 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const seriesId = form.series_id?.trim() || undefined;
     const payload = {
       ...form,
       episode_number: form.episode_number ? Number(form.episode_number) : undefined,
-      series_id: form.series_id || undefined,
+      series_id: seriesId,
       franchise_id: form.franchise_id || undefined,
+      // Auto-correct content_type based on series assignment
+      content_type: seriesId ? "episode" : "movie",
     };
     await base44.entities.Video.create(payload);
     toast.success("Video added successfully!");
@@ -210,7 +213,18 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Series</Label>
-          <Select value={form.series_id} onValueChange={(v) => update("series_id", v)}>
+          <Select
+            value={form.series_id}
+            onValueChange={(v) => {
+              const seriesId = v.trim() ? v : "";
+              setForm((prev) => ({
+                ...prev,
+                series_id: seriesId,
+                // Auto-set content_type when series is selected/deselected
+                content_type: seriesId ? "episode" : "movie",
+              }));
+            }}
+          >
             <SelectTrigger className="bg-secondary border-border">
               <SelectValue placeholder="Select series" />
             </SelectTrigger>
