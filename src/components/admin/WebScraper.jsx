@@ -18,6 +18,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [scanMode, setScanMode] = useState(null);
   const [uploadingThumbFor, setUploadingThumbFor] = useState(null);
   const [fetchingAiFor, setFetchingAiFor] = useState(null);
+  const [fetchingAiAll, setFetchingAiAll] = useState(false);
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
@@ -73,6 +74,37 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       toast.error("AI info failed");
     }
     setFetchingAiFor(null);
+  };
+
+  const handleAiFetchAll = async () => {
+    setFetchingAiAll(true);
+    const type = contentMode === "tv" ? "episode" : "movie";
+    const seriesName = contentMode === "tv"
+      ? seriesList?.find(s => s.id === selectedSeries)?.title
+      : undefined;
+
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const item = items[i];
+        const res = await base44.functions.invoke("aiMediaInfo", {
+          title: item.title || "",
+          type,
+          seriesName,
+          episodeNumber: item.episode_number,
+        });
+        if (res.data?.title || res.data?.description) {
+          setItems(prev => prev.map((ep, idx) => idx === i ? {
+            ...ep,
+            ...(res.data.title ? { title: res.data.title } : {}),
+            ...(res.data.description ? { description: res.data.description } : {}),
+          } : ep));
+        }
+      } catch (e) {
+        // skip failed items silently
+      }
+    }
+    setFetchingAiAll(false);
+    toast.success("AI info applied to all items!");
   };
 
   const removeItem = (index) => setItems(prev => prev.filter((_, i) => i !== index));
@@ -206,7 +238,20 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
           )}
 
           <div className="space-y-2">
-            <Label>Found {items.length} {isTV ? "episode" : "movie"}{items.length !== 1 ? "s" : ""} — review &amp; edit before importing</Label>
+            <div className="flex items-center justify-between">
+              <Label>Found {items.length} {isTV ? "episode" : "movie"}{items.length !== 1 ? "s" : ""} — review &amp; edit before importing</Label>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAiFetchAll}
+                disabled={fetchingAiAll}
+                className="gap-1.5 text-xs shrink-0"
+              >
+                {fetchingAiAll ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {fetchingAiAll ? "Fetching..." : "AI Fill All"}
+              </Button>
+            </div>
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
               {items.map((item, index) => (
                 <div key={index} className="bg-secondary/50 border border-border rounded-lg px-3 py-2 flex gap-3">
