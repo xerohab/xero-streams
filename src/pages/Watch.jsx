@@ -157,30 +157,20 @@ export default function Watch() {
     nextVideoRef.current = nextVideo;
   }, [nextVideo]);
 
-  // Auto-cast to open cast window when video loads
+  // Auto-cast: if a cast window is already open when a new video loads, send it there
   useEffect(() => {
     if (!video?.video_url) return;
     if (!isCastWindowOpen()) return;
+
+    // Set casting first so HLS hook clears the src before we do anything
+    setIsCasting(true);
+
     const castWin = getCastWindow();
-    // Build queue from current video onwards
     const queue = fullQueue.length > 0
       ? fullQueue.slice(Math.max(currentQueueIndex, 0) + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
       : franchiseMovies.slice(Math.max(currentFranchiseIndex, 0) + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
 
-    castWin.postMessage({
-      type: "CAST_PLAY",
-      src: video.video_url,
-      title: video.title || "",
-      queue,
-    }, "*");
-
-    // Immediately stop local video since it's casting
-    setIsCasting(true);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.removeAttribute("src");
-      videoRef.current.load();
-    }
+    castWin.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue }, "*");
   }, [video?.id]);
 
   const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
@@ -268,34 +258,13 @@ export default function Watch() {
       ? fullQueue.slice(currentQueueIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
       : franchiseMovies.slice(currentFranchiseIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
 
-    const params = new URLSearchParams({
-      src: video.video_url,
-      title: video.title || "",
-      t: currentTime,
-    });
-    if (queueItems.length > 0) {
-      params.set("queue", JSON.stringify(queueItems));
-    }
-    const castUrl = `/cast?${params.toString()}`;
-
     // On mobile, use in-page overlay instead of popup
     if (isMobile()) {
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.removeAttribute("src");
-        videoRef.current.load();
-      }
       openCast(video.video_url, video.title || "", queueItems, currentTime);
       return;
     }
 
-    // Immediately stop local video before casting
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.removeAttribute("src");
-      videoRef.current.load();
-    }
-
+    // Set casting state FIRST so HLS src becomes null before anything else
     setIsCasting(true);
 
     // If a cast window is already open, send video to it
@@ -307,8 +276,17 @@ export default function Watch() {
     }
 
     // Otherwise open a new popup
+    const params = new URLSearchParams({
+      src: video.video_url,
+      title: video.title || "",
+      t: currentTime,
+    });
+    if (queueItems.length > 0) params.set("queue", JSON.stringify(queueItems));
+    const castUrl = `/cast?${params.toString()}`;
+
     const popup = window.open(castUrl, "_blank");
     if (!popup) {
+      setIsCasting(false);
       window.location.href = castUrl;
       return;
     }
@@ -320,24 +298,21 @@ export default function Watch() {
         clearInterval(timer);
         setIsCasting(false);
         import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(null));
-        // HLS hook re-attaches when isCasting becomes false
       }
     }, 500);
   };
 
   const handleStopCasting = () => {
     setIsCasting(false);
-    // HLS hook will re-attach when isCasting becomes false (activeVideoSrc changes)
   };
 
-  // If casting via the global cast window, monitor its closure
+  // Monitor cast window closure
   useEffect(() => {
     if (!isCasting) return;
     const timer = setInterval(() => {
       if (!isCastWindowOpen()) {
         clearInterval(timer);
         setIsCasting(false);
-        // HLS hook re-attaches when isCasting becomes false
       }
     }, 1000);
     return () => clearInterval(timer);
