@@ -407,63 +407,59 @@ export default function Watch() {
                     <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
                   </div>
                 </div>
-              ) : (
-                <>
-                  <video
-                    ref={videoRef}
-                    controls={!isCasting}
-                    autoPlay
-                    playsInline
-                    webkit-playsinline="true"
-                    controlsList="nodownload"
-                    onContextMenu={(e) => e.preventDefault()}
-                    className="w-full h-full"
-                    style={isCasting ? { visibility: "hidden" } : {}}
-                    poster={video.thumbnail_url}
-                    onEnded={handleEnded}
-                    onTimeUpdate={handleTimeUpdate}
-                  />
-                  {isCasting && (
-                    <div
-                      className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
-                      onContextMenu={(e) => e.preventDefault()}
-                    >
-                      <Cast className="w-10 h-10 text-white animate-pulse" />
-                      <p className="text-white font-bold text-xl text-center">Playing in Cast Window</p>
-                      <p className="text-muted-foreground text-sm text-center max-w-sm">
-                        The video is playing in the separate cast window. To send it to your TV, follow the steps for your browser:
-                      </p>
-                      <div className="w-full max-w-md space-y-2 text-left">
-                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                          <p className="text-white font-semibold text-sm mb-1">🟡 Chrome (Desktop)</p>
-                          <p className="text-muted-foreground text-xs">In the cast window: click the <span className="text-white">⋮ menu</span> → <span className="text-white">Cast, Save, and Share</span> → <span className="text-white">Cast</span> → select your TV/Chromecast device.</p>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                          <p className="text-white font-semibold text-sm mb-1">🟠 Firefox (Desktop)</p>
-                          <p className="text-muted-foreground text-xs">Firefox doesn't support native Cast. Instead: right-click the video in the cast window → <span className="text-white">Picture-in-Picture</span>, or use a browser extension like <span className="text-white">fx_cast</span>.</p>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                          <p className="text-white font-semibold text-sm mb-1">🔵 Edge (Desktop)</p>
-                          <p className="text-muted-foreground text-xs">In the cast window: click the <span className="text-white">⋯ menu</span> → <span className="text-white">More tools</span> → <span className="text-white">Cast media to device</span> → select your TV.</p>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                          <p className="text-white font-semibold text-sm mb-1">🍎 Safari (Mac)</p>
-                          <p className="text-muted-foreground text-xs">Click the <span className="text-white">AirPlay icon</span> in the video controls in the cast window to stream to Apple TV or AirPlay 2 TVs.</p>
-                        </div>
-                        <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                          <p className="text-white font-semibold text-sm mb-1">📱 Mobile (Android/iPhone)</p>
-                          <p className="text-muted-foreground text-xs">The video plays full-screen here on mobile. Use your phone's <span className="text-white">Screen Mirror / Cast</span> from the notification drawer (Android) or <span className="text-white">AirPlay</span> from Control Centre (iPhone) to mirror to your TV.</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleStopCasting}
-                        className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors cursor-pointer"
-                      >
-                        Stop Casting &amp; Return Here
-                      </button>
+              ) : isCasting ? (
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  <Cast className="w-10 h-10 text-white animate-pulse" />
+                  <p className="text-white font-bold text-xl text-center">Playing in Cast Window</p>
+                  <p className="text-muted-foreground text-sm text-center max-w-sm">
+                    The video is playing in the separate cast window. To send it to your TV, follow the steps for your browser:
+                  </p>
+                  <div className="w-full max-w-md space-y-2 text-left">
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                      <p className="text-white font-semibold text-sm mb-1">🟡 Chrome (Desktop)</p>
+                      <p className="text-muted-foreground text-xs">In the cast window: click the <span className="text-white">⋮ menu</span> → <span className="text-white">Cast, Save, and Share</span> → <span className="text-white">Cast</span> → select your TV/Chromecast device.</p>
                     </div>
-                  )}
-                </>
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                      <p className="text-white font-semibold text-sm mb-1">🟠 Firefox (Desktop)</p>
+                      <p className="text-muted-foreground text-xs">Firefox doesn't support native Cast. Instead: right-click the video in the cast window → <span className="text-white">Picture-in-Picture</span>, or use a browser extension like <span className="text-white">fx_cast</span>.</p>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                      <p className="text-white font-semibold text-sm mb-1">🔵 Edge (Desktop)</p>
+                      <p className="text-muted-foreground text-xs">In the cast window: click the <span className="text-white">⋯ menu</span> → <span className="text-white">More tools</span> → <span className="text-white">Cast media to device</span> → select your TV.</p>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                      <p className="text-white font-semibold text-sm mb-1">🍎 Safari (Mac)</p>
+                      <p className="text-muted-foreground text-xs">Click the <span className="text-white">AirPlay icon</span> in the video controls in the cast window to stream to Apple TV or AirPlay 2 TVs.</p>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                      <p className="text-white font-semibold text-sm mb-1">📱 Mobile (Android/iPhone)</p>
+                      <p className="text-muted-foreground text-xs">The video plays full-screen here on mobile. Use your phone's <span className="text-white">Screen Mirror / Cast</span> from the notification drawer (Android) or <span className="text-white">AirPlay</span> from Control Centre (iPhone) to mirror to your TV.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleStopCasting}
+                    className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors cursor-pointer"
+                  >
+                    Stop Casting &amp; Return Here
+                  </button>
+                </div>
+              ) : (
+                <video
+                  ref={videoRef}
+                  controls
+                  autoPlay
+                  playsInline
+                  webkit-playsinline="true"
+                  controlsList="nodownload"
+                  onContextMenu={(e) => e.preventDefault()}
+                  className="w-full h-full"
+                  poster={video.thumbnail_url}
+                  onEnded={handleEnded}
+                  onTimeUpdate={handleTimeUpdate}
+                />
               )}
 
               {/* Top-right controls — hidden when coming soon */}
