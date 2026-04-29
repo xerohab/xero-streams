@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Cast } from "lucide-react";
+import useHls from "@/hooks/useHls";
 
 export default function CastPlayer() {
   const params = new URLSearchParams(useLocation().search);
@@ -25,6 +26,7 @@ export default function CastPlayer() {
 
   const videoRef = useRef(null);
   const userPausedRef = useRef(false);
+  useHls(videoRef, current?.src || null);
   const [showNext, setShowNext] = useState(false);
   const countdownRef = useRef(null);
   const [countdown, setCountdown] = useState(null);
@@ -135,7 +137,6 @@ export default function CastPlayer() {
       <video
         key={current.src}
         ref={videoRef}
-        src={current.src}
         controls
         autoPlay
         playsInline

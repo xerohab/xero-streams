@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     };
 
     // 1. Try direct media file links first
-    const mediaExtensions = /\.(mp4|wav|mkv|avi|mov|webm|m4v|mp3|ogg|flac)(\?.*)?$/i;
+    const mediaExtensions = /\.(mp4|m3u8|wav|mkv|avi|mov|webm|m4v|mp3|ogg|flac)(\?.*)?$/i;
     const directMediaLinks = links
       .filter(link => mediaExtensions.test(link))
       .map(resolveUrl)

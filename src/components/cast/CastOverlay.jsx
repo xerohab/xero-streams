@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { X } from "lucide-react";
+import useHls from "@/hooks/useHls";
 
 export default function CastOverlay({ src, title, queue = [], startTime = 0, onClose }) {
   const videoRef = useRef(null);
@@ -9,6 +10,7 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
   const [playlist, setPlaylist] = useState([{ src, title }, ...queue]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const current = playlist[currentIndex];
+  useHls(videoRef, current?.src || null);
 
   const [countdown, setCountdown] = useState(null);
   const countdownRef = useRef(null);
@@ -83,7 +85,6 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
       <video
         key={current.src}
         ref={videoRef}
-        src={current.src}
         controls
         autoPlay
         playsInline

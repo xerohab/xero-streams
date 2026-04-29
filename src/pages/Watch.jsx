@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import useHls from "@/hooks/useHls";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -306,22 +307,14 @@ export default function Watch() {
         clearInterval(timer);
         setIsCasting(false);
         import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(null));
-        if (videoRef.current) {
-          videoRef.current.src = video.video_url;
-          videoRef.current.load();
-          videoRef.current.currentTime = currentTime;
-        }
+        // HLS hook re-attaches when isCasting becomes false
       }
     }, 500);
   };
 
   const handleStopCasting = () => {
     setIsCasting(false);
-    if (videoRef.current && video?.video_url) {
-      videoRef.current.src = video.video_url;
-      videoRef.current.load();
-      videoRef.current.play();
-    }
+    // HLS hook will re-attach when isCasting becomes false (activeVideoSrc changes)
   };
 
   // If casting via the global cast window, monitor its closure
@@ -331,10 +324,7 @@ export default function Watch() {
       if (!isCastWindowOpen()) {
         clearInterval(timer);
         setIsCasting(false);
-        if (videoRef.current && video?.video_url) {
-          videoRef.current.src = video.video_url;
-          videoRef.current.load();
-        }
+        // HLS hook re-attaches when isCasting becomes false
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -362,7 +352,9 @@ export default function Watch() {
 
   const isComingSoon = video.coming_soon || !video.video_url;
   const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
-  const isMkv = !isComingSoon && video.video_url?.toLowerCase().endsWith(".mkv");
+  const isMkv = !isComingSoon && !embedUrl && video.video_url?.toLowerCase().endsWith(".mkv");
+  const activeVideoSrc = (!isComingSoon && !embedUrl && !isMkv && !isCasting) ? video.video_url : null;
+  useHls(videoRef, activeVideoSrc);
 
   return (
     <div className="min-h-screen bg-background">
@@ -424,10 +416,7 @@ export default function Watch() {
                     poster={video.thumbnail_url}
                     onEnded={handleEnded}
                     onTimeUpdate={handleTimeUpdate}
-                  >
-                    <source src={video.video_url} />
-                    Your browser does not support this video format.
-                  </video>
+                  />
                   {isCasting && (
                     <div
                       className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
