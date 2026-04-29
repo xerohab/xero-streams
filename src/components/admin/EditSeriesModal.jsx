@@ -125,11 +125,11 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border text-foreground max-w-lg">
-        <DialogHeader>
+      <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Edit Series</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-2">
+        <div className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label>Title</Label>

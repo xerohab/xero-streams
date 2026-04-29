@@ -140,16 +140,16 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="bg-secondary flex-wrap h-auto gap-1">
+          <TabsList className="bg-secondary flex-wrap h-auto gap-1 justify-start">
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
             <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
             <TabsTrigger value="imagescrape">Image Scraper</TabsTrigger>
+            <TabsTrigger value="masslinks">Mass Links</TabsTrigger>
             <TabsTrigger value="series">Add Series</TabsTrigger>
             <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
             <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
             <TabsTrigger value="sortorder">Sort Order</TabsTrigger>
-            <TabsTrigger value="masslinks">Mass Link Updater</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
