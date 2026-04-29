@@ -89,9 +89,10 @@ export default function Watch() {
   });
 
   // HLS hook — only attach when NOT casting (desktop popup or mobile overlay)
+  const isAnyCasting = isCasting || isMobileCasting || isCastWindowOpen();
   const hlsSrc = (() => {
     const url = video?.video_url;
-    if (!url || isCasting || isMobileCasting || isCastWindowOpen() || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
+    if (!url || isAnyCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
     return url;
   })();
   useHls(videoRef, hlsSrc);
@@ -393,7 +394,7 @@ export default function Watch() {
                     <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
                   </div>
                 </div>
-              ) : (isCasting || isMobileCasting || isCastWindowOpen()) ? (
+              ) : isAnyCasting ? (
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
                   onContextMenu={(e) => e.preventDefault()}

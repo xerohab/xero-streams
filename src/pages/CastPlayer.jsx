@@ -135,8 +135,7 @@ export default function CastPlayer() {
         autoPlay
         playsInline
         x-webkit-airplay="allow"
-        controlsList="nodownload noremoteplayback"
-        disablePictureInPicture
+        controlsList="nodownload"
         preload="auto"
         style={{ width: "100%", height: "100%", background: "#000", display: "block" }}
         onContextMenu={(e) => e.preventDefault()}
