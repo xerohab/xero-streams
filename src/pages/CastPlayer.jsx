@@ -4,24 +4,10 @@ import { Cast } from "lucide-react";
 import useHls from "@/hooks/useHls";
 
 export default function CastPlayer() {
-  const params = new URLSearchParams(useLocation().search);
-  const initialSrc = params.get("src");
-  const initialTitle = params.get("title") || "Video";
-  const t = parseInt(params.get("t") || "0");
-  const standby = params.get("standby") === "1";
-
-  // Parse the episode queue
-  let queueData = [];
-  try {
-    queueData = params.get("queue") ? JSON.parse(params.get("queue")) : [];
-  } catch {}
-
-  const [playlist, setPlaylist] = useState(
-    initialSrc
-      ? [{ src: initialSrc, title: initialTitle }, ...queueData]
-      : []
-  );
+  // No URL params — video is always sent via postMessage to keep source URL hidden
+  const [playlist, setPlaylist] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [startTime, setStartTime] = useState(0);
   const current = playlist[currentIndex] || null;
 
   const videoRef = useRef(null);
@@ -35,14 +21,16 @@ export default function CastPlayer() {
   useEffect(() => {
     const handleMessage = (e) => {
       if (e.data?.type === "CAST_PLAY") {
-        const { src, title, queue } = e.data;
+        const { src, title, queue, t } = e.data;
         const newPlaylist = [{ src, title }, ...(queue || [])];
         setPlaylist(newPlaylist);
         setCurrentIndex(0);
+        setStartTime(parseInt(t) || 0);
         setShowNext(false);
         setCountdown(null);
         clearTimeout(countdownRef.current);
         userPausedRef.current = false;
+        didSetTime.current = false;
       }
     };
     window.addEventListener("message", handleMessage);
@@ -60,8 +48,8 @@ export default function CastPlayer() {
     const el = videoRef.current;
     if (!el || didSetTime.current || currentIndex !== 0) return;
     const onMeta = () => {
-      if (t > 0) {
-        el.currentTime = t;
+      if (startTime > 0) {
+        el.currentTime = startTime;
         didSetTime.current = true;
       }
     };

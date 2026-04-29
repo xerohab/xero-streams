@@ -275,23 +275,24 @@ export default function Watch() {
       return;
     }
 
-    // Otherwise open a new popup
-    const params = new URLSearchParams({
-      src: video.video_url,
-      title: video.title || "",
-      t: currentTime,
-    });
-    if (queueItems.length > 0) params.set("queue", JSON.stringify(queueItems));
-    const castUrl = `/cast?${params.toString()}`;
-
-    const popup = window.open(castUrl, "_blank");
+    // Otherwise open a new popup — no URL params to hide the video source
+    const popup = window.open("/cast", "_blank");
     if (!popup) {
       setIsCasting(false);
-      window.location.href = castUrl;
       return;
     }
 
     import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(popup));
+
+    // Wait for the popup to load, then send video via postMessage (never in URL)
+    const sendWhenReady = setInterval(() => {
+      try {
+        popup.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems, t: currentTime }, "*");
+        clearInterval(sendWhenReady);
+      } catch {
+        // popup not ready yet
+      }
+    }, 200);
 
     const timer = setInterval(() => {
       if (popup.closed) {
