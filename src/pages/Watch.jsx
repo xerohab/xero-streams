@@ -88,10 +88,10 @@ export default function Watch() {
     staleTime: Infinity,
   });
 
-  // HLS hook — called unconditionally after all data is available, before any early returns
+  // HLS hook — only attach when NOT casting (check both state and live window ref)
   const hlsSrc = (() => {
     const url = video?.video_url;
-    if (!url || isCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
+    if (!url || isCasting || isCastWindowOpen() || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
     return url;
   })();
   useHls(videoRef, hlsSrc);
@@ -407,7 +407,7 @@ export default function Watch() {
                     <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
                   </div>
                 </div>
-              ) : isCasting ? (
+              ) : (isCasting || isCastWindowOpen()) ? (
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
                   onContextMenu={(e) => e.preventDefault()}
