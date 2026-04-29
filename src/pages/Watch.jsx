@@ -33,6 +33,14 @@ export default function Watch() {
   const [isFavourited, setIsFavourited] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
   const lastSaveRef = useRef(0);
+
+  // HLS hook — must be called unconditionally before any early returns
+  const hlsSrc = (() => {
+    const url = video?.video_url;
+    if (!url || isCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
+    return url;
+  })();
+  useHls(videoRef, hlsSrc);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const nextVideoRef = useRef(null);
@@ -354,7 +362,6 @@ export default function Watch() {
   const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
   const isMkv = !isComingSoon && !embedUrl && video.video_url?.toLowerCase().endsWith(".mkv");
   const activeVideoSrc = (!isComingSoon && !embedUrl && !isMkv && !isCasting) ? video.video_url : null;
-  useHls(videoRef, activeVideoSrc);
 
   return (
     <div className="min-h-screen bg-background">
