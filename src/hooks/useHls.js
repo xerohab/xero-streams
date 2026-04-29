@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
+import { encodeVideoUrl } from "@/lib/encodeVideoUrl";
 
 /**
  * Attaches HLS.js to a video element for m3u8 streams.
@@ -85,14 +86,15 @@ export default function useHls(videoRef, src) {
       }
     } else {
       // Native: mp4, mkv, webm, mov, avi, etc.
-      console.log("[useHls] Native playback for:", src);
-      video.src = src;
+      const safeSrc = encodeVideoUrl(src);
+      console.log("[useHls] Native playback for:", safeSrc);
+      video.src = safeSrc;
       video.addEventListener("error", () => {
         const e = video.error;
         console.error("[Video Error] Native playback error", {
           code: e?.code,
           message: e?.message,
-          src,
+          src: safeSrc,
           // code meanings: 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
           meaning: ["", "ABORTED", "NETWORK_ERROR", "DECODE_ERROR", "SRC_NOT_SUPPORTED"][e?.code] || "UNKNOWN",
         });

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { X, SkipForward, ChevronLeft, ChevronRight } from "lucide-react";
 import useHls from "@/hooks/useHls";
+import { encodeVideoUrl } from "@/lib/encodeVideoUrl";
 
 /**
  * Full-screen cast overlay — works on mobile + desktop.
@@ -12,10 +13,10 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
   const videoRef = useRef(null);
   const didSetTime = useRef(false);
 
-  // Build playlist: current + queue
+  // Build playlist: current + queue — encode URLs to handle spaces, & etc.
   const [playlist, setPlaylist] = useState(() => [
-    { src, title },
-    ...queue.filter((q) => q.src),
+    { src: encodeVideoUrl(src), title },
+    ...queue.filter((q) => q.src).map((q) => ({ ...q, src: encodeVideoUrl(q.src) })),
   ]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const current = playlist[currentIndex] || null;
