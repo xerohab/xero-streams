@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Film, Video, Trash2, Loader2, Play, Pencil, ImageIcon, Users, ShieldCheck, ShieldAlert, Heart, Shield } from "lucide-react";
+import { ArrowLeft, Film, Video, Loader2, ImageIcon, Users, ShieldCheck, ShieldAlert, Heart, Pencil } from "lucide-react";
+import ManageSection from "@/components/admin/ManageSection";
+import ImageScraper from "@/components/admin/ImageScraper";
 import VideoUploadForm from "@/components/admin/VideoUploadForm";
 import SeriesForm from "@/components/admin/SeriesForm";
 import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
@@ -141,6 +143,7 @@ export default function Admin() {
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
             <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
+            <TabsTrigger value="imagescrape">Image Scraper</TabsTrigger>
             <TabsTrigger value="series">Add Series</TabsTrigger>
             <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
             <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
@@ -237,118 +240,37 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="manage">
-            <div className="space-y-6">
-              {/* Series */}
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center gap-2">
-                    <Film className="w-5 h-5" /> Series
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingSeries ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  ) : seriesList.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No series yet.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {seriesList.map((s) => (
-                        <div key={s.id} className="flex items-center justify-between bg-secondary rounded-lg p-3">
-                          <div className="flex items-center gap-3">
-                            {s.cover_image && (
-                              <img src={s.cover_image} alt="" className="w-12 h-8 rounded object-cover" />
-                            )}
-                            <div>
-                              <p className="font-semibold text-foreground text-sm">{s.title}</p>
-                              {s.category && (
-                                <Badge variant="outline" className="text-xs mt-0.5">{s.category}</Badge>
-                              )}
-                              {s.is_adult && (
-                                <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30 mt-0.5">18+</Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => setEditingSeries(s)}>
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteSeries(s.id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+          <TabsContent value="imagescrape">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5" /> Image Scraper
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ImageScraper
+                  seriesList={seriesList}
+                  videos={videos}
+                  franchises={franchises}
+                  onSuccess={refresh}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              {/* Videos */}
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center gap-2">
-                    <Video className="w-5 h-5" /> Videos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingVideos ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  ) : videos.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">No videos yet.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {videos.map((v) => {
-                        const series = seriesList.find((s) => s.id === v.series_id);
-                        return (
-                          <div key={v.id} className="flex items-center justify-between bg-secondary rounded-lg p-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-16 h-10 rounded bg-muted flex-shrink-0 overflow-hidden">
-                                {v.thumbnail_url ? (
-                                  <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Play className="w-4 h-4 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-foreground text-sm truncate">{v.title}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  {series && <span className="text-xs text-primary">{series.title}</span>}
-                                  {v.episode_number && <span className="text-xs text-muted-foreground">EP {v.episode_number}</span>}
-                                  {v.content_type === "movie" && <Badge className="text-xs bg-blue-500/20 text-blue-400">Movie</Badge>}
-                                  {v.is_featured && <Badge className="text-xs bg-primary/20 text-primary">Featured</Badge>}
-                                  {v.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex gap-1 flex-shrink-0">
-                               <Button
-                                 variant="ghost"
-                                 size="icon"
-                                 className="text-muted-foreground hover:text-yellow-400"
-                                 title="Auto-fetch poster"
-                                 onClick={() => fetchPoster(v)}
-                                 disabled={fetchingPosterFor === v.id}
-                               >
-                                 {fetchingPosterFor === v.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                               </Button>
-                               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => setEditingVideo(v)}>
-                                 <Pencil className="w-4 h-4" />
-                               </Button>
-                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteVideo(v.id)}>
-                                 <Trash2 className="w-4 h-4" />
-                               </Button>
-                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="manage">
+            <ManageSection
+              videos={videos}
+              seriesList={seriesList}
+              loadingVideos={loadingVideos}
+              loadingSeries={loadingSeries}
+              fetchingPosterFor={fetchingPosterFor}
+              onEditVideo={setEditingVideo}
+              onDeleteVideo={deleteVideo}
+              onEditSeries={setEditingSeries}
+              onDeleteSeries={deleteSeries}
+              onFetchPoster={fetchPoster}
+            />
           </TabsContent>
           <TabsContent value="users">
             <Card className="bg-card border-border">
