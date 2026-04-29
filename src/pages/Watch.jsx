@@ -31,7 +31,7 @@ export default function Watch() {
   const countdownRef = useRef(null);
   const [user, setUser] = useState(null);
   const [isFavourited, setIsFavourited] = useState(false);
-  const [isCasting, setIsCasting] = useState(false);
+  const [isCasting, setIsCasting] = useState(() => isCastWindowOpen());
   const lastSaveRef = useRef(0);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);

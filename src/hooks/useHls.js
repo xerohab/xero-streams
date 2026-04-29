@@ -10,24 +10,40 @@ export default function useHls(videoRef, src) {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !src) return;
 
-    const isHls = src.includes(".m3u8") || src.includes("m3u8");
-
-    // Destroy any existing HLS instance
+    // Always tear down existing HLS instance first
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
 
+    // If no src (e.g. casting), stop and clear the video element
+    if (!src) {
+      if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      }
+      return;
+    }
+
+    if (!video) return;
+
+    const isHls = src.includes(".m3u8");
+
     if (isHls) {
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
         hlsRef.current = hls;
         hls.loadSource(src);
         hls.attachMedia(video);
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            hls.destroy();
+            hlsRef.current = null;
+          }
+        });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS support
         video.src = src;
       }
     } else {
