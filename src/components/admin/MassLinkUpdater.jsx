@@ -45,11 +45,19 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
     if (!preview || preview.length === 0) return;
     setLoading(true);
     setResult(null);
+
+    // Process in chunks of 5 with a 500ms pause between chunks to avoid rate limits
+    const chunkSize = 5;
     let updated = 0;
-    for (const item of preview) {
-      await base44.entities.Video.update(item.id, { video_url: item.new });
-      updated++;
+    for (let i = 0; i < preview.length; i += chunkSize) {
+      const chunk = preview.slice(i, i + chunkSize);
+      await Promise.all(chunk.map((item) => base44.entities.Video.update(item.id, { video_url: item.new })));
+      updated += chunk.length;
+      if (i + chunkSize < preview.length) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
     }
+
     setLoading(false);
     setPreview(null);
     setResult({ updated });
