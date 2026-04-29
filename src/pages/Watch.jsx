@@ -9,7 +9,7 @@ import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
-import { getCastWindow, isCastWindowOpen } from "@/components/browse/Navbar";
+
 import { useCast } from "@/lib/CastContext";
 
 function getEmbedUrl(url) {
@@ -25,13 +25,13 @@ export default function Watch() {
   const navigate = useNavigate();
   const location = useLocation();
   const videoId = new URLSearchParams(location.search).get("id");
-  const { openCast, isCasting: isMobileCasting } = useCast();
+  const { openCast, isCasting: isMobileCasting, closeCast } = useCast();
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
   const [user, setUser] = useState(null);
   const [isFavourited, setIsFavourited] = useState(false);
-  const [isCasting, setIsCasting] = useState(() => isCastWindowOpen());
+
   const lastSaveRef = useRef(0);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
@@ -88,8 +88,8 @@ export default function Watch() {
     staleTime: Infinity,
   });
 
-  // HLS hook — only attach when NOT casting (desktop popup or mobile overlay)
-  const isAnyCasting = isCasting || isMobileCasting || isCastWindowOpen();
+  // HLS hook — stop local playback when overlay is open
+  const isAnyCasting = isMobileCasting;
   const hlsSrc = (() => {
     const url = video?.video_url;
     if (!url || isAnyCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
@@ -158,21 +158,7 @@ export default function Watch() {
     nextVideoRef.current = nextVideo;
   }, [nextVideo]);
 
-  // Auto-cast: if a cast window is already open when a new video loads, send it there
-  useEffect(() => {
-    if (!video?.video_url) return;
-    if (!isCastWindowOpen()) return;
 
-    // Set casting first so HLS hook clears the src before we do anything
-    setIsCasting(true);
-
-    const castWin = getCastWindow();
-    const queue = fullQueue.length > 0
-      ? fullQueue.slice(Math.max(currentQueueIndex, 0) + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
-      : franchiseMovies.slice(Math.max(currentFranchiseIndex, 0) + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
-
-    castWin.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue }, "*");
-  }, [video?.id]);
 
   const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
 
@@ -248,86 +234,17 @@ export default function Watch() {
     }
   };
 
-  const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  // Cast to TV — send to existing cast window or open new one
+  // Cast to TV — use full-screen overlay on all devices
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
-
     const queueItems = fullQueue.length > 0
       ? fullQueue.slice(currentQueueIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
       : franchiseMovies.slice(currentFranchiseIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
-
-    // On mobile, use in-page overlay instead of popup
-    if (isMobile()) {
-      openCast(video.video_url, video.title || "", queueItems, currentTime);
-      return;
-    }
-
-    // Set casting state FIRST so HLS src becomes null before anything else
-    setIsCasting(true);
-
-    // If a cast window is already open, send video to it
-    if (isCastWindowOpen()) {
-      const castWin = getCastWindow();
-      castWin.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems }, "*");
-      castWin.focus();
-      return;
-    }
-
-    // Register the ready listener BEFORE opening the popup to avoid race condition
-    let popup = null;
-    const handleReady = (e) => {
-      if (e.source !== popup || e.data?.type !== "CAST_READY") return;
-      window.removeEventListener("message", handleReady);
-      clearTimeout(readyTimeout);
-      popup.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems, t: currentTime }, "*");
-    };
-    window.addEventListener("message", handleReady);
-
-    // Timeout fallback: if no ready signal in 15s, clean up
-    const readyTimeout = setTimeout(() => {
-      window.removeEventListener("message", handleReady);
-    }, 15000);
-
-    // Now open the popup
-    popup = window.open("/cast", "_blank");
-    if (!popup) {
-      setIsCasting(false);
-      clearTimeout(readyTimeout);
-      window.removeEventListener("message", handleReady);
-      return;
-    }
-
-    import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(popup));
-
-    const timer = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(timer);
-        clearTimeout(readyTimeout);
-        window.removeEventListener("message", handleReady);
-        setIsCasting(false);
-        import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(null));
-      }
-    }, 500);
+    openCast(video.video_url, video.title || "", queueItems, currentTime);
   };
 
-  const handleStopCasting = () => {
-    setIsCasting(false);
-  };
 
-  // Monitor cast window closure
-  useEffect(() => {
-    if (!isCasting) return;
-    const timer = setInterval(() => {
-      if (!isCastWindowOpen()) {
-        clearInterval(timer);
-        setIsCasting(false);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isCasting]);
 
   if (isLoading) {
     return (
@@ -397,45 +314,6 @@ export default function Watch() {
                     <p className="text-foreground font-semibold text-lg">MKV files can't play in the browser</p>
                     <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
                   </div>
-                </div>
-              ) : isAnyCasting ? (
-                <div
-                  className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
-                  onContextMenu={(e) => e.preventDefault()}
-                >
-                  <Cast className="w-10 h-10 text-white animate-pulse" />
-                  <p className="text-white font-bold text-xl text-center">Playing in Cast Window</p>
-                  <p className="text-muted-foreground text-sm text-center max-w-sm">
-                    The video is playing in the separate cast window. To send it to your TV, follow the steps for your browser:
-                  </p>
-                  <div className="w-full max-w-md space-y-2 text-left">
-                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                      <p className="text-white font-semibold text-sm mb-1">🟡 Chrome (Desktop)</p>
-                      <p className="text-muted-foreground text-xs">In the cast window: click the <span className="text-white">⋮ menu</span> → <span className="text-white">Cast, Save, and Share</span> → <span className="text-white">Cast</span> → select your TV/Chromecast device.</p>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                      <p className="text-white font-semibold text-sm mb-1">🟠 Firefox (Desktop)</p>
-                      <p className="text-muted-foreground text-xs">Firefox doesn't support native Cast. Instead: right-click the video in the cast window → <span className="text-white">Picture-in-Picture</span>, or use a browser extension like <span className="text-white">fx_cast</span>.</p>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                      <p className="text-white font-semibold text-sm mb-1">🔵 Edge (Desktop)</p>
-                      <p className="text-muted-foreground text-xs">In the cast window: click the <span className="text-white">⋯ menu</span> → <span className="text-white">More tools</span> → <span className="text-white">Cast media to device</span> → select your TV.</p>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                      <p className="text-white font-semibold text-sm mb-1">🍎 Safari (Mac)</p>
-                      <p className="text-muted-foreground text-xs">Click the <span className="text-white">AirPlay icon</span> in the video controls in the cast window to stream to Apple TV or AirPlay 2 TVs.</p>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                      <p className="text-white font-semibold text-sm mb-1">📱 Mobile (Android/iPhone)</p>
-                      <p className="text-muted-foreground text-xs">The video plays full-screen here on mobile. Use your phone's <span className="text-white">Screen Mirror / Cast</span> from the notification drawer (Android) or <span className="text-white">AirPlay</span> from Control Centre (iPhone) to mirror to your TV.</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleStopCasting}
-                    className="mt-2 text-sm text-muted-foreground hover:text-white underline transition-colors cursor-pointer"
-                  >
-                    Stop Casting &amp; Return Here
-                  </button>
                 </div>
               ) : (
                 <video
