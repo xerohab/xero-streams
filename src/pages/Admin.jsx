@@ -20,6 +20,7 @@ import FranchiseMassEditor from "@/components/admin/FranchiseMassEditor";
 import SortOrderManager from "@/components/admin/SortOrderManager";
 import EditUserModal from "@/components/admin/EditUserModal";
 import DonationSettings from "@/components/admin/DonationSettings";
+import MassLinkUpdater from "@/components/admin/MassLinkUpdater";
 import { Toaster } from "react-hot-toast";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -148,6 +149,7 @@ export default function Admin() {
             <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
             <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
             <TabsTrigger value="sortorder">Sort Order</TabsTrigger>
+            <TabsTrigger value="masslinks">Mass Link Updater</TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
@@ -251,6 +253,22 @@ export default function Admin() {
                 <ImageScraper
                   seriesList={seriesList}
                   videos={videos}
+                  franchises={franchises}
+                  onSuccess={refresh}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="masslinks">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Mass Link Updater</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MassLinkUpdater
+                  videos={videos}
+                  seriesList={seriesList}
                   franchises={franchises}
                   onSuccess={refresh}
                 />
