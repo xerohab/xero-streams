@@ -276,27 +276,31 @@ export default function Watch() {
       return;
     }
 
-    // Otherwise open a new popup — no URL params to hide the video source
-    const popup = window.open("/cast", "_blank");
-    if (!popup) {
-      setIsCasting(false);
-      return;
-    }
-
-    import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(popup));
-
-    // Wait for CastPlayer to signal it's ready, then send the video
+    // Register the ready listener BEFORE opening the popup to avoid race condition
+    let popup = null;
     const handleReady = (e) => {
       if (e.source !== popup || e.data?.type !== "CAST_READY") return;
       window.removeEventListener("message", handleReady);
+      clearTimeout(readyTimeout);
       popup.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems, t: currentTime }, "*");
     };
     window.addEventListener("message", handleReady);
 
-    // Timeout fallback: if no ready signal in 10s, clean up
+    // Timeout fallback: if no ready signal in 15s, clean up
     const readyTimeout = setTimeout(() => {
       window.removeEventListener("message", handleReady);
-    }, 10000);
+    }, 15000);
+
+    // Now open the popup
+    popup = window.open("/cast", "_blank");
+    if (!popup) {
+      setIsCasting(false);
+      clearTimeout(readyTimeout);
+      window.removeEventListener("message", handleReady);
+      return;
+    }
+
+    import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(popup));
 
     const timer = setInterval(() => {
       if (popup.closed) {
