@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Shield, LogOut, Search, User, LogIn, Cast } from "lucide-react";
+import { Play, Shield, LogOut, Search, User, LogIn } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Global cast window reference so any page can send video to it
-let _castWindow = null;
-export function getCastWindow() { return _castWindow; }
-export function setCastWindow(w) { _castWindow = w; }
-export function isCastWindowOpen() { return _castWindow && !_castWindow.closed; }
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -17,17 +11,8 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [castActive, setCastActive] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef(null);
-
-  // Poll cast window status
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCastActive(isCastWindowOpen());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -40,28 +25,6 @@ export default function Navbar() {
   useEffect(() => {
     if (searchOpen) inputRef.current?.focus();
   }, [searchOpen]);
-
-  const isMobile = () => /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  const handleOpenCast = () => {
-    if (isMobile()) {
-      alert("Cast Mode works best on desktop. On mobile, use the Cast button inside the video player to open it directly.");
-      return;
-    }
-    if (isCastWindowOpen()) {
-      _castWindow.focus();
-      return;
-    }
-    const w = window.open("/cast?standby=1", "_blank");
-    setCastWindow(w);
-    setCastActive(true);
-  };
-
-  const handleCloseCast = () => {
-    if (_castWindow && !_castWindow.closed) _castWindow.close();
-    setCastWindow(null);
-    setCastActive(false);
-  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -91,17 +54,6 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Cast Mode — desktop only (mobile uses in-player overlay) */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`hidden md:flex h-8 w-8 transition-colors ${castActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            title={castActive ? "Cast mode active — click to stop" : "Start Cast Mode"}
-            onClick={castActive ? handleCloseCast : handleOpenCast}
-          >
-            <Cast className="w-4 h-4" />
-          </Button>
-
           {/* Search */}
           {searchOpen ? (
             <form onSubmit={handleSearch} className="flex items-center gap-2">

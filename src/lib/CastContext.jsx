@@ -4,7 +4,7 @@ import CastOverlay from "@/components/cast/CastOverlay";
 const CastContext = createContext(null);
 
 export function CastProvider({ children }) {
-  const [castData, setCastData] = useState(null); // { src, title, queue, startTime }
+  const [castData, setCastData] = useState(null);
 
   const openCast = useCallback((src, title, queue = [], startTime = 0) => {
     setCastData({ src, title, queue, startTime });

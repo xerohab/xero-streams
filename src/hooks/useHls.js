@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
 /**
- * Attaches HLS.js to a video element when the src is an m3u8 stream.
- * Falls back to native playback for mp4 and other formats.
+ * Attaches HLS.js to a video element for m3u8 streams.
+ * Falls back to native for mp4, mkv, webm, and other formats.
+ * Tuned for large files (up to 3GB+) with generous buffer settings.
  */
 export default function useHls(videoRef, src) {
   const hlsRef = useRef(null);
@@ -11,13 +12,12 @@ export default function useHls(videoRef, src) {
   useEffect(() => {
     const video = videoRef.current;
 
-    // Always tear down existing HLS instance first
+    // Tear down any existing HLS instance
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
 
-    // If no src (e.g. casting), stop and clear the video element
     if (!src) {
       if (video) {
         video.pause();
@@ -29,24 +29,51 @@ export default function useHls(videoRef, src) {
 
     if (!video) return;
 
-    const isHls = src.includes(".m3u8");
+    const isHls = src.toLowerCase().includes(".m3u8");
 
     if (isHls) {
       if (Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          // Large buffer settings for big files
+          maxBufferLength: 120,
+          maxMaxBufferLength: 600,
+          maxBufferSize: 256 * 1024 * 1024, // 256MB buffer
+          maxBufferHole: 2,
+          highBufferWatchdogPeriod: 10,
+          startFragPrefetch: true,
+          testBandwidth: true,
+          progressive: true,
+        });
         hlsRef.current = hls;
         hls.loadSource(src);
         hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {});
+        });
         hls.on(Hls.Events.ERROR, (_, data) => {
           if (data.fatal) {
-            hls.destroy();
-            hlsRef.current = null;
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad(); // retry
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hls.recoverMediaError();
+                break;
+              default:
+                hls.destroy();
+                hlsRef.current = null;
+                break;
+            }
           }
         });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        // Safari native HLS
         video.src = src;
       }
     } else {
+      // Native: mp4, mkv, webm, mov, avi, etc.
       video.src = src;
     }
 

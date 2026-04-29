@@ -25,7 +25,7 @@ export default function Watch() {
   const navigate = useNavigate();
   const location = useLocation();
   const videoId = new URLSearchParams(location.search).get("id");
-  const { openCast, isCasting: isMobileCasting, closeCast } = useCast();
+  const { openCast, isCasting: isMobileCasting } = useCast();
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
@@ -88,11 +88,10 @@ export default function Watch() {
     staleTime: Infinity,
   });
 
-  // HLS hook — stop local playback when overlay is open
-  const isAnyCasting = isMobileCasting;
+  // HLS hook — stop local playback when cast overlay is open
   const hlsSrc = (() => {
     const url = video?.video_url;
-    if (!url || isAnyCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
+    if (!url || isMobileCasting || getEmbedUrl(url)) return null;
     return url;
   })();
   useHls(videoRef, hlsSrc);
@@ -234,13 +233,27 @@ export default function Watch() {
     }
   };
 
-  // Cast to TV — use full-screen overlay on all devices
+  // Cast — open fullscreen overlay on all devices with proper queue
   const handleCast = () => {
     if (!video?.video_url) return;
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
-    const queueItems = fullQueue.length > 0
-      ? fullQueue.slice(currentQueueIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }))
-      : franchiseMovies.slice(currentFranchiseIndex + 1).map((v) => ({ src: v.video_url, title: v.title || "" }));
+
+    // Build queue of remaining videos after current
+    let queueItems = [];
+    if (fullQueue.length > 1 && currentQueueIndex >= 0) {
+      // TV series / franchise series queue
+      queueItems = fullQueue
+        .slice(currentQueueIndex + 1)
+        .filter((v) => v.video_url)
+        .map((v) => ({ src: v.video_url, title: v.title || "" }));
+    } else if (franchiseMovies.length > 1 && currentFranchiseIndex >= 0) {
+      // Franchise movies queue
+      queueItems = franchiseMovies
+        .slice(currentFranchiseIndex + 1)
+        .filter((v) => v.video_url)
+        .map((v) => ({ src: v.video_url, title: v.title || "" }));
+    }
+
     openCast(video.video_url, video.title || "", queueItems, currentTime);
   };
 
@@ -268,7 +281,6 @@ export default function Watch() {
 
   const isComingSoon = video.coming_soon || !video.video_url;
   const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
-  const isMkv = !isComingSoon && !embedUrl && video.video_url?.toLowerCase().endsWith(".mkv");
 
   return (
     <div className="min-h-screen bg-background">
@@ -305,16 +317,6 @@ export default function Watch() {
                   allowFullScreen
                   title={video.title}
                 />
-              ) : isMkv ? (
-                <div
-                  className="w-full h-full flex flex-col items-center justify-center gap-5 bg-black"
-                  style={video.thumbnail_url ? { backgroundImage: `url(${video.thumbnail_url})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
-                >
-                  <div className="bg-black/70 rounded-2xl px-8 py-7 flex flex-col items-center gap-4 text-center backdrop-blur-sm">
-                    <p className="text-foreground font-semibold text-lg">MKV files can't play in the browser</p>
-                    <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
-                  </div>
-                </div>
               ) : (
                 <video
                   ref={videoRef}
@@ -331,9 +333,9 @@ export default function Watch() {
                 />
               )}
 
-              {/* Top-right controls — hidden when coming soon */}
+              {/* Top-right controls — hidden when coming soon or embedded */}
               <div className="absolute top-3 right-3 z-20 flex gap-2">
-                {!isComingSoon && !embedUrl && !isMkv && (
+                {!isComingSoon && !embedUrl && (
                   <button
                     onClick={handlePiP}
                     className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
@@ -342,11 +344,11 @@ export default function Watch() {
                     <PictureInPicture2 className="w-5 h-5" />
                   </button>
                 )}
-                {!isComingSoon && !embedUrl && !isMkv && (
+                {!isComingSoon && !embedUrl && (
                   <button
                     onClick={handleCast}
                     className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
-                    title="Cast to TV"
+                    title="Cast / Fullscreen Player"
                   >
                     <Cast className="w-5 h-5" />
                   </button>
