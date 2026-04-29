@@ -33,14 +33,6 @@ export default function Watch() {
   const [isFavourited, setIsFavourited] = useState(false);
   const [isCasting, setIsCasting] = useState(false);
   const lastSaveRef = useRef(0);
-
-  // HLS hook — must be called unconditionally before any early returns
-  const hlsSrc = (() => {
-    const url = video?.video_url;
-    if (!url || isCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
-    return url;
-  })();
-  useHls(videoRef, hlsSrc);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const nextVideoRef = useRef(null);
@@ -95,6 +87,14 @@ export default function Watch() {
     queryFn: () => base44.entities.Franchise.list(),
     staleTime: Infinity,
   });
+
+  // HLS hook — called unconditionally after all data is available, before any early returns
+  const hlsSrc = (() => {
+    const url = video?.video_url;
+    if (!url || isCasting || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
+    return url;
+  })();
+  useHls(videoRef, hlsSrc);
 
   const series = video?.series_id ? seriesList.find((s) => s.id === video.series_id) : null;
 
@@ -361,7 +361,6 @@ export default function Watch() {
   const isComingSoon = video.coming_soon || !video.video_url;
   const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
   const isMkv = !isComingSoon && !embedUrl && video.video_url?.toLowerCase().endsWith(".mkv");
-  const activeVideoSrc = (!isComingSoon && !embedUrl && !isMkv && !isCasting) ? video.video_url : null;
 
   return (
     <div className="min-h-screen bg-background">
