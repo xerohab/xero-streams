@@ -284,19 +284,24 @@ export default function Watch() {
 
     import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(popup));
 
-    // Wait for the popup to load, then send video via postMessage (never in URL)
-    const sendWhenReady = setInterval(() => {
-      try {
-        popup.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems, t: currentTime }, "*");
-        clearInterval(sendWhenReady);
-      } catch {
-        // popup not ready yet
-      }
-    }, 200);
+    // Wait for CastPlayer to signal it's ready, then send the video
+    const handleReady = (e) => {
+      if (e.source !== popup || e.data?.type !== "CAST_READY") return;
+      window.removeEventListener("message", handleReady);
+      popup.postMessage({ type: "CAST_PLAY", src: video.video_url, title: video.title || "", queue: queueItems, t: currentTime }, "*");
+    };
+    window.addEventListener("message", handleReady);
+
+    // Timeout fallback: if no ready signal in 10s, clean up
+    const readyTimeout = setTimeout(() => {
+      window.removeEventListener("message", handleReady);
+    }, 10000);
 
     const timer = setInterval(() => {
       if (popup.closed) {
         clearInterval(timer);
+        clearTimeout(readyTimeout);
+        window.removeEventListener("message", handleReady);
         setIsCasting(false);
         import("@/components/browse/Navbar").then(({ setCastWindow }) => setCastWindow(null));
       }

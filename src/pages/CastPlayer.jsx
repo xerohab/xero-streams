@@ -16,6 +16,13 @@ export default function CastPlayer() {
   const countdownRef = useRef(null);
   const [countdown, setCountdown] = useState(null);
 
+  // Signal to the opener that CastPlayer is ready to receive messages
+  useEffect(() => {
+    if (window.opener) {
+      window.opener.postMessage({ type: "CAST_READY" }, "*");
+    }
+  }, []);
+
   // Listen for messages from the parent window to play a new video
   useEffect(() => {
     const handleMessage = (e) => {
