@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { Cast } from "lucide-react";
 import useHls from "@/hooks/useHls";
 
@@ -39,7 +38,7 @@ export default function CastPlayer() {
 
   // Update page title
   useEffect(() => {
-    document.title = current?.title || (standby ? "Cast Ready" : "Video");
+    document.title = current?.title || "Cast Ready";
   }, [current]);
 
   // Set start time on first video load only
