@@ -67,33 +67,7 @@ export default function CastPlayer() {
     return () => el.removeEventListener("loadedmetadata", onMeta);
   }, [current]);
 
-  // Prevent accidental pauses
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-
-    const handlePause = () => {
-      if (!userPausedRef.current) {
-        setTimeout(() => {
-          if (el.paused && !el.ended && !userPausedRef.current) {
-            el.play().catch(() => {});
-          }
-        }, 300);
-      }
-    };
-
-    const handlePlay = () => { userPausedRef.current = false; };
-    const handleClick = () => { userPausedRef.current = !el.paused; };
-
-    el.addEventListener("pause", handlePause);
-    el.addEventListener("play", handlePlay);
-    el.addEventListener("click", handleClick);
-    return () => {
-      el.removeEventListener("pause", handlePause);
-      el.removeEventListener("play", handlePlay);
-      el.removeEventListener("click", handleClick);
-    };
-  }, [current]);
+  // No accidental-pause override — let native controls work normally
 
   // Handle video ended — countdown to next
   const handleEnded = () => {

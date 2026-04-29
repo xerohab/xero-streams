@@ -27,28 +27,7 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
     return () => el.removeEventListener("loadedmetadata", onMeta);
   }, [current]);
 
-  // Prevent accidental pauses
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    const onPause = () => {
-      if (!userPausedRef.current) {
-        setTimeout(() => {
-          if (el.paused && !el.ended && !userPausedRef.current) el.play().catch(() => {});
-        }, 300);
-      }
-    };
-    const onPlay = () => { userPausedRef.current = false; };
-    const onClick = () => { userPausedRef.current = !el.paused; };
-    el.addEventListener("pause", onPause);
-    el.addEventListener("play", onPlay);
-    el.addEventListener("click", onClick);
-    return () => {
-      el.removeEventListener("pause", onPause);
-      el.removeEventListener("play", onPlay);
-      el.removeEventListener("click", onClick);
-    };
-  }, [current]);
+  // No accidental-pause override — let native controls work normally
 
   const handleEnded = () => {
     userPausedRef.current = false;
