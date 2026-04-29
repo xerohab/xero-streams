@@ -25,7 +25,7 @@ export default function Watch() {
   const navigate = useNavigate();
   const location = useLocation();
   const videoId = new URLSearchParams(location.search).get("id");
-  const { openCast } = useCast();
+  const { openCast, isCasting: isMobileCasting } = useCast();
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
@@ -88,10 +88,10 @@ export default function Watch() {
     staleTime: Infinity,
   });
 
-  // HLS hook — only attach when NOT casting (check both state and live window ref)
+  // HLS hook — only attach when NOT casting (desktop popup or mobile overlay)
   const hlsSrc = (() => {
     const url = video?.video_url;
-    if (!url || isCasting || isCastWindowOpen() || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
+    if (!url || isCasting || isMobileCasting || isCastWindowOpen() || getEmbedUrl(url) || url.toLowerCase().endsWith(".mkv")) return null;
     return url;
   })();
   useHls(videoRef, hlsSrc);
@@ -280,6 +280,11 @@ export default function Watch() {
 
     // On mobile, use in-page overlay instead of popup
     if (isMobile()) {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.removeAttribute("src");
+        videoRef.current.load();
+      }
       openCast(video.video_url, video.title || "", queueItems, currentTime);
       return;
     }
@@ -407,7 +412,7 @@ export default function Watch() {
                     <p className="text-muted-foreground text-sm max-w-xs">Use a media player like VLC to watch this file.</p>
                   </div>
                 </div>
-              ) : (isCasting || isCastWindowOpen()) ? (
+              ) : (isCasting || isMobileCasting || isCastWindowOpen()) ? (
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10 gap-4 px-6 overflow-y-auto"
                   onContextMenu={(e) => e.preventDefault()}
