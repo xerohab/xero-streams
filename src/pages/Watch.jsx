@@ -330,6 +330,15 @@ export default function Watch() {
                   poster={video.thumbnail_url}
                   onEnded={handleEnded}
                   onTimeUpdate={handleTimeUpdate}
+                  onError={(e) => {
+                    const err = e.target.error;
+                    console.error("[Watch] Video element error", {
+                      code: err?.code,
+                      message: err?.message,
+                      src: e.target.src,
+                      meaning: ["", "ABORTED", "NETWORK_ERROR", "DECODE_ERROR", "SRC_NOT_SUPPORTED"][err?.code] || "UNKNOWN",
+                    });
+                  }}
                 />
               )}
 

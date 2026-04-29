@@ -53,15 +53,26 @@ export default function useHls(videoRef, src) {
           video.play().catch(() => {});
         });
         hls.on(Hls.Events.ERROR, (_, data) => {
+          console.error("[HLS Error]", {
+            fatal: data.fatal,
+            type: data.type,
+            details: data.details,
+            url: data.url,
+            response: data.response,
+            src,
+          });
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                hls.startLoad(); // retry
+                console.warn("[HLS] Fatal network error — retrying load");
+                hls.startLoad();
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn("[HLS] Fatal media error — attempting recovery");
                 hls.recoverMediaError();
                 break;
               default:
+                console.error("[HLS] Unrecoverable fatal error — destroying instance");
                 hls.destroy();
                 hlsRef.current = null;
                 break;
@@ -74,7 +85,18 @@ export default function useHls(videoRef, src) {
       }
     } else {
       // Native: mp4, mkv, webm, mov, avi, etc.
+      console.log("[useHls] Native playback for:", src);
       video.src = src;
+      video.addEventListener("error", () => {
+        const e = video.error;
+        console.error("[Video Error] Native playback error", {
+          code: e?.code,
+          message: e?.message,
+          src,
+          // code meanings: 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
+          meaning: ["", "ABORTED", "NETWORK_ERROR", "DECODE_ERROR", "SRC_NOT_SUPPORTED"][e?.code] || "UNKNOWN",
+        });
+      }, { once: false });
     }
 
     return () => {
