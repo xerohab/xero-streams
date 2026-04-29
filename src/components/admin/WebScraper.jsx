@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon, Sparkles, Film, Tv } from "lucide-react";
+import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon, Sparkles, Film, Tv, Globe, X } from "lucide-react";
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 
@@ -20,6 +20,35 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [uploadingThumbFor, setUploadingThumbFor] = useState(null);
   const [fetchingAiFor, setFetchingAiFor] = useState(null);
   const [fetchingAiAll, setFetchingAiAll] = useState(false);
+  const [imageScrapeFor, setImageScrapeFor] = useState(null); // index of item with scraper open
+  const [imageScrapeUrl, setImageScrapeUrl] = useState("");
+  const [scrapedImages, setScrapedImages] = useState([]);
+  const [scrapingImages, setScrapingImages] = useState(false);
+
+  const handleScrapeImages = async () => {
+    if (!imageScrapeUrl) return;
+    setScrapingImages(true);
+    setScrapedImages([]);
+    try {
+      const res = await base44.functions.invoke("scrapeImageLinks", { url: imageScrapeUrl });
+      if (res.data?.images?.length > 0) {
+        setScrapedImages(res.data.images.map(img => typeof img === "object" ? img.image_url : img));
+        toast.success(`Found ${res.data.images.length} images`);
+      } else {
+        toast.error("No images found at that URL");
+      }
+    } catch (e) {
+      toast.error("Failed to scrape images");
+    }
+    setScrapingImages(false);
+  };
+
+  const pickScrapedImage = (index, url) => {
+    updateItem(index, "thumbnail_url", url);
+    setImageScrapeFor(null);
+    setImageScrapeUrl("");
+    setScrapedImages([]);
+  };
 
   const handleScan = async () => {
     if (!url) { toast.error("Enter a URL to scan"); return; }
@@ -297,8 +326,43 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
                         {uploadingThumbFor === index ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
                         <input type="file" accept="image/*" onChange={e => handleThumbUpload(index, e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
                       </Button>
+                      <Button type="button" variant="secondary" className="h-7 w-7 p-0 shrink-0" title="Scrape images from URL" onClick={() => { setImageScrapeFor(index); setScrapedImages([]); setImageScrapeUrl(""); }}>
+                        <Globe className="w-3 h-3" />
+                      </Button>
                       {item.thumbnail_url && <img src={item.thumbnail_url} alt="" className="h-7 w-12 rounded object-cover shrink-0" />}
                     </div>
+                    {imageScrapeFor === index && (
+                      <div className="bg-background border border-border rounded-lg p-2 space-y-2">
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={imageScrapeUrl}
+                            onChange={e => setImageScrapeUrl(e.target.value)}
+                            placeholder="URL to scrape images from"
+                            className="bg-secondary border-border h-7 text-xs flex-1"
+                            onKeyDown={e => e.key === "Enter" && handleScrapeImages()}
+                          />
+                          <Button type="button" size="sm" className="h-7 text-xs px-2" onClick={handleScrapeImages} disabled={scrapingImages}>
+                            {scrapingImages ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+                          </Button>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setImageScrapeFor(null)}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        {scrapedImages.length > 0 && (
+                          <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                            {scrapedImages.map((imgUrl, i) => (
+                              <img
+                                key={i}
+                                src={imgUrl}
+                                alt=""
+                                className="h-14 w-20 object-cover rounded cursor-pointer border-2 border-transparent hover:border-primary transition-all"
+                                onClick={() => pickScrapedImage(index, imgUrl)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground truncate">{item.video_url}</p>
                   </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">
