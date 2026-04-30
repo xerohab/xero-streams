@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import useHls from "@/hooks/useHls";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart } from "lucide-react";
+import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart, Download as DownloadIcon, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -58,6 +58,36 @@ export default function Watch() {
     setUser((prev) => ({ ...prev, favourites: updated }));
     setIsFavourited(!isFavourited);
   };
+
+  const [purchasing, setPurchasing] = useState(false);
+  const { data: purchases = [] } = useQuery({
+    queryKey: ["video_purchases", user?.id],
+    queryFn: () => base44.entities.VideoPurchase.filter({ user_id: user.id }),
+    enabled: !!user
+  });
+
+  const handlePurchase = async () => {
+    if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    setPurchasing(true);
+    try {
+      const res = await base44.functions.invoke("createPaypalOrder", { 
+        amount: video.price,
+        return_url: window.location.origin + "/callback?success=true",
+        cancel_url: window.location.origin + "/callback?cancelled=true"
+      });
+      if (res.data?.approvalUrl) {
+        localStorage.setItem("pending_video_purchase", JSON.stringify({ video_id: video.id }));
+        window.location.href = res.data.approvalUrl;
+      } else {
+        throw new Error(res.data?.error || "Failed to checkout");
+      }
+    } catch (err) {
+      console.error(err);
+      setPurchasing(false);
+    }
+  };
+
+  const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
 
   const { data: video, isLoading } = useQuery({
     queryKey: ["video", videoId],
@@ -468,6 +498,17 @@ export default function Watch() {
                   <Film className="w-4 h-4" />
                   More Info
                 </Button>
+                {video.is_for_sale && (
+                  isPurchased ? (
+                    <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => window.open(video.download_url, '_blank')}>
+                      <DownloadIcon className="w-4 h-4" /> Download
+                    </Button>
+                  ) : (
+                    <Button variant="default" className="gap-2" onClick={handlePurchase} disabled={purchasing}>
+                      {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
+                    </Button>
+                  )
+                )}
               </div>
             </div>
           </div>

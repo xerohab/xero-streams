@@ -30,6 +30,7 @@ export default function PurchaseCallback() {
           // Check what we were buying
           const pendingBook = localStorage.getItem("pending_book_purchase");
           const pendingPlan = localStorage.getItem("pending_plan_purchase");
+          const pendingVideo = localStorage.getItem("pending_video_purchase");
 
           if (pendingBook) {
             const { book_id } = JSON.parse(pendingBook);
@@ -42,6 +43,17 @@ export default function PurchaseCallback() {
             localStorage.removeItem("pending_book_purchase");
             setStatus("completed");
             setTimeout(() => navigate("/books"), 2000);
+          } else if (pendingVideo) {
+            const { video_id } = JSON.parse(pendingVideo);
+            await base44.entities.VideoPurchase.create({
+              user_id: user.id,
+              video_id,
+              status: "completed",
+              paypal_order_id: token
+            });
+            localStorage.removeItem("pending_video_purchase");
+            setStatus("completed");
+            setTimeout(() => navigate("/dashboard"), 2000);
           } else if (pendingPlan) {
             const { plan_id } = JSON.parse(pendingPlan);
             

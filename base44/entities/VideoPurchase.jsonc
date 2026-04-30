@@ -1,0 +1,47 @@
+{
+  "name": "VideoPurchase",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed"
+      ],
+      "default": "completed"
+    },
+    "paypal_order_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "video_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "id": "user_id"
+          }
+        ]
+      }
+    },
+    "create": null,
+    "update": null,
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

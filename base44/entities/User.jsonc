@@ -12,24 +12,24 @@
     },
     "age_verified": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether the user has been verified as 18+ by an admin"
-    },
-    "date_of_birth": {
-      "type": "string",
-      "description": "User's date of birth (YYYY-MM-DD)"
+      "default": false
     },
     "age_verification_requested": {
       "type": "boolean",
-      "default": false,
-      "description": "User has submitted an age verification request"
+      "default": false
+    },
+    "date_of_birth": {
+      "type": "string"
     },
     "favourites": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Array of video IDs the user has favourited"
+      }
+    },
+    "theme_color": {
+      "type": "string",
+      "default": "red"
     }
   }
 }

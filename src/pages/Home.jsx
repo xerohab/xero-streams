@@ -8,6 +8,7 @@ import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
 import { Loader2, Film, Tv } from "lucide-react";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
+import VideoRow from "@/components/browse/VideoRow";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -161,6 +162,16 @@ export default function Home() {
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
         <ContinueWatchingRow />
+
+        {/* Favourites Row */}
+        {user?.favourites?.length > 0 && activeTab === "all" && (
+          <div className="mb-12">
+            <VideoRow 
+              title="My Favourites" 
+              videos={safeVideos.filter(v => user.favourites.includes(v.id))} 
+            />
+          </div>
+        )}
 
         {/* TV Series tab */}
         {(activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (

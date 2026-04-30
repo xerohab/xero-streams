@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio, Download as DownloadIcon, Palette
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -103,6 +103,28 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: bookPurchases = [] } = useQuery({
+    queryKey: ["book_purchases", user?.id],
+    queryFn: () => base44.entities.BookPurchase.filter({ user_id: user.id }),
+    enabled: !!user
+  });
+
+  const { data: videoPurchases = [] } = useQuery({
+    queryKey: ["video_purchases", user?.id],
+    queryFn: () => base44.entities.VideoPurchase.filter({ user_id: user.id }),
+    enabled: !!user
+  });
+
+  const { data: books = [] } = useQuery({
+    queryKey: ["books"],
+    queryFn: () => base44.entities.Book.list()
+  });
+
+  const handleThemeChange = async (color) => {
+    await base44.auth.updateMe({ theme_color: color });
+    fetchUser();
+  };
+
   const favouriteVideos = videos.filter((v) => user?.favourites?.includes(v.id));
   const cwVideos = continueWatching
     .map(({ id, percent, currentTime }) => ({ video: videos.find((v) => v.id === id), percent, currentTime }))
@@ -195,6 +217,76 @@ export default function Dashboard() {
         </div>
 
         {/* Age verification & adult links hidden */}
+
+        {/* Customisation */}
+        <div>
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <Palette className="w-5 h-5 text-primary" /> Homepage Customisation
+          </h2>
+          <Card className="bg-card border-border">
+            <CardContent className="p-6">
+              <h3 className="font-semibold mb-3">Theme Color</h3>
+              <div className="flex gap-3">
+                {[
+                  { id: 'red', class: 'bg-red-600' },
+                  { id: 'blue', class: 'bg-blue-600' },
+                  { id: 'green', class: 'bg-green-600' },
+                  { id: 'purple', class: 'bg-purple-600' },
+                  { id: 'orange', class: 'bg-orange-500' }
+                ].map(theme => (
+                  <button
+                    key={theme.id}
+                    onClick={() => handleThemeChange(theme.id)}
+                    className={`w-10 h-10 rounded-full ${theme.class} transition-transform ${user.theme_color === theme.id || (!user.theme_color && theme.id === 'red') ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-background' : 'hover:scale-105'}`}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Downloads */}
+        {(bookPurchases.length > 0 || videoPurchases.length > 0) && (
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <DownloadIcon className="w-5 h-5 text-primary" /> My Downloads
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {bookPurchases.map(p => {
+                const book = books.find(b => b.id === p.book_id);
+                if (!book) return null;
+                return (
+                  <div key={p.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Book className="w-8 h-8 text-muted-foreground" />
+                      <div>
+                        <p className="font-bold text-sm line-clamp-1">{book.title}</p>
+                        <p className="text-xs text-muted-foreground">Book</p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => window.open(book.file_url, '_blank')}>Download</Button>
+                  </div>
+                )
+              })}
+              {videoPurchases.map(p => {
+                const video = videos.find(v => v.id === p.video_id);
+                if (!video) return null;
+                return (
+                  <div key={p.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Film className="w-8 h-8 text-muted-foreground" />
+                      <div>
+                        <p className="font-bold text-sm line-clamp-1">{video.title}</p>
+                        <p className="text-xs text-muted-foreground">Video</p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => window.open(video.download_url, '_blank')}>Download</Button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Quick Links */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">

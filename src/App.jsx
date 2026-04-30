@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -24,7 +25,19 @@ import Books from '@/pages/Books';
 import PurchaseCallback from '@/pages/PurchaseCallback';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+
+  useEffect(() => {
+    if (user?.theme_color) {
+      const root = document.documentElement;
+      const color = user.theme_color;
+      if (color === 'blue') { root.style.setProperty('--primary', '221.2 83.2% 53.3%'); root.style.setProperty('--ring', '221.2 83.2% 53.3%'); }
+      else if (color === 'green') { root.style.setProperty('--primary', '142.1 76.2% 36.3%'); root.style.setProperty('--ring', '142.1 76.2% 36.3%'); }
+      else if (color === 'purple') { root.style.setProperty('--primary', '262.1 83.3% 57.8%'); root.style.setProperty('--ring', '262.1 83.3% 57.8%'); }
+      else if (color === 'orange') { root.style.setProperty('--primary', '24.6 95% 53.1%'); root.style.setProperty('--ring', '24.6 95% 53.1%'); }
+      else { root.style.setProperty('--primary', '0 72% 51%'); root.style.setProperty('--ring', '0 72% 51%'); }
+    }
+  }, [user?.theme_color]);
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {

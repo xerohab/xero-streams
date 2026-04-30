@@ -28,6 +28,9 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     content_type: "movie",
     coming_soon: false,
     release_date: "",
+    is_for_sale: false,
+    price: "",
+    download_url: "",
   });
 
   const handleFileUpload = async (e) => {
@@ -59,6 +62,9 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       franchise_id: form.franchise_id || undefined,
       // Auto-correct content_type based on series assignment
       content_type: seriesId ? "episode" : "movie",
+      is_for_sale: form.is_for_sale,
+      price: form.price ? Number(form.price) : undefined,
+      download_url: form.download_url || undefined,
     };
     await base44.entities.Video.create(payload);
     toast.success("Video added successfully!");
@@ -76,6 +82,9 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       content_type: "movie",
       coming_soon: false,
       release_date: "",
+      is_for_sale: false,
+      price: "",
+      download_url: "",
     });
     onSuccess?.();
   };
@@ -343,6 +352,26 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
           <p className="text-xs text-muted-foreground">Only visible to age-verified users in the Adult tab</p>
         </div>
       </div>
+
+      <div className="flex items-center gap-3 p-3 bg-secondary border border-border rounded-lg">
+        <Switch checked={form.is_for_sale} onCheckedChange={(v) => update("is_for_sale", v)} />
+        <div>
+          <Label className="font-semibold">Available for Download Purchase</Label>
+          <p className="text-xs text-muted-foreground">Users can buy this to download it</p>
+        </div>
+      </div>
+      {form.is_for_sale && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>Price ($)</Label>
+            <Input type="number" step="0.01" value={form.price} onChange={(e) => update("price", e.target.value)} className="bg-secondary border-border" />
+          </div>
+          <div className="space-y-2">
+            <Label>Download URL</Label>
+            <Input value={form.download_url} onChange={(e) => update("download_url", e.target.value)} className="bg-secondary border-border" />
+          </div>
+        </div>
+      )}
 
       <Button
         type="submit"
