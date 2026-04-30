@@ -122,6 +122,13 @@ export default function Dashboard() {
 
   const handleThemeChange = async (color) => {
     await base44.auth.updateMe({ theme_color: color });
+    window.location.reload();
+  };
+
+  const handleToggleRow = async (rowId, checked) => {
+    const currentRows = user.homepage_rows || ["hero", "continue_watching", "favourites", "tv", "movies"];
+    const newRows = checked ? [...currentRows, rowId] : currentRows.filter(r => r !== rowId);
+    await base44.auth.updateMe({ homepage_rows: newRows });
     fetchUser();
   };
 
@@ -224,33 +231,72 @@ export default function Dashboard() {
             <Palette className="w-5 h-5 text-primary" /> Homepage Customisation
           </h2>
           <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <h3 className="font-semibold mb-3">Theme Color</h3>
-              <div className="flex gap-3">
-                {[
-                  { id: 'red', class: 'bg-red-600' },
-                  { id: 'blue', class: 'bg-blue-600' },
-                  { id: 'green', class: 'bg-green-600' },
-                  { id: 'purple', class: 'bg-purple-600' },
-                  { id: 'orange', class: 'bg-orange-500' }
-                ].map(theme => (
-                  <button
-                    key={theme.id}
-                    onClick={() => handleThemeChange(theme.id)}
-                    className={`w-10 h-10 rounded-full ${theme.class} transition-transform ${user.theme_color === theme.id || (!user.theme_color && theme.id === 'red') ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-background' : 'hover:scale-105'}`}
-                  />
-                ))}
+            <CardContent className="p-6 space-y-6">
+              <div>
+                <h3 className="font-semibold mb-3">Theme Color</h3>
+                <div className="flex gap-3">
+                  {[
+                    { id: 'red', class: 'bg-red-600' },
+                    { id: 'blue', class: 'bg-blue-600' },
+                    { id: 'green', class: 'bg-green-600' },
+                    { id: 'purple', class: 'bg-purple-600' },
+                    { id: 'orange', class: 'bg-orange-500' }
+                  ].map(theme => (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      className={`w-10 h-10 rounded-full ${theme.class} transition-transform ${user.theme_color === theme.id || (!user.theme_color && theme.id === 'red') ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-background' : 'hover:scale-105'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div className="border-t border-border pt-6">
+                <h3 className="font-semibold mb-3">Content to Display on Homepage</h3>
+                <div className="space-y-3">
+                  {[
+                    { id: "hero", label: "Hero Banner (Featured)" },
+                    { id: "continue_watching", label: "Continue Watching" },
+                    { id: "favourites", label: "My Favourites" },
+                    { id: "tv", label: "TV Series" },
+                    { id: "movies", label: "Movies" }
+                  ].map(row => {
+                    const isChecked = (user.homepage_rows || ["hero", "continue_watching", "favourites", "tv", "movies"]).includes(row.id);
+                    return (
+                      <div key={row.id} className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          id={`row-${row.id}`}
+                          className="w-4 h-4 accent-primary"
+                          checked={isChecked}
+                          onChange={(e) => handleToggleRow(row.id, e.target.checked)}
+                        />
+                        <label htmlFor={`row-${row.id}`} className="text-sm cursor-pointer">{row.label}</label>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Downloads */}
-        {(bookPurchases.length > 0 || videoPurchases.length > 0) && (
-          <div>
-            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <DownloadIcon className="w-5 h-5 text-primary" /> My Downloads
-            </h2>
+        <div>
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <DownloadIcon className="w-5 h-5 text-primary" /> My Downloads
+          </h2>
+          
+          {(bookPurchases.length === 0 && videoPurchases.length === 0) ? (
+            <div className="bg-secondary border border-border rounded-xl p-8 text-center">
+              <DownloadIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-semibold mb-1">No Downloads Yet</h3>
+              <p className="text-muted-foreground text-sm">You haven't purchased or been granted access to any downloadable content.</p>
+              <Link to="/books">
+                <Button className="mt-4" variant="outline">Browse Store</Button>
+              </Link>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {bookPurchases.map(p => {
                 const book = books.find(b => b.id === p.book_id);
@@ -285,8 +331,8 @@ export default function Dashboard() {
                 )
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Quick Links */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">

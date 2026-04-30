@@ -30,6 +30,12 @@
     "theme_color": {
       "type": "string",
       "default": "red"
+    },
+    "homepage_rows": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }

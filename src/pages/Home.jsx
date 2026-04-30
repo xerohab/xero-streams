@@ -105,6 +105,8 @@ export default function Home() {
     .filter((s) => adultVideos.some((v) => v.series_id === s.id));
   const adultEpisodeCount = (seriesId) => adultVideos.filter((v) => v.series_id === seriesId).length;
 
+  const rows = user?.homepage_rows || ["hero", "continue_watching", "favourites", "tv", "movies"];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -133,7 +135,7 @@ export default function Home() {
       <Navbar />
 
       {/* Hero: latest 5 videos */}
-      <HeroSection videos={heroVideos} seriesList={seriesList} />
+      {rows.includes("hero") && <HeroSection videos={heroVideos} seriesList={seriesList} />}
 
       {/* Tabs */}
       <div className="relative z-10 -mt-6 px-6 md:px-16 mb-8">
@@ -161,10 +163,10 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
-        <ContinueWatchingRow />
+        {rows.includes("continue_watching") && <ContinueWatchingRow />}
 
         {/* Favourites Row */}
-        {user?.favourites?.length > 0 && activeTab === "all" && (
+        {rows.includes("favourites") && user?.favourites?.length > 0 && activeTab === "all" && (
           <div className="mb-12">
             <VideoRow 
               title="My Favourites" 
@@ -174,7 +176,7 @@ export default function Home() {
         )}
 
         {/* TV Series tab */}
-        {(activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (
+        {rows.includes("tv") && (activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -207,7 +209,7 @@ export default function Home() {
         )}
 
         {/* Movies tab */}
-        {(activeTab === "all" || activeTab === "movies") && (ungroupedMovies.length > 0 || moviesByFranchise.length > 0) && (
+        {rows.includes("movies") && (activeTab === "all" || activeTab === "movies") && (ungroupedMovies.length > 0 || moviesByFranchise.length > 0) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
