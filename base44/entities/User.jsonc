@@ -27,6 +27,18 @@
         "type": "string"
       }
     },
+    "favourite_series": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "favourite_franchises": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "theme_color": {
       "type": "string",
       "default": "red"

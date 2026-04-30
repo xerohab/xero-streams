@@ -25,6 +25,8 @@ import BillingPlansManager from "@/components/admin/BillingPlansManager";
 import LiveStreamManager from "@/components/admin/LiveStreamManager";
 import BooksManager from "@/components/admin/BooksManager";
 import StoreManager from "@/components/admin/StoreManager";
+import RequestsManager from "@/components/admin/RequestsManager";
+import EmailManager from "@/components/admin/EmailManager";
 import { Toaster } from "react-hot-toast";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -161,6 +163,8 @@ export default function Admin() {
             <TabsTrigger value="livestream">Live Stream</TabsTrigger>
             <TabsTrigger value="books">Books</TabsTrigger>
             <TabsTrigger value="store">Store & Downloads</TabsTrigger>
+            <TabsTrigger value="requests">Requests</TabsTrigger>
+            <TabsTrigger value="emails">Emails</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -408,6 +412,22 @@ export default function Admin() {
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <StoreManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <RequestsManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="emails">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <EmailManager />
               </CardContent>
             </Card>
           </TabsContent>

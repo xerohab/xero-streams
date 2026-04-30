@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { Upload, Loader2, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function FranchiseForm({ onSuccess }) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
   const [fetchingPoster, setFetchingPoster] = useState(false);
+  const [aiNaming, setAiNaming] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", cover_image: "" });
 
   const handleAiDescription = async () => {
@@ -47,6 +48,26 @@ export default function FranchiseForm({ onSuccess }) {
     setFetchingPoster(false);
   };
 
+  const handleAiName = async () => {
+    if (!form.title) return;
+    setAiNaming(true);
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `The user is adding a movie franchise / collection called "${form.title}". Identify the official or most common name for this franchise (e.g. "The Fast and the Furious Collection", "Harry Potter Collection"). Only return the corrected/confirmed title, nothing else.`,
+      });
+      const suggested = (res || "").trim().replace(/^["']|["']$/g, "");
+      if (suggested && suggested !== form.title) {
+        setForm((prev) => ({ ...prev, title: suggested }));
+        toast.success(`Title corrected to: ${suggested}`);
+      } else {
+        toast("Title looks correct!", { icon: "✓" });
+      }
+    } catch (e) {
+      toast.error("AI naming failed");
+    }
+    setAiNaming(false);
+  };
+
   const handleCoverUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -69,7 +90,20 @@ export default function FranchiseForm({ onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label>Franchise / Collection Title *</Label>
+        <div className="flex items-center justify-between">
+          <Label>Franchise / Collection Title *</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleAiName}
+            disabled={aiNaming || !form.title}
+            className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7"
+          >
+            {aiNaming ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            AI Correct Name
+          </Button>
+        </div>
         <Input
           value={form.title}
           onChange={(e) => update("title", e.target.value)}

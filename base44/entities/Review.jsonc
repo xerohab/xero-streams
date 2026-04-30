@@ -1,0 +1,59 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "content_id": {
+      "type": "string"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "video",
+        "series",
+        "franchise"
+      ]
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "comment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "content_id",
+    "content_type",
+    "rating"
+  ],
+  "rls": {
+    "read": null,
+    "create": {
+      "user_condition": {
+        "id": "user_id"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "id": "user_id"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "id": "user_id"
+          }
+        ]
+      }
+    }
+  }
+}

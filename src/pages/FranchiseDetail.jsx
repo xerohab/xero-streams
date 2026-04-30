@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -7,10 +7,26 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
+import ReviewSection from "@/components/browse/ReviewSection";
+import { Heart } from "lucide-react";
 
 export default function FranchiseDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const franchiseId = urlParams.get("id");
+
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
+  const isFavourited = user?.favourite_franchises?.includes(franchiseId) ?? false;
+  const handleToggleFavourite = async () => {
+    if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    const current = user.favourite_franchises || [];
+    const updated = isFavourited ? current.filter((id) => id !== franchiseId) : [...current, franchiseId];
+    await base44.auth.updateMe({ favourite_franchises: updated });
+    setUser((prev) => ({ ...prev, favourite_franchises: updated }));
+  };
 
   const { data: franchise, isLoading: loadingFranchise } = useQuery({
     queryKey: ["franchise", franchiseId],
@@ -90,6 +106,16 @@ export default function FranchiseDetail() {
               {franchise.description}
             </p>
           )}
+          <div className="mt-4">
+            <Button
+              variant={isFavourited ? "default" : "outline"}
+              className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
+              onClick={handleToggleFavourite}
+            >
+              <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+              {isFavourited ? "Favourited" : "Favourite Franchise"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -125,6 +151,8 @@ export default function FranchiseDetail() {
         {franchiseSeries.length === 0 && franchiseMovies.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">No content in this franchise yet.</div>
         )}
+
+        <ReviewSection contentId={franchiseId} contentType="franchise" />
       </div>
     </div>
   );

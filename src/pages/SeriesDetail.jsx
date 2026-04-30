@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
@@ -6,11 +6,27 @@ import { ArrowLeft, Clock, Film, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
+import ReviewSection from "@/components/browse/ReviewSection";
+import { Heart } from "lucide-react";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
   const seriesId = searchParams.get("id");
   const from = searchParams.get("from") || "/";
+
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
+  const isFavourited = user?.favourite_series?.includes(seriesId) ?? false;
+  const handleToggleFavourite = async () => {
+    if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    const current = user.favourite_series || [];
+    const updated = isFavourited ? current.filter((id) => id !== seriesId) : [...current, seriesId];
+    await base44.auth.updateMe({ favourite_series: updated });
+    setUser((prev) => ({ ...prev, favourite_series: updated }));
+  };
 
   const { data: series, isLoading: loadingSeries } = useQuery({
     queryKey: ["series", seriesId],
@@ -96,6 +112,16 @@ export default function SeriesDetail() {
               {sortedEpisodes.length} episode{sortedEpisodes.length !== 1 ? "s" : ""}
             </p>
           )}
+          <div className="mt-4">
+            <Button
+              variant={isFavourited ? "default" : "outline"}
+              className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
+              onClick={handleToggleFavourite}
+            >
+              <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+              {isFavourited ? "Favourited" : "Favourite Series"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -129,6 +155,10 @@ export default function SeriesDetail() {
           </div>
         </div>
       )}
+
+      <div className="px-6 md:px-16 pb-16">
+        <ReviewSection contentId={seriesId} contentType="series" />
+      </div>
     </div>
   );
 }

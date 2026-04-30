@@ -4,8 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio, Download as DownloadIcon, Palette
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio, Download as DownloadIcon, Palette, MessageSquare, Plus, Tv
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import SeriesCard from "@/components/browse/SeriesCard";
+import FranchiseCard from "@/components/browse/FranchiseCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +44,10 @@ export default function Dashboard() {
   const streamRef = useRef(null);
 
   const { inProgress: continueWatching, completed: watchedHistory } = useContinueWatching();
+
+  const [requestTitle, setRequestTitle] = useState("");
+  const [requestDesc, setRequestDesc] = useState("");
+  const [requesting, setRequesting] = useState(false);
 
   const fetchUser = () =>
     base44.auth.me().then((u) => {
@@ -120,6 +128,22 @@ export default function Dashboard() {
     queryFn: () => base44.entities.Book.list()
   });
 
+  const { data: allSeries = [] } = useQuery({
+    queryKey: ["series"],
+    queryFn: () => base44.entities.Series.list()
+  });
+
+  const { data: allFranchises = [] } = useQuery({
+    queryKey: ["franchises"],
+    queryFn: () => base44.entities.Franchise.list()
+  });
+
+  const { data: myRequests = [], refetch: refetchRequests } = useQuery({
+    queryKey: ["my_requests", user?.id],
+    queryFn: () => base44.entities.ContentRequest.filter({ user_id: user.id }),
+    enabled: !!user
+  });
+
   const handleThemeChange = async (color) => {
     await base44.auth.updateMe({ theme_color: color });
     window.location.reload();
@@ -133,6 +157,8 @@ export default function Dashboard() {
   };
 
   const favouriteVideos = videos.filter((v) => user?.favourites?.includes(v.id));
+  const favouriteSeries = allSeries.filter((s) => user?.favourite_series?.includes(s.id));
+  const favouriteFranchises = allFranchises.filter((f) => user?.favourite_franchises?.includes(f.id));
   const cwVideos = continueWatching
     .map(({ id, percent, currentTime }) => ({ video: videos.find((v) => v.id === id), percent, currentTime }))
     .filter((x) => x.video);
@@ -140,6 +166,21 @@ export default function Dashboard() {
   const completedVideos = watchedHistory
     .map(({ id }) => videos.find((v) => v.id === id))
     .filter(Boolean);
+
+  const submitRequest = async (e) => {
+    e.preventDefault();
+    if (!requestTitle) return;
+    setRequesting(true);
+    await base44.entities.ContentRequest.create({
+      user_id: user.id,
+      title: requestTitle,
+      description: requestDesc
+    });
+    setRequestTitle("");
+    setRequestDesc("");
+    setRequesting(false);
+    refetchRequests();
+  };
 
   const startCamera = async () => {
     setCapturedImage(null);
@@ -224,6 +265,51 @@ export default function Dashboard() {
         </div>
 
         {/* Age verification & adult links hidden */}
+
+        {/* Content Requests */}
+        <div>
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" /> Request Content
+          </h2>
+          <Card className="bg-card border-border">
+            <CardContent className="p-6">
+              <form onSubmit={submitRequest} className="space-y-4 mb-6 border-b border-border pb-6">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Movie / TV Series Title *</label>
+                  <Input value={requestTitle} onChange={e => setRequestTitle(e.target.value)} required placeholder="e.g. The Matrix" className="bg-secondary" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Additional Details (Optional)</label>
+                  <Textarea value={requestDesc} onChange={e => setRequestDesc(e.target.value)} placeholder="e.g. Any specific season?" className="bg-secondary" />
+                </div>
+                <Button type="submit" disabled={requesting || !requestTitle}>
+                  {requesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                  Submit Request
+                </Button>
+              </form>
+
+              <div>
+                <h3 className="font-semibold mb-3">My Previous Requests</h3>
+                {myRequests.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">You haven't requested any content yet.</p>
+                ) : (
+                  <div className="grid gap-3">
+                    {myRequests.map(req => (
+                      <div key={req.id} className="flex items-center justify-between bg-secondary p-3 rounded-lg">
+                        <div>
+                          <p className="font-semibold">{req.title}</p>
+                        </div>
+                        <Badge variant={req.status === 'fulfilled' ? 'default' : 'secondary'} className={req.status === 'fulfilled' ? 'bg-green-600' : ''}>
+                          {req.status === 'fulfilled' ? 'Available Now' : 'Pending'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Customisation */}
         <div>
@@ -393,38 +479,68 @@ export default function Dashboard() {
         )}
 
         {/* Favourites */}
-        <div>
-          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+        <div className="space-y-8">
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Heart className="w-5 h-5 text-primary" /> My Favourites
           </h2>
-          {favouriteVideos.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No favourites yet. Click the heart icon on any video to save it here.</p>
+          
+          {(favouriteVideos.length === 0 && favouriteSeries.length === 0 && favouriteFranchises.length === 0) ? (
+            <p className="text-muted-foreground text-sm">No favourites yet. Click the heart icon on any video, series, or franchise to save it here.</p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {favouriteVideos.map((video) => (
-                <Link key={video.id} to={`/watch?id=${video.id}`}>
-                  <div className="relative rounded-lg overflow-hidden bg-secondary group cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                    <div className="aspect-video">
-                      {video.thumbnail_url ? (
-                        <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                          <Play className="w-6 h-6 text-muted-foreground" />
+            <>
+              {favouriteVideos.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Film className="w-4 h-4" /> Movies & Episodes</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {favouriteVideos.map((video) => (
+                      <Link key={video.id} to={`/watch?id=${video.id}`}>
+                        <div className="relative rounded-lg overflow-hidden bg-secondary group cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                          <div className="aspect-video">
+                            {video.thumbnail_url ? (
+                              <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-muted">
+                                <Play className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                                <Play className="w-4 h-4 fill-current text-primary-foreground ml-0.5" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-2">
+                            <p className="text-xs font-semibold text-foreground line-clamp-2">{video.title}</p>
+                          </div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                          <Play className="w-4 h-4 fill-current text-primary-foreground ml-0.5" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-2">
-                      <p className="text-xs font-semibold text-foreground line-clamp-2">{video.title}</p>
-                    </div>
+                      </Link>
+                    ))}
                   </div>
-                </Link>
-              ))}
-            </div>
+                </div>
+              )}
+
+              {favouriteSeries.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Tv className="w-4 h-4" /> TV Series</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {favouriteSeries.map(s => (
+                      <SeriesCard key={s.id} series={s} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {favouriteFranchises.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Film className="w-4 h-4" /> Franchises / Collections</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {favouriteFranchises.map(f => (
+                      <FranchiseCard key={f.id} franchise={f} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
+import ReviewSection from "@/components/browse/ReviewSection";
 import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
 
 import { useCast } from "@/lib/CastContext";
@@ -526,6 +527,10 @@ export default function Watch() {
         {moreVideos.length > 0 && (
           <VideoRow title="You May Also Like" videos={moreVideos} />
         )}
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-6 md:px-16 pb-16">
+        <ReviewSection contentId={videoId} contentType="video" />
       </div>
     </div>
   );
