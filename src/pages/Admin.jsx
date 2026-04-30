@@ -21,6 +21,9 @@ import SortOrderManager from "@/components/admin/SortOrderManager";
 import EditUserModal from "@/components/admin/EditUserModal";
 import DonationSettings from "@/components/admin/DonationSettings";
 import MassLinkUpdater from "@/components/admin/MassLinkUpdater";
+import BillingPlansManager from "@/components/admin/BillingPlansManager";
+import LiveStreamManager from "@/components/admin/LiveStreamManager";
+import BooksManager from "@/components/admin/BooksManager";
 import { Toaster } from "react-hot-toast";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -153,6 +156,9 @@ export default function Admin() {
             <TabsTrigger value="manage">Manage</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
+            <TabsTrigger value="billing">Billing</TabsTrigger>
+            <TabsTrigger value="livestream">Live Stream</TabsTrigger>
+            <TabsTrigger value="books">Books</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -368,6 +374,30 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <DonationSettings />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="billing">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <BillingPlansManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="livestream">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <LiveStreamManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="books">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <BooksManager />
               </CardContent>
             </Card>
           </TabsContent>

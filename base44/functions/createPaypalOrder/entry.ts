@@ -24,7 +24,7 @@ async function getAccessToken() {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { amount, currency = "GBP" } = await req.json();
+    const { amount, currency = "GBP", return_url, cancel_url } = await req.json();
 
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
       return Response.json({ error: "Invalid amount" }, { status: 400 });
@@ -50,8 +50,8 @@ Deno.serve(async (req) => {
         application_context: {
           brand_name: "Xero Streams",
           user_action: "PAY_NOW",
-          return_url: `${req.headers.get("origin") || "https://xerostreams.com"}/donate?success=true`,
-          cancel_url: `${req.headers.get("origin") || "https://xerostreams.com"}/donate?cancelled=true`,
+          return_url: return_url || `${req.headers.get("origin") || "https://xerostreams.com"}/donate?success=true`,
+          cancel_url: cancel_url || `${req.headers.get("origin") || "https://xerostreams.com"}/donate?cancelled=true`,
         },
       }),
     });

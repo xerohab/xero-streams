@@ -1,0 +1,34 @@
+{
+  "name": "Book",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Book title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Book description"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price of the book"
+    },
+    "cover_image": {
+      "type": "string",
+      "description": "URL to the cover image"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to the book file (PDF, EPUB, etc.)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "price"
+  ]
+}

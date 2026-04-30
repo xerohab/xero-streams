@@ -1,0 +1,35 @@
+{
+  "name": "SubscriptionPlan",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Plan name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Plan description"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price per billing interval"
+    },
+    "interval": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "yearly"
+      ],
+      "default": "monthly",
+      "description": "Billing interval"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "price"
+  ]
+}

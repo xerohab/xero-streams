@@ -75,7 +75,12 @@ export default function Navbar() {
             </Button>
           )}
 
-          {/* Leaks link hidden */}
+          <Link to="/live" className="hidden md:inline">
+            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-400 hover:bg-red-500/10">Live</Button>
+          </Link>
+          <Link to="/books" className="hidden md:inline">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Books</Button>
+          </Link>
 
           {isAdmin && (
             <Link to="/admin">

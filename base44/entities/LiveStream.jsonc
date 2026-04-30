@@ -1,0 +1,23 @@
+{
+  "name": "LiveStream",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Stream title"
+    },
+    "stream_url": {
+      "type": "string",
+      "description": "URL of the external live stream"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this stream is currently live"
+    }
+  },
+  "required": [
+    "title",
+    "stream_url"
+  ]
+}

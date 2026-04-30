@@ -53,6 +53,50 @@ export default function Dashboard() {
 
   useEffect(() => { fetchUser(); }, []);
 
+  const { data: plans = [] } = useQuery({
+    queryKey: ["subscription_plans"],
+    queryFn: () => base44.entities.SubscriptionPlan.filter({ is_active: true })
+  });
+
+  const { data: subscriptions = [], refetch: refetchSubscriptions } = useQuery({
+    queryKey: ["user_subscriptions", user?.id],
+    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id }),
+    enabled: !!user
+  });
+
+  const [subscribingTo, setSubscribingTo] = useState(null);
+
+  const handleSubscribe = async (plan) => {
+    if (!user) return;
+    setSubscribingTo(plan.id);
+    try {
+      const res = await base44.functions.invoke("createPaypalOrder", { 
+        amount: plan.price,
+        return_url: window.location.origin + "/callback?success=true",
+        cancel_url: window.location.origin + "/callback?cancelled=true"
+      });
+      if (res.data?.approvalUrl) {
+        localStorage.setItem("pending_plan_purchase", JSON.stringify({ plan_id: plan.id }));
+        window.location.href = res.data.approvalUrl;
+      } else {
+        throw new Error(res.data?.error || "Failed to start checkout");
+      }
+    } catch (err) {
+      console.error(err);
+      setSubscribingTo(null);
+    }
+  };
+
+  const handleCancelSub = async (subId) => {
+    if (confirm("Are you sure you want to cancel your subscription?")) {
+      await base44.entities.UserSubscription.update(subId, { status: "cancelled" });
+      refetchSubscriptions();
+    }
+  };
+
+  const activeSub = subscriptions.find(s => s.status === "active");
+  const activePlan = activeSub ? plans.find(p => p.id === activeSub.plan_id) : null;
+
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
     queryFn: () => base44.entities.Video.list("sort_order"),
@@ -280,6 +324,46 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Billing */}
+        <div>
+          <h2 className="text-lg font-bold text-foreground mb-4">Billing & Subscriptions</h2>
+          <Card className="bg-card border-border mb-6">
+            <CardContent className="p-6">
+              {activeSub ? (
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-foreground">Current Plan: {activePlan?.name || "Unknown"}</h3>
+                    <p className="text-muted-foreground">You are subscribed and have full access.</p>
+                  </div>
+                  <Button variant="destructive" onClick={() => handleCancelSub(activeSub.id)}>Cancel Subscription</Button>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-xl font-bold text-foreground mb-4">Choose a Plan</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {plans.map(plan => (
+                      <div key={plan.id} className="border border-border rounded-lg p-5 flex flex-col">
+                        <h4 className="text-lg font-bold">{plan.name}</h4>
+                        <p className="text-2xl font-black text-primary my-2">${plan.price}<span className="text-sm text-muted-foreground font-normal">/{plan.interval}</span></p>
+                        <p className="text-sm text-muted-foreground mb-4 flex-1">{plan.description}</p>
+                        <Button 
+                          className="w-full" 
+                          onClick={() => handleSubscribe(plan)}
+                          disabled={subscribingTo === plan.id}
+                        >
+                          {subscribingTo === plan.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Subscribe
+                        </Button>
+                      </div>
+                    ))}
+                    {plans.length === 0 && <p className="text-muted-foreground">No active plans available.</p>}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
