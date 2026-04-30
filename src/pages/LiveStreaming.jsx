@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/browse/Navbar";
-import { Loader2, Radio, AlertCircle } from "lucide-react";
+import { Loader2, Radio, AlertCircle, Calendar, Clock } from "lucide-react";
+import { format } from "date-fns";
 
 export default function LiveStreaming() {
   const { data: streams = [], isLoading } = useQuery({
@@ -22,7 +23,7 @@ export default function LiveStreaming() {
           </div>
           <div>
             <h1 className="text-3xl font-black text-foreground">Live Stream</h1>
-            <p className="text-muted-foreground">Watch our 24/7 broadcast</p>
+            <p className="text-muted-foreground">Watch our live stream (when available)</p>
           </div>
         </div>
 
@@ -40,6 +41,40 @@ export default function LiveStreaming() {
             </div>
             <div className="p-6">
               <h2 className="text-2xl font-bold">{stream.title || "Live Stream"}</h2>
+            </div>
+          </div>
+        ) : stream?.upcoming_date ? (
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-lg max-w-3xl mx-auto">
+            {stream.image_url ? (
+              <div className="aspect-video relative w-full bg-muted">
+                <img src={stream.image_url} alt="Upcoming Event" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+                  <h2 className="text-3xl font-bold text-white">{stream.title || "Upcoming Event"}</h2>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-secondary p-8 border-b border-border">
+                <h2 className="text-3xl font-bold text-center">{stream.title || "Upcoming Event"}</h2>
+              </div>
+            )}
+            <div className="p-8 text-center flex flex-col items-center">
+              <div className="flex gap-6 mb-6">
+                <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg">
+                  <Calendar className="w-5 h-5" />
+                  <span className="font-semibold">{format(new Date(stream.upcoming_date), "MMMM do, yyyy")}</span>
+                </div>
+                {stream.upcoming_time && (
+                  <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg">
+                    <Clock className="w-5 h-5" />
+                    <span className="font-semibold">{stream.upcoming_time}</span>
+                  </div>
+                )}
+              </div>
+              {stream.description ? (
+                <p className="text-lg text-muted-foreground max-w-xl mx-auto">{stream.description}</p>
+              ) : (
+                <p className="text-muted-foreground">Stay tuned for our next live stream event.</p>
+              )}
             </div>
           </div>
         ) : (

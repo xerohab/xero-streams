@@ -33,7 +33,7 @@ export default function LiveStreamManager() {
 
   if (isLoading) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
 
-  const stream = streams[0] || { title: "", stream_url: "", is_active: false };
+  const stream = streams[0] || { title: "", stream_url: "", is_active: false, upcoming_date: "", upcoming_time: "", description: "", image_url: "" };
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -41,7 +41,11 @@ export default function LiveStreamManager() {
     const data = {
       title: formData.get("title"),
       stream_url: formData.get("stream_url"),
-      is_active: formData.get("is_active") === "on"
+      is_active: formData.get("is_active") === "on",
+      upcoming_date: formData.get("upcoming_date"),
+      upcoming_time: formData.get("upcoming_time"),
+      description: formData.get("description"),
+      image_url: formData.get("image_url")
     };
 
     if (stream.id) {
@@ -57,17 +61,41 @@ export default function LiveStreamManager() {
       <form onSubmit={handleSave} className="bg-secondary p-4 rounded-lg space-y-4 max-w-xl">
         <div>
           <label className="text-sm font-medium mb-1 block">Stream Title</label>
-          <Input name="title" placeholder="e.g. 24/7 Movie Marathon" defaultValue={stream.title} required />
+          <Input name="title" placeholder="e.g. Live Stream Event" defaultValue={stream.title} required />
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">External Stream URL (Twitch, YouTube embed, M3U8, etc.)</label>
           <Input name="stream_url" placeholder="https://..." defaultValue={stream.stream_url} required />
         </div>
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-2 pt-2 pb-4">
           <Switch name="is_active" defaultChecked={stream.is_active} />
-          <label className="text-sm">Stream is currently Live</label>
+          <label className="text-sm font-bold">Stream is currently Live</label>
         </div>
-        <Button type="submit">Save Stream Settings</Button>
+        
+        <div className="border-t border-border pt-4 space-y-4">
+          <h4 className="font-semibold text-primary">Upcoming Event Information</h4>
+          <p className="text-xs text-muted-foreground">If the stream is not currently live, this information will be shown to users.</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Upcoming Date</label>
+              <Input name="upcoming_date" type="date" defaultValue={stream.upcoming_date} />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Upcoming Time</label>
+              <Input name="upcoming_time" type="time" defaultValue={stream.upcoming_time} />
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Event Description</label>
+            <Input name="description" placeholder="Join us for..." defaultValue={stream.description} />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Event Image URL</label>
+            <Input name="image_url" placeholder="https://..." defaultValue={stream.image_url} />
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full">Save Stream Settings</Button>
       </form>
     </div>
   );

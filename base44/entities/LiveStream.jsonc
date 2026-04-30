@@ -3,17 +3,27 @@
   "type": "object",
   "properties": {
     "title": {
-      "type": "string",
-      "description": "Stream title"
+      "type": "string"
     },
     "stream_url": {
-      "type": "string",
-      "description": "URL of the external live stream"
+      "type": "string"
     },
     "is_active": {
       "type": "boolean",
-      "default": true,
-      "description": "Whether this stream is currently live"
+      "default": true
+    },
+    "upcoming_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "upcoming_time": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
     }
   },
   "required": [

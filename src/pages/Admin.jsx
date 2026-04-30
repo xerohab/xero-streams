@@ -24,6 +24,7 @@ import MassLinkUpdater from "@/components/admin/MassLinkUpdater";
 import BillingPlansManager from "@/components/admin/BillingPlansManager";
 import LiveStreamManager from "@/components/admin/LiveStreamManager";
 import BooksManager from "@/components/admin/BooksManager";
+import StoreManager from "@/components/admin/StoreManager";
 import { Toaster } from "react-hot-toast";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -159,6 +160,7 @@ export default function Admin() {
             <TabsTrigger value="billing">Billing</TabsTrigger>
             <TabsTrigger value="livestream">Live Stream</TabsTrigger>
             <TabsTrigger value="books">Books</TabsTrigger>
+            <TabsTrigger value="store">Store & Downloads</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -398,6 +400,14 @@ export default function Admin() {
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <BooksManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="store">
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <StoreManager />
               </CardContent>
             </Card>
           </TabsContent>
