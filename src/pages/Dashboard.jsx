@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -197,11 +197,13 @@ export default function Dashboard() {
         {/* Age verification & adult links hidden */}
 
         {/* Quick Links */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {[
             { label: "Browse All", icon: Home, to: "/" },
             { label: "Movies", icon: Film, to: "/?tab=movies" },
             { label: "TV Series", icon: TrendingUp, to: "/?tab=tv" },
+            { label: "Live", icon: Radio, to: "/live" },
+            { label: "Books", icon: Book, to: "/books" },
           ].map(({ label, icon: Icon, to }) => (
             <Link key={label} to={to}>
               <Card className="bg-card border-border hover:border-primary/50 transition-colors cursor-pointer group">
