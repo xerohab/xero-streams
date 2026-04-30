@@ -14,6 +14,54 @@ export default function StoreManager() {
   const [editing, setEditing] = useState(null);
   const [editingType, setEditingType] = useState(null); // 'video' or 'book'
   const [searchQuery, setSearchQuery] = useState("");
+  const [grantEmail, setGrantEmail] = useState("");
+  const [granting, setGranting] = useState(false);
+
+  const handleGrantAccess = async () => {
+    if (!grantEmail) return;
+    setGranting(true);
+    try {
+      const users = await base44.entities.User.filter({ email: grantEmail.trim().toLowerCase() });
+      if (users.length === 0) {
+        toast.error("User not found with that email");
+        setGranting(false);
+        return;
+      }
+      const targetUser = users[0];
+      if (editingType === "video") {
+        await base44.entities.VideoPurchase.create({
+          user_id: targetUser.id,
+          video_id: editing.id,
+          status: "completed",
+          paypal_order_id: "admin_granted"
+        });
+      } else {
+        await base44.entities.BookPurchase.create({
+          user_id: targetUser.id,
+          book_id: editing.id,
+          status: "completed",
+          paypal_order_id: "admin_granted"
+        });
+      }
+      
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: targetUser.email,
+          subject: "You have been granted access to " + editing.title,
+          body: `Hi ${targetUser.full_name || 'there'},\n\nYou have been granted access to download ${editing.title}.\n\nYou can download it directly using this link:\n${editing._download_url || "Log in to your dashboard to view the download link."}\n\nAlternatively, log in to your dashboard to view all your downloads.`
+        });
+      } catch (e) {
+        console.error("Email failed:", e);
+      }
+
+      toast.success("Access granted & email sent to " + targetUser.full_name);
+      setGrantEmail("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to grant access");
+    }
+    setGranting(false);
+  };
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
@@ -111,6 +159,7 @@ export default function StoreManager() {
       </div>
 
       {editing !== null && (
+        <>
         <form onSubmit={handleSave} className="bg-secondary p-5 border border-primary/30 rounded-lg space-y-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
             {editingType === 'video' ? <Film className="w-5 h-5 text-primary" /> : <Book className="w-5 h-5 text-primary" />}
@@ -147,6 +196,26 @@ export default function StoreManager() {
             <Button type="submit">Save Store Settings</Button>
           </div>
         </form>
+
+        <div className="bg-secondary p-5 border border-primary/30 rounded-lg space-y-4 mb-6">
+          <h4 className="font-bold text-lg flex items-center gap-2">Grant Individual Access</h4>
+          <p className="text-sm text-muted-foreground">
+            Grant a specific user access to download this item without making it publicly available. They will receive an email with the link and it will appear in their dashboard downloads.
+          </p>
+          <div className="flex gap-2 items-center">
+            <Input 
+              placeholder="User Email Address" 
+              value={grantEmail} 
+              onChange={e => setGrantEmail(e.target.value)} 
+              className="bg-background border-border max-w-sm" 
+            />
+            <Button onClick={handleGrantAccess} disabled={granting || !grantEmail}>
+              {granting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Grant & Email
+            </Button>
+          </div>
+        </div>
+        </>
       )}
 
       <div>
