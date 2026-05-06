@@ -81,7 +81,16 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
 
   const handleEnded = useCallback(() => {
     if (currentIndex < playlist.length - 1) {
-      setCountdown(10);
+      const isFullscreen = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        (videoRef.current && videoRef.current.webkitDisplayingFullscreen)
+      );
+      if (isFullscreen) {
+        setCurrentIndex((i) => i + 1);
+      } else {
+        setCountdown(5);
+      }
     }
   }, [currentIndex, playlist.length]);
 

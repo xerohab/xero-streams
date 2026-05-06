@@ -200,7 +200,7 @@ export default function Watch() {
   // Autoplay countdown
   const startCountdown = useCallback(() => {
     if (!nextVideoRef.current) return;
-    setAutoplayCountdown(10);
+    setAutoplayCountdown(5);
   }, []);
 
   useEffect(() => {
@@ -252,8 +252,21 @@ export default function Watch() {
 
   const handleEnded = useCallback(() => {
     if (video?.id) removeProgress(video.id);
-    startCountdown();
-  }, [video, startCountdown]);
+    
+    // Check if video is natively fullscreen
+    const isFullscreen = !!(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      (videoRef.current && videoRef.current.webkitDisplayingFullscreen)
+    );
+
+    if (isFullscreen && nextVideoRef.current) {
+      // Play immediately to maintain fullscreen state on mobile/desktop
+      navigate(`/watch?id=${nextVideoRef.current.id}`, { replace: true });
+    } else {
+      startCountdown();
+    }
+  }, [video, startCountdown, navigate]);
 
   // Picture-in-Picture
   const handlePiP = async () => {
