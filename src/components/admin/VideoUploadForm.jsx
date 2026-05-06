@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles } from "lucide-react";
+import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles, Search, AudioLines } from "lucide-react";
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
@@ -107,6 +107,71 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
 
   const [fetchingPoster, setFetchingPoster] = useState(false);
   const [fetchingAi, setFetchingAi] = useState(false);
+  const [fetchingSubs, setFetchingSubs] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+
+  const handleFetchSubs = async () => {
+    if (!form.title) {
+        toast.error("Please fill the title first");
+        return;
+    }
+    setFetchingSubs(true);
+    try {
+        const seriesName = seriesList?.find((s) => s.id === form.series_id)?.title;
+        const res = await base44.functions.invoke("fetchOpenSubtitles", {
+            title: seriesName ? `${seriesName} ${form.title}` : form.title,
+            episode_number: form.episode_number,
+        });
+        if (res.data?.vtt) {
+            const file = new File([res.data.vtt], `${form.title}-subs.vtt`, { type: 'text/vtt' });
+            const { file_url } = await base44.integrations.Core.UploadFile({ file });
+            update("subtitles", [...(form.subtitles || []), { language: "en", label: "English", url: file_url }]);
+            toast.success("Subtitles found and attached!");
+        } else {
+            toast.error(res.data?.error || "No subtitles found");
+        }
+    } catch (e) {
+        toast.error("Failed to fetch subtitles");
+    }
+    setFetchingSubs(false);
+  };
+
+  const handleTranscribe = async () => {
+    if (!form.video_url) {
+        toast.error("Please add a video URL first");
+        return;
+    }
+    setTranscribing(true);
+    const toastId = toast.loading("Starting AI transcription...");
+    try {
+        const res = await base44.functions.invoke("startAssemblyTranscription", { videoUrl: form.video_url });
+        if (res.data?.error) throw new Error(res.data.error);
+        const transcriptId = res.data.id;
+        
+        toast.loading("Transcribing video audio (this may take a few minutes)...", { id: toastId });
+        
+        const checkStatus = async () => {
+            const checkRes = await base44.functions.invoke("checkAssemblyTranscription", { transcriptId });
+            if (checkRes.data?.status === 'completed') {
+                const file = new File([checkRes.data.vtt], `${form.title || 'auto'}-subs.vtt`, { type: 'text/vtt' });
+                const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                update("subtitles", [...(form.subtitles || []), { language: "en", label: "English (Auto)", url: file_url }]);
+                toast.success("AI Transcription complete!", { id: toastId });
+                setTranscribing(false);
+            } else if (checkRes.data?.status === 'error') {
+                toast.error("Transcription failed", { id: toastId });
+                setTranscribing(false);
+            } else {
+                setTimeout(checkStatus, 5000);
+            }
+        };
+        
+        setTimeout(checkStatus, 5000);
+    } catch (e) {
+        toast.error(e.message || "Failed to start transcription", { id: toastId });
+        setTranscribing(false);
+    }
+  };
 
   const handleAiFetch = async () => {
     setFetchingAi(true);
@@ -370,9 +435,21 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       </div>
 
       <div className="space-y-2 p-3 bg-secondary/50 rounded-lg">
-        <Label className="flex justify-between items-center">
+        <Label className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <span>Subtitles / Audio Tracks (.vtt)</span>
-          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => update("subtitles", [...(form.subtitles || []), { language: "en", label: "English", url: "" }])}>+ Add Track</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" size="sm" className="h-7 text-xs gap-1" onClick={handleFetchSubs} disabled={fetchingSubs}>
+                {fetchingSubs ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
+                Search OpenSubtitles
+            </Button>
+            <Button type="button" variant="secondary" size="sm" className="h-7 text-xs gap-1" onClick={handleTranscribe} disabled={transcribing}>
+                {transcribing ? <Loader2 className="w-3 h-3 animate-spin" /> : <AudioLines className="w-3 h-3" />}
+                AI Transcribe
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => update("subtitles", [...(form.subtitles || []), { language: "en", label: "English", url: "" }])}>
+                + Add Track
+            </Button>
+          </div>
         </Label>
         {form.subtitles?.map((sub, i) => (
           <div key={i} className="flex gap-2 items-center">
