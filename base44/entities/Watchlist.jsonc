@@ -1,0 +1,48 @@
+{
+  "name": "Watchlist",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "name"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "id": "user_id"
+          }
+        ]
+      }
+    },
+    "create": {
+      "user_condition": {
+        "id": "user_id"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "id": "user_id"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "id": "user_id"
+      }
+    }
+  }
+}

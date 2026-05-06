@@ -6,6 +6,7 @@ import { ArrowLeft, CalendarClock, Clock, Film, Play, Loader2, Users, Star, Down
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
+import WatchlistButton from "@/components/browse/WatchlistButton";
 
 export default function MovieDetail() {
   const navigate = useNavigate();
@@ -201,6 +202,7 @@ export default function MovieDetail() {
                 {loadingCast ? "Loading..." : "Cast & Crew"}
               </Button>
             )}
+            <WatchlistButton videoId={video.id} variant="secondary" />
             {video.is_for_sale && (
               isPurchased ? (
                 <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => window.open(video.download_url, '_blank')}>

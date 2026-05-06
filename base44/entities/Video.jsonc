@@ -20,6 +20,10 @@
     "franchise_id": {
       "type": "string"
     },
+    "category_id": {
+      "type": "string",
+      "description": "ID of VideoCategory"
+    },
     "episode_number": {
       "type": "number"
     },

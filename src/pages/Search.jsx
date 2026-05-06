@@ -12,6 +12,8 @@ export default function Search() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const [query, setQuery] = useState(urlParams.get("q") || "");
+  const [filterType, setFilterType] = useState("all"); // 'all', 'movies', 'series'
+  const [filterCategory, setFilterCategory] = useState("all");
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
@@ -23,24 +25,42 @@ export default function Search() {
     queryFn: () => base44.entities.Series.list(),
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["video_categories"],
+    queryFn: () => base44.entities.VideoCategory.list(),
+  });
+
   const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
 
   const results = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return { videos: [], series: [] };
-    return {
-      videos: videos.filter(
-        (v) =>
-          v.title?.toLowerCase().includes(q) ||
-          v.description?.toLowerCase().includes(q)
-      ),
-      series: seriesList.filter(
-        (s) =>
-          s.title?.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q)
-      ),
-    };
-  }, [query, videos, seriesList]);
+    let filteredVideos = videos;
+    let filteredSeries = seriesList;
+
+    if (q) {
+      filteredVideos = filteredVideos.filter(
+        (v) => v.title?.toLowerCase().includes(q) || v.description?.toLowerCase().includes(q)
+      );
+      filteredSeries = filteredSeries.filter(
+        (s) => s.title?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)
+      );
+    }
+
+    if (filterCategory !== "all") {
+      filteredVideos = filteredVideos.filter(v => v.category_id === filterCategory);
+      filteredSeries = filteredSeries.filter(s => s.category === filterCategory); // Series has enum category
+    }
+
+    if (filterType === "movies") filteredSeries = [];
+    if (filterType === "series") filteredVideos = [];
+
+    // Only return empty if no query AND no filters are applied
+    if (!q && filterType === "all" && filterCategory === "all") {
+      return { videos: [], series: [] };
+    }
+
+    return { videos: filteredVideos, series: filteredSeries };
+  }, [query, videos, seriesList, filterType, filterCategory]);
 
   const hasResults = results.videos.length > 0 || results.series.length > 0;
 
@@ -56,19 +76,49 @@ export default function Search() {
           Back
         </button>
 
-        <div className="relative max-w-2xl mb-10">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search movies, TV shows..."
-            className="pl-10 h-12 text-base bg-card border-border"
-          />
+        <div className="flex flex-col md:flex-row gap-4 max-w-4xl mb-10">
+          <div className="relative flex-1">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search movies, TV shows..."
+              className="pl-10 h-12 text-base bg-card border-border w-full"
+            />
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-card text-foreground"
+            >
+              <option value="all">All Types</option>
+              <option value="movies">Movies</option>
+              <option value="series">TV Series</option>
+            </select>
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="h-12 px-4 rounded-md border border-input bg-card text-foreground"
+            >
+              <option value="all">All Categories</option>
+              <option value="action">Action</option>
+              <option value="comedy">Comedy</option>
+              <option value="drama">Drama</option>
+              <option value="documentary">Documentary</option>
+              <option value="horror">Horror</option>
+              <option value="sci-fi">Sci-Fi</option>
+              <option value="thriller">Thriller</option>
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {query.trim() === "" && (
-          <p className="text-muted-foreground">Start typing to search...</p>
+        {!hasResults && !query && filterType === "all" && filterCategory === "all" && (
+          <p className="text-muted-foreground">Start typing or use filters to search...</p>
         )}
 
         {query.trim() !== "" && !hasResults && (

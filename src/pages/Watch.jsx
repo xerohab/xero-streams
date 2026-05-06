@@ -9,6 +9,7 @@ import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
+import WatchlistButton from "@/components/browse/WatchlistButton";
 import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
 
 import { useCast } from "@/lib/CastContext";
@@ -485,6 +486,7 @@ export default function Watch() {
                     {isFavourited ? "Favourited" : "Favourite"}
                   </Button>
                 )}
+                <WatchlistButton videoId={video.id} />
                 {prevVideo && (
                   <Button
                     variant="secondary"

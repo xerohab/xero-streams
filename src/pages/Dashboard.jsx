@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio, Download as DownloadIcon, Palette, MessageSquare, Plus, Tv
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio, Download as DownloadIcon, Palette, MessageSquare, Plus, Tv, ListVideo, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -143,6 +143,25 @@ export default function Dashboard() {
     queryFn: () => base44.entities.ContentRequest.filter({ user_id: user.id }),
     enabled: !!user
   });
+
+  const { data: watchlists = [], refetch: refetchWatchlists } = useQuery({
+    queryKey: ["watchlists", user?.id],
+    queryFn: () => base44.entities.Watchlist.filter({ user_id: user.id }),
+    enabled: !!user
+  });
+
+  const { data: watchlistItems = [] } = useQuery({
+    queryKey: ["watchlistItems", user?.id],
+    queryFn: () => base44.entities.WatchlistItem.list(),
+    enabled: !!user
+  });
+
+  const deleteWatchlist = async (id) => {
+    if (confirm("Are you sure you want to delete this watchlist?")) {
+      await base44.entities.Watchlist.delete(id);
+      refetchWatchlists();
+    }
+  };
 
   const handleThemeChange = async (color) => {
     await base44.auth.updateMe({ theme_color: color });
@@ -474,6 +493,58 @@ export default function Dashboard() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Watchlists */}
+        {watchlists.length > 0 && (
+          <div className="space-y-8">
+            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <ListVideo className="w-5 h-5 text-primary" /> My Watchlists
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {watchlists.map((wl) => {
+                const items = watchlistItems.filter((i) => i.watchlist_id === wl.id);
+                return (
+                  <Card key={wl.id} className="bg-card border-border overflow-hidden">
+                    <CardHeader className="bg-secondary/50 pb-3 flex flex-row items-center justify-between">
+                      <CardTitle className="text-base">{wl.name}</CardTitle>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteWatchlist(wl.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      {items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No items in this watchlist yet.</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {items.slice(0, 3).map((item) => {
+                            const video = item.video_id ? videos.find((v) => v.id === item.video_id) : null;
+                            if (!video) return null;
+                            return (
+                              <Link key={item.id} to={`/watch?id=${video.id}`}>
+                                <div className="relative aspect-video rounded-md overflow-hidden bg-secondary group">
+                                  {video.thumbnail_url ? (
+                                    <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center"><Play className="w-4 h-4 text-muted-foreground" /></div>
+                                  )}
+                                </div>
+                              </Link>
+                            );
+                          })}
+                          {items.length > 3 && (
+                            <div className="relative aspect-video rounded-md overflow-hidden bg-secondary flex items-center justify-center">
+                              <span className="text-sm font-semibold text-muted-foreground">+{items.length - 3}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         )}

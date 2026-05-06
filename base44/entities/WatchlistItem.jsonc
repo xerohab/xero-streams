@@ -1,0 +1,18 @@
+{
+  "name": "WatchlistItem",
+  "type": "object",
+  "properties": {
+    "watchlist_id": {
+      "type": "string"
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "series_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "watchlist_id"
+  ]
+}
