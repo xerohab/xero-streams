@@ -112,9 +112,8 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Video element — key forces remount on src change */}
+      {/* Video element */}
       <video
-        key={current.src}
         ref={videoRef}
         controls
         autoPlay

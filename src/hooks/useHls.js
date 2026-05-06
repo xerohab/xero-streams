@@ -83,12 +83,14 @@ export default function useHls(videoRef, src) {
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         // Safari native HLS
         video.src = src;
+        video.play().catch(() => {});
       }
     } else {
       // Native: mp4, mkv, webm, mov, avi, etc.
       const safeSrc = encodeVideoUrl(src);
       console.log("[useHls] Native playback for:", safeSrc);
       video.src = safeSrc;
+      video.play().catch(() => {});
       video.addEventListener("error", () => {
         const e = video.error;
         console.error("[Video Error] Native playback error", {

@@ -49,5 +49,12 @@
         "type": "string"
       }
     }
-  }
+  },
+  "required": [
+    "date_of_birth",
+    "favourites",
+    "favourite_series",
+    "favourite_franchises",
+    "homepage_rows"
+  ]
 }

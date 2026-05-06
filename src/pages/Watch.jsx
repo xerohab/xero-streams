@@ -90,22 +90,27 @@ export default function Watch() {
 
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
 
-  const { data: video, isLoading } = useQuery({
+  const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
+    queryKey: ["videos"],
+    queryFn: () => base44.entities.Video.list("sort_order"),
+    staleTime: Infinity,
+  });
+
+  const videoFromAll = allVideos.find(v => v.id === videoId);
+
+  const { data: fetchedVideo, isLoading: isFetchingVideo } = useQuery({
     queryKey: ["video", videoId],
     queryFn: async () => {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
     },
-    enabled: !!videoId,
+    enabled: !!videoId && !videoFromAll,
     staleTime: Infinity,
     gcTime: Infinity,
   });
 
-  const { data: allVideos = [] } = useQuery({
-    queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("sort_order"),
-    staleTime: Infinity,
-  });
+  const video = videoFromAll || fetchedVideo;
+  const isLoading = !video && (isFetchingVideo || isLoadingAll);
 
   const { data: seriesList = [] } = useQuery({
     queryKey: ["series"],
