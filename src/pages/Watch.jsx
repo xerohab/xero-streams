@@ -37,6 +37,7 @@ export default function Watch() {
   const [showSkipRecap, setShowSkipRecap] = useState(false);
 
   const lastSaveRef = useRef(0);
+  const countdownStartedRef = useRef(false);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const nextVideoRef = useRef(null);
@@ -201,9 +202,9 @@ export default function Watch() {
   const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
 
   // Autoplay countdown
-  const startCountdown = useCallback(() => {
+  const startCountdown = useCallback((seconds = 10) => {
     if (!nextVideoRef.current) return;
-    setAutoplayCountdown(5);
+    setAutoplayCountdown(seconds);
   }, []);
 
   useEffect(() => {
@@ -219,11 +220,13 @@ export default function Watch() {
 
   useEffect(() => {
     setAutoplayCountdown(null);
+    countdownStartedRef.current = false;
     clearTimeout(countdownRef.current);
   }, [videoId]);
 
   const cancelAutoplay = () => {
     setAutoplayCountdown(null);
+    countdownStartedRef.current = true; // prevent starting again on same video
     clearTimeout(countdownRef.current);
   };
 
@@ -249,6 +252,7 @@ export default function Watch() {
     if (!videoRef.current || !video) return;
     const now = Date.now();
     const t = videoRef.current.currentTime;
+    const duration = videoRef.current.duration;
     
     if (video.intro_start != null && video.intro_end != null && t >= video.intro_start && t < video.intro_end) {
       setShowSkipIntro(true);
@@ -262,14 +266,21 @@ export default function Watch() {
       setShowSkipRecap(false);
     }
 
+    if (duration > 0 && duration - t <= 10 && !countdownStartedRef.current && nextVideoRef.current) {
+      countdownStartedRef.current = true;
+      startCountdown(10);
+    }
+
     if (now - lastSaveRef.current < 10000) return;
     lastSaveRef.current = now;
-    saveProgress(video, t, videoRef.current.duration);
-  }, [video]);
+    saveProgress(video, t, duration);
+  }, [video, startCountdown]);
 
   const handleEnded = useCallback(() => {
     if (video?.id) removeProgress(video.id);
-    startCountdown();
+    if (!countdownStartedRef.current) {
+      startCountdown(0);
+    }
   }, [video, startCountdown]);
 
   // Picture-in-Picture
