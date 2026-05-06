@@ -81,16 +81,7 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
 
   const handleEnded = useCallback(() => {
     if (currentIndex < playlist.length - 1) {
-      const isFullscreen = !!(
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        (videoRef.current && videoRef.current.webkitDisplayingFullscreen)
-      );
-      if (isFullscreen) {
-        setCurrentIndex((i) => i + 1);
-      } else {
-        setCountdown(5);
-      }
+      setCountdown(5);
     }
   }, [currentIndex, playlist.length]);
 
@@ -189,22 +180,32 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
 
       {/* Up next countdown overlay */}
       {countdown !== null && hasNext && (
-        <div style={{
-          position: "absolute",
-          bottom: 90,
-          right: 20,
-          background: "rgba(0,0,0,0.88)",
-          backdropFilter: "blur(10px)",
-          borderRadius: 14,
-          padding: "16px 20px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: 10,
-          zIndex: 20,
-          fontFamily: "sans-serif",
-          minWidth: 200,
-        }}>
+        <dialog
+          className="up-next-dialog"
+          ref={el => { if (el && !el.open) el.showModal(); }}
+          onCancel={(e) => { e.preventDefault(); cancelNext(); }}
+          style={{
+            position: "fixed",
+            bottom: 90,
+            right: 20,
+            left: "auto",
+            top: "auto",
+            background: "rgba(0,0,0,0.88)",
+            backdropFilter: "blur(10px)",
+            borderRadius: 14,
+            padding: "16px 20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 10,
+            zIndex: 20,
+            fontFamily: "sans-serif",
+            minWidth: 200,
+            border: "none",
+            margin: 0
+          }}
+        >
+          <style>{`.up-next-dialog::backdrop { background: transparent; }`}</style>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <SkipForward size={14} color="#aaa" />
             <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Up Next</span>
@@ -227,7 +228,10 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
               Cancel
             </button>
             <button
-              onClick={playNext}
+              onClick={() => {
+                cancelNext();
+                playNext();
+              }}
               style={{
                 background: "#e53e3e",
                 color: "#fff",
@@ -242,7 +246,7 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
               Play in {countdown}s
             </button>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

@@ -252,21 +252,8 @@ export default function Watch() {
 
   const handleEnded = useCallback(() => {
     if (video?.id) removeProgress(video.id);
-    
-    // Check if video is natively fullscreen
-    const isFullscreen = !!(
-      document.fullscreenElement ||
-      document.webkitFullscreenElement ||
-      (videoRef.current && videoRef.current.webkitDisplayingFullscreen)
-    );
-
-    if (isFullscreen && nextVideoRef.current) {
-      // Play immediately to maintain fullscreen state on mobile/desktop
-      navigate(`/watch?id=${nextVideoRef.current.id}`, { replace: true });
-    } else {
-      startCountdown();
-    }
-  }, [video, startCountdown, navigate]);
+    startCountdown();
+  }, [video, startCountdown]);
 
   // Picture-in-Picture
   const handlePiP = async () => {
@@ -415,19 +402,28 @@ export default function Watch() {
 
               {/* Autoplay countdown overlay */}
               {autoplayCountdown !== null && nextVideo && (
-                <div className="absolute bottom-20 right-4 bg-black/80 backdrop-blur-sm rounded-xl p-4 flex flex-col items-end gap-2 z-20">
+                <dialog
+                  ref={el => { if (el && !el.open) el.showModal(); }}
+                  onCancel={(e) => { e.preventDefault(); cancelAutoplay(); }}
+                  className="up-next-dialog bg-black/80 backdrop-blur-sm rounded-xl p-4 border-none m-0 fixed z-50 flex-col items-end gap-2"
+                  style={{ bottom: '5rem', right: '1rem', left: 'auto', top: 'auto', display: 'flex' }}
+                >
+                  <style>{`.up-next-dialog::backdrop { background: transparent; }`}</style>
                   <p className="text-white text-sm font-semibold">Up Next</p>
                   <p className="text-muted-foreground text-xs max-w-[180px] truncate">{nextVideo.title}</p>
                   <div className="flex items-center gap-2">
                     <button onClick={cancelAutoplay} className="text-xs text-muted-foreground hover:text-white transition-colors">Cancel</button>
                     <button
-                      onClick={() => navigate(`/watch?id=${nextVideo.id}`)}
+                      onClick={() => {
+                        cancelAutoplay();
+                        navigate(`/watch?id=${nextVideo.id}`, { replace: true });
+                      }}
                       className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
                     >
                       Play in {autoplayCountdown}s
                     </button>
                   </div>
-                </div>
+                </dialog>
               )}
             </div>
           </div>
