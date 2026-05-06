@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
@@ -168,20 +169,7 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
             <Input type="number" value={form.sort_order} onChange={(e) => update("sort_order", e.target.value)} className="bg-secondary border-border" placeholder="0 = first" />
           </div>
           {franchises.length > 0 && (
-            <div className="space-y-1">
-              <Label>Franchise / Collection</Label>
-              <Select value={form.franchise_id || "_none"} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="No franchise" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">No Franchise</SelectItem>
-                  {franchises.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FranchiseSearchSelect franchises={franchises} value={form.franchise_id} onChange={(id) => update("franchise_id", id)} />
           )}
           <div className="space-y-1">
             <Label>Cover Image</Label>

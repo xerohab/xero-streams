@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Upload, Loader2, Layers, Sparkles, ImageIcon, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
+import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
 
@@ -183,20 +184,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       </div>
 
       {franchises.length > 0 && (
-        <div className="space-y-2">
-          <Label>Franchise / Collection</Label>
-          <Select value={form.franchise_id} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="No franchise" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_none">No Franchise</SelectItem>
-              {franchises.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <FranchiseSearchSelect franchises={franchises} value={form.franchise_id} onChange={(id) => update("franchise_id", id)} />
       )}
 
       <div className="space-y-2">

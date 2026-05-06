@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload, Sparkles, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
+import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 
 export default function EditVideoModal({ video, seriesList, franchises = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -216,20 +217,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
             label="Series"
           />
           {franchises.length > 0 && (
-            <div className="space-y-1">
-              <Label>Franchise / Collection</Label>
-              <Select value={form.franchise_id || "_none"} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="No franchise" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">No Franchise</SelectItem>
-                  {franchises.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FranchiseSearchSelect franchises={franchises} value={form.franchise_id} onChange={(id) => update("franchise_id", id)} />
           )}
           <div className="space-y-1">
             <Label>Duration</Label>

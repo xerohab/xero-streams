@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
+import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 
 export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
   const [uploading, setUploading] = useState(false);
@@ -296,20 +297,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       </div>
 
       {franchises.length > 0 && (
-        <div className="space-y-2">
-          <Label>Franchise / Collection</Label>
-          <Select value={form.franchise_id} onValueChange={(v) => update("franchise_id", v === "_none" ? "" : v)}>
-            <SelectTrigger className="bg-secondary border-border">
-              <SelectValue placeholder="No franchise" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_none">No Franchise</SelectItem>
-              {franchises.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <FranchiseSearchSelect franchises={franchises} value={form.franchise_id} onChange={(id) => update("franchise_id", id)} />
       )}
 
       <div className="space-y-2">
