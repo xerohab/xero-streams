@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,6 +151,46 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
   };
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  useEffect(() => {
+    if (form.video_url && !form.title) {
+      try {
+        const link = form.video_url;
+        const filename = decodeURIComponent(link.split('/').pop().split('?')[0]);
+        const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
+        let episodeNumber = null;
+
+        const patterns = [
+          /[Ss]\d+[Ee](\d+)/,
+          /[Ee]p(?:isode)?[-_\s]?(\d+)/i,
+          /[-_](\d+)[-_]?$/,
+          /[\s._-](\d+)[\s._-]/,
+          /^(\d+)[\s._-]/,
+          /(\d+)$/,
+        ];
+
+        for (const pattern of patterns) {
+          const m = (nameWithoutExt + ' ' + link).match(pattern);
+          if (m) {
+            episodeNumber = parseInt(m[1], 10);
+            break;
+          }
+        }
+
+        let title = nameWithoutExt
+          .replace(/[-_]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        title = title.replace(/\b\w/g, c => c.toUpperCase());
+
+        setForm(prev => ({
+          ...prev,
+          title: prev.title || title,
+          episode_number: prev.episode_number || (episodeNumber ? String(episodeNumber) : prev.episode_number)
+        }));
+      } catch (e) {}
+    }
+  }, [form.video_url]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
