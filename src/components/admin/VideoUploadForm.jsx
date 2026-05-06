@@ -31,6 +31,11 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     is_for_sale: false,
     price: "",
     download_url: "",
+    intro_start: "",
+    intro_end: "",
+    recap_start: "",
+    recap_end: "",
+    subtitles: [],
   });
 
   const handleFileUpload = async (e) => {
@@ -65,6 +70,11 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       is_for_sale: form.is_for_sale,
       price: form.price ? Number(form.price) : undefined,
       download_url: form.download_url || undefined,
+      intro_start: form.intro_start !== "" ? Number(form.intro_start) : undefined,
+      intro_end: form.intro_end !== "" ? Number(form.intro_end) : undefined,
+      recap_start: form.recap_start !== "" ? Number(form.recap_start) : undefined,
+      recap_end: form.recap_end !== "" ? Number(form.recap_end) : undefined,
+      subtitles: form.subtitles.filter(s => s.url.trim() !== ""),
     };
     await base44.entities.Video.create(payload);
     toast.success("Video added successfully!");
@@ -85,6 +95,11 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       is_for_sale: false,
       price: "",
       download_url: "",
+      intro_start: "",
+      intro_end: "",
+      recap_start: "",
+      recap_end: "",
+      subtitles: [],
     });
     onSuccess?.();
   };
@@ -305,6 +320,55 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
           placeholder="e.g. 24:30"
           className="bg-secondary border-border"
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 p-3 bg-secondary/50 rounded-lg">
+        <div className="space-y-2">
+          <Label>Intro Start (sec)</Label>
+          <Input type="number" value={form.intro_start} onChange={(e) => update("intro_start", e.target.value)} className="bg-secondary border-border" />
+        </div>
+        <div className="space-y-2">
+          <Label>Intro End (sec)</Label>
+          <Input type="number" value={form.intro_end} onChange={(e) => update("intro_end", e.target.value)} className="bg-secondary border-border" />
+        </div>
+        <div className="space-y-2">
+          <Label>Recap Start (sec)</Label>
+          <Input type="number" value={form.recap_start} onChange={(e) => update("recap_start", e.target.value)} className="bg-secondary border-border" />
+        </div>
+        <div className="space-y-2">
+          <Label>Recap End (sec)</Label>
+          <Input type="number" value={form.recap_end} onChange={(e) => update("recap_end", e.target.value)} className="bg-secondary border-border" />
+        </div>
+      </div>
+
+      <div className="space-y-2 p-3 bg-secondary/50 rounded-lg">
+        <Label className="flex justify-between items-center">
+          <span>Subtitles / Audio Tracks (.vtt)</span>
+          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => update("subtitles", [...(form.subtitles || []), { language: "en", label: "English", url: "" }])}>+ Add Track</Button>
+        </Label>
+        {form.subtitles?.map((sub, i) => (
+          <div key={i} className="flex gap-2 items-center">
+            <Input placeholder="Lang (en)" value={sub.language} onChange={(e) => {
+              const newSubs = [...form.subtitles];
+              newSubs[i].language = e.target.value;
+              update("subtitles", newSubs);
+            }} className="w-20 bg-secondary border-border text-xs" />
+            <Input placeholder="Label" value={sub.label} onChange={(e) => {
+              const newSubs = [...form.subtitles];
+              newSubs[i].label = e.target.value;
+              update("subtitles", newSubs);
+            }} className="w-24 bg-secondary border-border text-xs" />
+            <Input placeholder="URL" value={sub.url} onChange={(e) => {
+              const newSubs = [...form.subtitles];
+              newSubs[i].url = e.target.value;
+              update("subtitles", newSubs);
+            }} className="flex-1 bg-secondary border-border text-xs" />
+            <Button type="button" variant="ghost" size="sm" className="text-destructive h-8 px-2" onClick={() => {
+              const newSubs = form.subtitles.filter((_, idx) => idx !== i);
+              update("subtitles", newSubs);
+            }}>X</Button>
+          </div>
+        ))}
       </div>
 
       <div className="space-y-2">

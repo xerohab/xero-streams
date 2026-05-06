@@ -67,6 +67,35 @@
     },
     "download_url": {
       "type": "string"
+    },
+    "intro_start": {
+      "type": "number"
+    },
+    "intro_end": {
+      "type": "number"
+    },
+    "recap_start": {
+      "type": "number"
+    },
+    "recap_end": {
+      "type": "number"
+    },
+    "subtitles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [

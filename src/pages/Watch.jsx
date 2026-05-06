@@ -33,6 +33,8 @@ export default function Watch() {
   const countdownRef = useRef(null);
   const [user, setUser] = useState(null);
   const [isFavourited, setIsFavourited] = useState(false);
+  const [showSkipIntro, setShowSkipIntro] = useState(false);
+  const [showSkipRecap, setShowSkipRecap] = useState(false);
 
   const lastSaveRef = useRef(0);
   // Track current video id being played (for seamless next-episode without navigate)
@@ -246,9 +248,23 @@ export default function Watch() {
   const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current || !video) return;
     const now = Date.now();
+    const t = videoRef.current.currentTime;
+    
+    if (video.intro_start != null && video.intro_end != null && t >= video.intro_start && t < video.intro_end) {
+      setShowSkipIntro(true);
+    } else {
+      setShowSkipIntro(false);
+    }
+    
+    if (video.recap_start != null && video.recap_end != null && t >= video.recap_start && t < video.recap_end) {
+      setShowSkipRecap(true);
+    } else {
+      setShowSkipRecap(false);
+    }
+
     if (now - lastSaveRef.current < 10000) return;
     lastSaveRef.current = now;
-    saveProgress(video, videoRef.current.currentTime, videoRef.current.duration);
+    saveProgress(video, t, videoRef.current.duration);
   }, [video]);
 
   const handleEnded = useCallback(() => {
@@ -376,7 +392,29 @@ export default function Watch() {
                       meaning: ["", "ABORTED", "NETWORK_ERROR", "DECODE_ERROR", "SRC_NOT_SUPPORTED"][err?.code] || "UNKNOWN",
                     });
                   }}
-                />
+                >
+                  {video.subtitles?.map((sub, i) => (
+                    <track key={i} src={sub.url} kind="subtitles" srcLang={sub.language} label={sub.label} />
+                  ))}
+                </video>
+              )}
+
+              {/* Skip Buttons */}
+              {showSkipIntro && (
+                <button
+                  onClick={() => videoRef.current.currentTime = video.intro_end}
+                  className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 border border-white/20 transition-all flex items-center gap-2 text-sm shadow-lg"
+                >
+                  <SkipForward className="w-4 h-4" /> Skip Intro
+                </button>
+              )}
+              {showSkipRecap && (
+                <button
+                  onClick={() => videoRef.current.currentTime = video.recap_end}
+                  className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 border border-white/20 transition-all flex items-center gap-2 text-sm shadow-lg"
+                >
+                  <SkipForward className="w-4 h-4" /> Skip Recap
+                </button>
               )}
 
               {/* Top-right controls — hidden when coming soon or embedded */}
