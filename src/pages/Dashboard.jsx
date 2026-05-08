@@ -190,15 +190,25 @@ export default function Dashboard() {
     e.preventDefault();
     if (!requestTitle) return;
     setRequesting(true);
-    await base44.entities.ContentRequest.create({
-      user_id: user.id,
-      title: requestTitle,
-      description: requestDesc
-    });
-    setRequestTitle("");
-    setRequestDesc("");
-    setRequesting(false);
-    refetchRequests();
+    try {
+      const payload = {
+        user_id: user.id,
+        title: requestTitle,
+        status: "pending"
+      };
+      if (requestDesc) {
+        payload.description = requestDesc;
+      }
+      await base44.entities.ContentRequest.create(payload);
+      setRequestTitle("");
+      setRequestDesc("");
+      refetchRequests();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit request: " + (err.message || "Unknown error"));
+    } finally {
+      setRequesting(false);
+    }
   };
 
   const startCamera = async () => {
