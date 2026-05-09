@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2, Sparkles, Wand2, ImageIcon } from "lucide-react";
+
+const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 import toast from "react-hot-toast";
 
 export default function FranchiseForm({ onSuccess }) {
@@ -12,7 +15,7 @@ export default function FranchiseForm({ onSuccess }) {
   const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
   const [fetchingPoster, setFetchingPoster] = useState(false);
   const [aiNaming, setAiNaming] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", cover_image: "" });
+  const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "" });
 
   const handleAiDescription = async () => {
     if (!form.title) return;
@@ -79,9 +82,12 @@ export default function FranchiseForm({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await base44.entities.Franchise.create(form);
+    await base44.entities.Franchise.create({
+      ...form,
+      category: form.category || undefined,
+    });
     toast.success("Franchise created!");
-    setForm({ title: "", description: "", cover_image: "" });
+    setForm({ title: "", description: "", cover_image: "", category: "" });
     onSuccess?.();
   };
 
@@ -133,6 +139,21 @@ export default function FranchiseForm({ onSuccess }) {
           placeholder="What's this franchise about? (or use AI Auto-Fill)"
           className="bg-secondary border-border h-20"
         />
+      </div>
+      <div className="space-y-2">
+        <Label>Category</Label>
+        <Select value={form.category} onValueChange={(v) => update("category", v)}>
+          <SelectTrigger className="bg-secondary border-border">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c.charAt(0).toUpperCase() + c.slice(1).replace("-", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label>Cover Image</Label>
