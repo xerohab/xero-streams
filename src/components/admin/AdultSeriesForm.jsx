@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Upload, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
-const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
+const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
 export default function AdultSeriesForm({ imageCategories, videoCategories, onSuccess }) {
   const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "", series_type: "video" });

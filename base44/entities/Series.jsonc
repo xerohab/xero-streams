@@ -26,6 +26,12 @@
         "thriller",
         "education",
         "music",
+        "crime",
+        "mystery",
+        "fantasy",
+        "romance",
+        "animation",
+        "adventure",
         "other"
       ],
       "description": "Series category"

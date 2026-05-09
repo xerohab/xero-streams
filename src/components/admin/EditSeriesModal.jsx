@@ -11,7 +11,7 @@ import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 
-const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
+const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
 export default function EditSeriesModal({ series, franchises = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({

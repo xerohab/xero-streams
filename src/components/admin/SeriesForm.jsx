@@ -10,7 +10,7 @@ import { Upload, Loader2, Layers, Sparkles, ImageIcon, Wand2 } from "lucide-reac
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 
-const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "other"];
+const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
 export default function SeriesForm({ franchises = [], onSuccess }) {
   const [uploadingCover, setUploadingCover] = useState(false);

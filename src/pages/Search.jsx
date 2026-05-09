@@ -110,6 +110,15 @@ export default function Search() {
               <option value="horror">Horror</option>
               <option value="sci-fi">Sci-Fi</option>
               <option value="thriller">Thriller</option>
+              <option value="education">Education</option>
+              <option value="music">Music</option>
+              <option value="crime">Crime</option>
+              <option value="mystery">Mystery</option>
+              <option value="fantasy">Fantasy</option>
+              <option value="romance">Romance</option>
+              <option value="animation">Animation</option>
+              <option value="adventure">Adventure</option>
+              <option value="other">Other</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.title}</option>
               ))}
