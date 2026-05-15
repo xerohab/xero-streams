@@ -40,6 +40,9 @@ export default function Home() {
 
   const isLoading = loadingVideos || loadingSeries;
 
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
   // Latest 5 for hero banner — exclude adult content
   const heroVideos = videos.filter((v) => !v.is_adult).slice(0, 5);
 
@@ -51,10 +54,14 @@ export default function Home() {
   const adultVideos = videos.filter((v) => v.is_adult);
   const adultSeries = seriesList.filter((s) => s.is_adult);
 
+  const latestVideos = safeVideos
+    .filter((v) => new Date(v.created_date) >= sevenDaysAgo)
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
   // Movies: standalone movies only
   // Exclude anything with a series_id, typed as episode, or has an episode_number (coming soon episodes)
   const movies = safeVideos.filter(
-    (v) => !v.series_id && v.content_type !== "episode" && !v.episode_number
+    (v) => !v.series_id && v.content_type !== "episode" && !v.episode_number && new Date(v.created_date) < sevenDaysAgo
   );
 
   // Franchises with content (safe only — no adult), newest first
@@ -92,7 +99,7 @@ export default function Home() {
   const moviesByFranchise = franchisesWithContent
     .map((f) => ({
       franchise: f,
-      movies: safeVideos.filter((v) => v.franchise_id === f.id)
+      movies: safeVideos.filter((v) => v.franchise_id === f.id && (!v.series_id && v.content_type !== "episode" && !v.episode_number ? new Date(v.created_date) < sevenDaysAgo : true))
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }))
     .filter((g) => g.movies.length > 0);
@@ -105,7 +112,7 @@ export default function Home() {
     .filter((s) => adultVideos.some((v) => v.series_id === s.id));
   const adultEpisodeCount = (seriesId) => adultVideos.filter((v) => v.series_id === seriesId).length;
 
-  const rows = user?.homepage_rows || ["hero", "continue_watching", "favourites", "tv", "movies"];
+  const rows = user?.homepage_rows || ["hero", "latest", "continue_watching", "favourites", "tv", "movies"];
 
   if (isLoading) {
     return (
@@ -163,6 +170,16 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
+        {/* Latest Row */}
+        {rows.includes("latest") && latestVideos.length > 0 && activeTab === "all" && (
+          <div className="mb-12">
+            <VideoRow 
+              title="Latest" 
+              videos={latestVideos} 
+            />
+          </div>
+        )}
+
         {rows.includes("continue_watching") && <ContinueWatchingRow />}
 
         {/* Favourites Row */}
