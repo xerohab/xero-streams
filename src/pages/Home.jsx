@@ -56,7 +56,8 @@ export default function Home() {
 
   const latestVideos = safeVideos
     .filter((v) => new Date(v.created_date) >= sevenDaysAgo)
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+    .slice(0, 6);
 
   // Movies: standalone movies only
   // Exclude anything with a series_id, typed as episode, or has an episode_number (coming soon episodes)
