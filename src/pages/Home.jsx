@@ -60,9 +60,9 @@ export default function Home() {
     .slice(0, 6);
 
   // Movies: standalone movies only
-  // Exclude anything with a series_id, typed as episode, or has an episode_number (coming soon episodes)
+  // Exclude anything with a series_id, typed as episode
   const movies = safeVideos.filter(
-    (v) => !v.series_id && v.content_type !== "episode" && !v.episode_number
+    (v) => !v.series_id && v.content_type !== "episode"
   );
 
   // Franchises with content (safe only — no adult), newest first
@@ -100,7 +100,7 @@ export default function Home() {
   const moviesByFranchise = franchisesWithContent
     .map((f) => ({
       franchise: f,
-      movies: safeVideos.filter((v) => v.franchise_id === f.id)
+      movies: movies.filter((v) => v.franchise_id === f.id)
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
     }))
     .filter((g) => g.movies.length > 0);
