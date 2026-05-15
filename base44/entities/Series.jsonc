@@ -49,6 +49,13 @@
       "type": "number",
       "default": 0,
       "description": "Display order within franchise"
+    },
+    "release_year": {
+      "type": "number"
+    },
+    "cast": {
+      "type": "string",
+      "description": "Comma-separated list of cast members"
     }
   },
   "required": [

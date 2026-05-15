@@ -58,6 +58,13 @@
       "type": "string",
       "format": "date"
     },
+    "release_year": {
+      "type": "number"
+    },
+    "cast": {
+      "type": "string",
+      "description": "Comma-separated list of cast members"
+    },
     "is_for_sale": {
       "type": "boolean",
       "default": false

@@ -28,6 +28,8 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     content_type: video?.content_type || "movie",
     coming_soon: video?.coming_soon || false,
     release_date: video?.release_date || "",
+    release_year: video?.release_year ?? "",
+    cast: video?.cast || "",
     is_for_sale: video?.is_for_sale || false,
     price: video?.price ?? "",
     download_url: video?.download_url || "",
@@ -166,6 +168,8 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
         content_type: video.content_type || "movie",
         coming_soon: video.coming_soon || false,
         release_date: video.release_date || "",
+        release_year: video.release_year ?? "",
+        cast: video.cast || "",
         is_for_sale: video.is_for_sale || false,
         price: video.price ?? "",
         download_url: video.download_url || "",
@@ -197,6 +201,8 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
       sort_order: form.sort_order !== "" ? Number(form.sort_order) : 0,
       series_id: form.series_id || undefined,
       franchise_id: form.franchise_id || undefined,
+      release_year: form.release_year ? Number(form.release_year) : undefined,
+      cast: form.cast || undefined,
       is_for_sale: form.is_for_sale,
       price: form.price !== "" ? Number(form.price) : undefined,
       download_url: form.download_url || undefined,
@@ -273,6 +279,16 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
             <div className="space-y-1">
               <Label>Sort Order</Label>
               <Input type="number" value={form.sort_order} onChange={(e) => update("sort_order", e.target.value)} className="bg-secondary border-border" placeholder="0" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Release Year</Label>
+              <Input type="number" value={form.release_year} onChange={(e) => update("release_year", e.target.value)} className="bg-secondary border-border" placeholder="e.g. 2023" />
+            </div>
+            <div className="space-y-1">
+              <Label>Cast</Label>
+              <Input value={form.cast} onChange={(e) => update("cast", e.target.value)} className="bg-secondary border-border" placeholder="Tom Hanks, ..." />
             </div>
           </div>
           <SeriesSearchSelect
