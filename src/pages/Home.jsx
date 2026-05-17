@@ -60,9 +60,9 @@ export default function Home() {
     .slice(0, 6);
 
   // Movies: standalone movies only
-  // Exclude anything with a series_id, typed as episode
+  // Exclude anything with a series_id
   const movies = safeVideos.filter(
-    (v) => !v.series_id && v.content_type !== "episode"
+    (v) => !v.series_id
   );
 
   // Franchises with content (safe only — no adult), newest first
