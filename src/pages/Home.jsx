@@ -104,9 +104,10 @@ export default function Home() {
       return {
         franchise: f,
         series: seriesWithEpisodes.filter((s) => allIds.includes(s.franchise_id)),
+        totalItems: seriesWithEpisodes.filter((s) => allIds.includes(s.franchise_id)).length + movies.filter((v) => allIds.includes(v.franchise_id)).length
       };
     })
-    .filter((g) => g.series.length > 0);
+    .filter((g) => g.series.length > 0 || g.franchise.title.toLowerCase().includes("wrestling"));
 
   const ungroupedSeries = seriesWithEpisodes.filter((s) => !s.franchise_id || !franchises.some((f) => f.id === s.franchise_id));
 
@@ -118,9 +119,10 @@ export default function Home() {
         franchise: f,
         movies: movies.filter((v) => allIds.includes(v.franchise_id))
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+        totalItems: seriesWithEpisodes.filter((s) => allIds.includes(s.franchise_id)).length + movies.filter((v) => allIds.includes(v.franchise_id)).length
       };
     })
-    .filter((g) => g.movies.length > 0);
+    .filter((g) => g.movies.length > 0 && !g.franchise.title.toLowerCase().includes("wrestling"));
 
   const ungroupedMovies = movies.filter((v) => !v.franchise_id || !franchises.some((f) => f.id === v.franchise_id));
 
@@ -226,9 +228,9 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(() => {
                 // Merge franchises and standalone series, sorted by newest created_date
-                const franchiseItems = seriesByFranchise.map(({ franchise, series }) => ({
+                const franchiseItems = seriesByFranchise.map(({ franchise, totalItems }) => ({
                   date: franchise.created_date,
-                  el: <FranchiseCard key={franchise.id} franchise={franchise} itemCount={series.length} itemLabel="Series" />,
+                  el: <FranchiseCard key={franchise.id} franchise={franchise} itemCount={totalItems} itemLabel="Titles" />,
                 }));
                 const seriesItems = ungroupedSeries.map((s) => ({
                   date: s.created_date,
@@ -259,9 +261,9 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(() => {
                 // Merge franchises and standalone movies, sorted by newest created_date
-                const franchiseItems = moviesByFranchise.map(({ franchise, movies: fMovies }) => ({
+                const franchiseItems = moviesByFranchise.map(({ franchise, totalItems }) => ({
                   date: franchise.created_date,
-                  el: <FranchiseCard key={franchise.id} franchise={franchise} itemCount={fMovies.length} itemLabel="Titles" />,
+                  el: <FranchiseCard key={franchise.id} franchise={franchise} itemCount={totalItems} itemLabel="Titles" />,
                 }));
                 const movieItems = ungroupedMovies.map((v) => ({
                   date: v.created_date,
