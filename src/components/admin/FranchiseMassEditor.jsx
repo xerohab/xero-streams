@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, Check, Search, Film, Tv, Layers } from "lucide-react";
+import { Loader2, Check, Search, Film, Tv, Layers, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function FranchiseMassEditor({ franchises, videos, seriesList, onSuccess }) {
@@ -48,6 +48,19 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
     seriesList.forEach(item => { if (item.franchise_id === franchiseId) preSelected.add(`series:${item.id}`); });
     franchises.forEach(item => { if (item.parent_id === franchiseId && item.id !== franchiseId) preSelected.add(`franchise:${item.id}`); });
     setSelected(preSelected);
+  };
+
+  const handleDeleteFranchise = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this franchise?")) return;
+    try {
+      await base44.entities.Franchise.delete(id);
+      if (selectedFranchise === id) setSelectedFranchise("");
+      toast.success("Franchise deleted");
+      onSuccess();
+    } catch (error) {
+      toast.error("Failed to delete franchise");
+    }
   };
 
   const toggleItem = (item) => {
@@ -108,20 +121,28 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
       {/* Step 1: Pick franchise */}
       <div>
         <label className="text-sm font-medium text-foreground mb-2 block">1. Select a Franchise</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {franchises.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => handleSelectFranchise(f.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                selectedFranchise === f.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary text-muted-foreground border-border hover:text-foreground"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              {f.title}
-            </button>
+            <div key={f.id} className="relative group flex">
+              <button
+                onClick={() => handleSelectFranchise(f.id)}
+                className={`flex items-center gap-1.5 pl-3 pr-8 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                  selectedFranchise === f.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-secondary text-muted-foreground border-border hover:text-foreground"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                {f.title}
+              </button>
+              <button 
+                onClick={(e) => handleDeleteFranchise(e, f.id)}
+                title="Delete Franchise"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive p-1 rounded-full hover:bg-destructive/10 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           ))}
         </div>
         {franchises.length === 0 && (
