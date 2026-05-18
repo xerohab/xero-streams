@@ -86,6 +86,11 @@ export default function Admin() {
     refresh();
   };
 
+  const deleteFranchise = async (id) => {
+    await base44.entities.Franchise.delete(id);
+    refresh();
+  };
+
   const fetchPoster = async (v) => {
     setFetchingPosterFor(v.id);
     const series = seriesList.find((s) => s.id === v.series_id);
@@ -292,6 +297,7 @@ export default function Admin() {
             <ManageSection
               videos={videos}
               seriesList={seriesList}
+              franchises={franchises}
               loadingVideos={loadingVideos}
               loadingSeries={loadingSeries}
               fetchingPosterFor={fetchingPosterFor}
@@ -299,6 +305,7 @@ export default function Admin() {
               onDeleteVideo={deleteVideo}
               onEditSeries={setEditingSeries}
               onDeleteSeries={deleteSeries}
+              onDeleteFranchise={deleteFranchise}
               onFetchPoster={fetchPoster}
             />
           </TabsContent>

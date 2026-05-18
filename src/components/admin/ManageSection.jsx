@@ -4,9 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search } from "lucide-react";
 
+import { Layers } from "lucide-react";
+
 export default function ManageSection({
   videos,
   seriesList,
+  franchises = [],
   loadingVideos,
   loadingSeries,
   fetchingPosterFor,
@@ -14,12 +17,19 @@ export default function ManageSection({
   onDeleteVideo,
   onEditSeries,
   onDeleteSeries,
+  onDeleteFranchise,
   onFetchPoster,
 }) {
+  const [franchisesOpen, setFranchisesOpen] = useState(true);
   const [seriesOpen, setSeriesOpen] = useState(true);
   const [videosOpen, setVideosOpen] = useState(true);
+  const [franchiseSearch, setFranchiseSearch] = useState("");
   const [seriesSearch, setSeriesSearch] = useState("");
   const [videosSearch, setVideosSearch] = useState("");
+
+  const filteredFranchises = franchises.filter((f) =>
+    f.title?.toLowerCase().includes(franchiseSearch.toLowerCase())
+  );
 
   const filteredSeries = seriesList.filter((s) =>
     s.title?.toLowerCase().includes(seriesSearch.toLowerCase())
@@ -36,6 +46,64 @@ export default function ManageSection({
 
   return (
     <div className="space-y-4">
+      {/* Franchises Section */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <button
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-secondary/40 transition-colors"
+          onClick={() => setFranchisesOpen((o) => !o)}
+        >
+          <div className="flex items-center gap-2 font-bold text-foreground">
+            <Layers className="w-4 h-4" />
+            Franchises
+            <Badge variant="secondary" className="ml-1 text-xs">{franchises.length}</Badge>
+          </div>
+          {franchisesOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+        </button>
+
+        {franchisesOpen && (
+          <div className="px-5 pb-4 space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={franchiseSearch}
+                onChange={(e) => setFranchiseSearch(e.target.value)}
+                placeholder="Search franchises..."
+                className="bg-secondary border-border pl-8 h-8 text-sm"
+              />
+            </div>
+
+            {filteredFranchises.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No franchises found.</p>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {filteredFranchises.map((f) => (
+                  <div key={f.id} className="flex items-center justify-between bg-secondary rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      {f.cover_image && (
+                        <img src={f.cover_image} alt="" className="w-12 h-8 rounded object-cover" />
+                      )}
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{f.title}</p>
+                        {f.parent_id && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Sub-franchise
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDeleteFranchise(f.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Series Section */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <button
