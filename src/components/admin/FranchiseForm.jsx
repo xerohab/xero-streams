@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,19 @@ import { Upload, Loader2, Sparkles, Wand2, ImageIcon } from "lucide-react";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 import toast from "react-hot-toast";
+import FranchiseSearchSelect from "./FranchiseSearchSelect";
 
 export default function FranchiseForm({ onSuccess }) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
   const [fetchingPoster, setFetchingPoster] = useState(false);
   const [aiNaming, setAiNaming] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "" });
+  const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "", parent_id: "" });
+
+  const [franchises, setFranchises] = useState([]);
+  useEffect(() => {
+    base44.entities.Franchise.list().then(setFranchises).catch(() => {});
+  }, []);
 
   const handleAiDescription = async () => {
     if (!form.title) return;
@@ -85,9 +91,10 @@ export default function FranchiseForm({ onSuccess }) {
     await base44.entities.Franchise.create({
       ...form,
       category: form.category || undefined,
+      parent_id: form.parent_id || undefined,
     });
     toast.success("Franchise created!");
-    setForm({ title: "", description: "", cover_image: "", category: "" });
+    setForm({ title: "", description: "", cover_image: "", category: "", parent_id: "" });
     onSuccess?.();
   };
 
@@ -138,6 +145,14 @@ export default function FranchiseForm({ onSuccess }) {
           onChange={(e) => update("description", e.target.value)}
           placeholder="What's this franchise about? (or use AI Auto-Fill)"
           className="bg-secondary border-border h-20"
+        />
+      </div>
+      <div className="space-y-2">
+        <FranchiseSearchSelect
+          franchises={franchises}
+          value={form.parent_id}
+          onChange={(v) => update("parent_id", v)}
+          label="Parent Franchise (Optional)"
         />
       </div>
       <div className="space-y-2">

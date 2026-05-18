@@ -18,18 +18,20 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
   // All movies (standalone videos)
   const movies = videos.filter((v) => v.content_type === "movie" || (!v.series_id && !v.content_type));
 
-  // Combine movies and series into one list for display
+  // Combine movies and series and franchises into one list for display
   const allItems = useMemo(() => {
     const movieItems = movies.map((v) => ({ ...v, _type: "movie" }));
     const seriesItems = seriesList.map((s) => ({ ...s, _type: "series" }));
-    return [...movieItems, ...seriesItems];
-  }, [movies, seriesList]);
+    const franchiseItems = franchises.filter(f => f.id !== selectedFranchise).map((f) => ({ ...f, _type: "franchise" }));
+    return [...movieItems, ...seriesItems, ...franchiseItems];
+  }, [movies, seriesList, franchises, selectedFranchise]);
 
   const filtered = useMemo(() => {
     return allItems
       .filter((item) => {
         if (activeType === "movies") return item._type === "movie";
         if (activeType === "series") return item._type === "series";
+        if (activeType === "franchises") return item._type === "franchise";
         return true;
       })
       .filter((item) =>
@@ -41,9 +43,10 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
   const handleSelectFranchise = (franchiseId) => {
     setSelectedFranchise(franchiseId);
     const preSelected = new Set();
-    allItems.forEach((item) => {
-      if (item.franchise_id === franchiseId) preSelected.add(`${item._type}:${item.id}`);
-    });
+    // We need to check all items fresh because allItems changes when selectedFranchise changes
+    movies.forEach(item => { if (item.franchise_id === franchiseId) preSelected.add(`movie:${item.id}`); });
+    seriesList.forEach(item => { if (item.franchise_id === franchiseId) preSelected.add(`series:${item.id}`); });
+    franchises.forEach(item => { if (item.parent_id === franchiseId && item.id !== franchiseId) preSelected.add(`franchise:${item.id}`); });
     setSelected(preSelected);
   };
 
@@ -63,20 +66,23 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
 
     const movieUpdates = [];
     const seriesUpdates = [];
+    const franchiseUpdates = [];
 
     allItems.forEach((item) => {
       const key = `${item._type}:${item.id}`;
       const isSelected = selected.has(key);
-      const wasAssigned = item.franchise_id === selectedFranchise;
+      const wasAssigned = item._type === "franchise" ? item.parent_id === selectedFranchise : item.franchise_id === selectedFranchise;
 
       if (isSelected && !wasAssigned) {
         // Assign to this franchise
         if (item._type === "movie") movieUpdates.push({ id: item.id, franchise_id: selectedFranchise });
-        else seriesUpdates.push({ id: item.id, franchise_id: selectedFranchise });
+        else if (item._type === "series") seriesUpdates.push({ id: item.id, franchise_id: selectedFranchise });
+        else if (item._type === "franchise") franchiseUpdates.push({ id: item.id, parent_id: selectedFranchise });
       } else if (!isSelected && wasAssigned) {
         // Remove from this franchise
         if (item._type === "movie") movieUpdates.push({ id: item.id, franchise_id: "" });
-        else seriesUpdates.push({ id: item.id, franchise_id: "" });
+        else if (item._type === "series") seriesUpdates.push({ id: item.id, franchise_id: "" });
+        else if (item._type === "franchise") franchiseUpdates.push({ id: item.id, parent_id: "" });
       }
     });
 
@@ -87,9 +93,12 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
       ...seriesUpdates.map(({ id, franchise_id }) =>
         base44.entities.Series.update(id, { franchise_id })
       ),
+      ...franchiseUpdates.map(({ id, parent_id }) =>
+        base44.entities.Franchise.update(id, { parent_id })
+      ),
     ]);
 
-    toast.success(`Saved ${movieUpdates.length + seriesUpdates.length} changes`);
+    toast.success(`Saved ${movieUpdates.length + seriesUpdates.length + franchiseUpdates.length} changes`);
     setSaving(false);
     onSuccess();
   };
@@ -144,6 +153,7 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
                   { id: "all", label: "All" },
                   { id: "movies", label: "Movies", icon: Film },
                   { id: "series", label: "Series", icon: Tv },
+                  { id: "franchises", label: "Collections", icon: Layers },
                 ].map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -192,7 +202,7 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
                         <img src={item.thumbnail_url || item.cover_image} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          {item._type === "movie" ? <Film className="w-4 h-4 text-muted-foreground" /> : <Tv className="w-4 h-4 text-muted-foreground" />}
+                          {item._type === "movie" ? <Film className="w-4 h-4 text-muted-foreground" /> : item._type === "series" ? <Tv className="w-4 h-4 text-muted-foreground" /> : <Layers className="w-4 h-4 text-muted-foreground" />}
                         </div>
                       )}
                     </div>
@@ -201,11 +211,16 @@ export default function FranchiseMassEditor({ franchises, videos, seriesList, on
                       <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <Badge variant="outline" className="text-xs py-0">
-                          {item._type === "movie" ? "Movie" : "Series"}
+                          {item._type === "movie" ? "Movie" : item._type === "series" ? "Series" : "Collection"}
                         </Badge>
-                        {item.franchise_id && item.franchise_id !== selectedFranchise && (
+                        {item._type !== "franchise" && item.franchise_id && item.franchise_id !== selectedFranchise && (
                           <span className="text-xs text-muted-foreground">
                             in: {franchises.find((f) => f.id === item.franchise_id)?.title}
+                          </span>
+                        )}
+                        {item._type === "franchise" && item.parent_id && item.parent_id !== selectedFranchise && (
+                          <span className="text-xs text-muted-foreground">
+                            in: {franchises.find((f) => f.id === item.parent_id)?.title}
                           </span>
                         )}
                       </div>

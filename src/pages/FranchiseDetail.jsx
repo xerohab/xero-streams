@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
+import FranchiseCard from "@/components/browse/FranchiseCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
 
@@ -47,6 +48,15 @@ export default function FranchiseDetail() {
     queryFn: () => base44.entities.Video.list("sort_order"),
   });
 
+  const { data: allFranchises = [], isLoading: loadingFranchises } = useQuery({
+    queryKey: ["franchises"],
+    queryFn: () => base44.entities.Franchise.list("-created_date"),
+  });
+
+  const subFranchises = allFranchises
+    .filter((f) => f.parent_id === franchiseId)
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
+
   const franchiseSeries = allSeries
     .filter((s) => s.franchise_id === franchiseId)
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
@@ -58,7 +68,7 @@ export default function FranchiseDetail() {
   const episodeCountBySeries = (seriesId) =>
     allVideos.filter((v) => v.series_id === seriesId).length;
 
-  if (loadingFranchise || loadingSeries || loadingVideos) {
+  if (loadingFranchise || loadingSeries || loadingVideos || loadingFranchises) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -120,6 +130,24 @@ export default function FranchiseDetail() {
       </div>
 
       <div className="px-6 md:px-16 py-10 space-y-12">
+        {/* Sub-franchises within franchise */}
+        {subFranchises.length > 0 && (
+          <div>
+            <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
+              <Film className="w-5 h-5 text-primary" /> Collections
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {subFranchises.map((f) => (
+                <FranchiseCard key={f.id} franchise={f} itemCount={
+                  allSeries.filter((s) => s.franchise_id === f.id).length +
+                  allVideos.filter((v) => v.franchise_id === f.id).length +
+                  allFranchises.filter((sub) => sub.parent_id === f.id).length
+                } itemLabel="Items" />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Series within franchise */}
         {franchiseSeries.length > 0 && (
           <div>
@@ -148,7 +176,7 @@ export default function FranchiseDetail() {
           </div>
         )}
 
-        {franchiseSeries.length === 0 && franchiseMovies.length === 0 && (
+        {subFranchises.length === 0 && franchiseSeries.length === 0 && franchiseMovies.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">No content in this franchise yet.</div>
         )}
 
