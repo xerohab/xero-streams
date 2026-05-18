@@ -65,21 +65,30 @@ export default function Home() {
     (v) => !v.series_id
   );
 
+  const getAllFranchiseIds = (fId, allFranchises) => {
+    const ids = new Set([fId]);
+    let added = true;
+    while(added) {
+      added = false;
+      allFranchises.forEach(f => {
+        if (f.parent_id && ids.has(f.parent_id) && !ids.has(f.id)) {
+          ids.add(f.id);
+          added = true;
+        }
+      });
+    }
+    return Array.from(ids);
+  };
+
   // Franchises with content (safe only — no adult), newest first
   const franchisesWithContent = franchises
     .filter((f) => !f.parent_id)
     .filter((f) => {
-      const hasSeries = safeSeries.some((s) => s.franchise_id === f.id);
-      const hasVideos = safeVideos.some((v) => v.franchise_id === f.id);
-      const hasSubFranchises = franchises.some((sub) => sub.parent_id === f.id);
-      return hasSeries || hasVideos || hasSubFranchises;
+      const allIds = getAllFranchiseIds(f.id, franchises);
+      const hasSeries = safeSeries.some((s) => allIds.includes(s.franchise_id));
+      const hasVideos = safeVideos.some((v) => allIds.includes(v.franchise_id));
+      return hasSeries || hasVideos;
     });
-
-  const franchiseItemCount = (franchiseId) => {
-    const seriesCount = safeSeries.filter((s) => s.franchise_id === franchiseId).length;
-    const videoCount = safeVideos.filter((v) => v.franchise_id === franchiseId).length;
-    return seriesCount + videoCount;
-  };
 
   // Series that have episodes (safe only), newest first
   const seriesWithEpisodes = safeSeries
@@ -90,24 +99,30 @@ export default function Home() {
 
   // Grouped series by franchise (for TV tab)
   const seriesByFranchise = franchisesWithContent
-    .map((f) => ({
-      franchise: f,
-      series: seriesWithEpisodes.filter((s) => s.franchise_id === f.id),
-    }))
+    .map((f) => {
+      const allIds = getAllFranchiseIds(f.id, franchises);
+      return {
+        franchise: f,
+        series: seriesWithEpisodes.filter((s) => allIds.includes(s.franchise_id)),
+      };
+    })
     .filter((g) => g.series.length > 0);
 
-  const ungroupedSeries = seriesWithEpisodes.filter((s) => !s.franchise_id || franchises.find((f) => f.id === s.franchise_id)?.parent_id);
+  const ungroupedSeries = seriesWithEpisodes.filter((s) => !s.franchise_id || !franchises.some((f) => f.id === s.franchise_id));
 
   // Grouped movies by franchise (for Movies tab)
   const moviesByFranchise = franchisesWithContent
-    .map((f) => ({
-      franchise: f,
-      movies: movies.filter((v) => v.franchise_id === f.id)
-        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
-    }))
+    .map((f) => {
+      const allIds = getAllFranchiseIds(f.id, franchises);
+      return {
+        franchise: f,
+        movies: movies.filter((v) => allIds.includes(v.franchise_id))
+          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+      };
+    })
     .filter((g) => g.movies.length > 0);
 
-  const ungroupedMovies = movies.filter((v) => !v.franchise_id || franchises.find((f) => f.id === v.franchise_id)?.parent_id);
+  const ungroupedMovies = movies.filter((v) => !v.franchise_id || !franchises.some((f) => f.id === v.franchise_id));
 
   // Adult content groupings
   const adultMovies = adultVideos.filter((v) => !v.series_id);
