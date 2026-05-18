@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft, Film, Loader2, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
@@ -12,7 +12,8 @@ import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
 
 export default function FranchiseDetail() {
-  const urlParams = new URLSearchParams(window.location.search);
+  const location = useLocation();
+  const urlParams = new URLSearchParams(location.search);
   const franchiseId = urlParams.get("id");
 
   const [user, setUser] = useState(null);
@@ -22,7 +23,7 @@ export default function FranchiseDetail() {
 
   const isFavourited = user?.favourite_franchises?.includes(franchiseId) ?? false;
   const handleToggleFavourite = async () => {
-    if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    if (!user) { base44.auth.redirectToLogin(location.pathname + location.search); return; }
     const current = user.favourite_franchises || [];
     const updated = isFavourited ? current.filter((id) => id !== franchiseId) : [...current, franchiseId];
     await base44.auth.updateMe({ favourite_franchises: updated });
