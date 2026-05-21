@@ -30,6 +30,7 @@ export default function Books() {
       base44.auth.redirectToLogin(window.location.pathname);
       return;
     }
+    base44.analytics.track({ eventName: "book_purchase_initiated", properties: { book_id: book.id, price: book.price } });
     setPurchasing(book.id);
     try {
       const res = await base44.functions.invoke("createPaypalOrder", { 

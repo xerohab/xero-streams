@@ -47,6 +47,15 @@ export default function Watch() {
   }, [videoId]);
 
   useEffect(() => {
+    if (video) {
+      base44.analytics.track({
+        eventName: "video_viewed",
+        properties: { video_id: video.id, title: video.title, series_id: video.series_id || null, franchise_id: video.franchise_id || null }
+      });
+    }
+  }, [video?.id]);
+
+  useEffect(() => {
     base44.auth.me().then((u) => {
       setUser(u);
       if (u && videoId) {
@@ -62,6 +71,10 @@ export default function Watch() {
     await base44.auth.updateMe({ favourites: updated });
     setUser((prev) => ({ ...prev, favourites: updated }));
     setIsFavourited(!isFavourited);
+    base44.analytics.track({
+      eventName: isFavourited ? "video_unfavourited" : "video_favourited",
+      properties: { video_id: videoId }
+    });
   };
 
   const [purchasing, setPurchasing] = useState(false);
@@ -73,6 +86,7 @@ export default function Watch() {
 
   const handlePurchase = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    base44.analytics.track({ eventName: "video_purchase_initiated", properties: { video_id: video.id, price: video.price } });
     setPurchasing(true);
     try {
       const res = await base44.functions.invoke("createPaypalOrder", { 
@@ -291,6 +305,7 @@ export default function Watch() {
         await document.exitPictureInPicture();
       } else {
         await videoRef.current.requestPictureInPicture();
+        base44.analytics.track({ eventName: "pip_toggled", properties: { video_id: video?.id } });
       }
     } catch {
       alert("Picture-in-Picture is not supported by your browser.");
@@ -300,6 +315,7 @@ export default function Watch() {
   // Cast — open fullscreen overlay on all devices with proper queue
   const handleCast = () => {
     if (!video?.video_url) return;
+    base44.analytics.track({ eventName: "cast_initiated", properties: { video_id: video?.id } });
     const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
 
     // Build queue of remaining videos after current
@@ -413,7 +429,10 @@ export default function Watch() {
               {/* Skip Buttons */}
               {showSkipIntro && (
                 <button
-                  onClick={() => videoRef.current.currentTime = video.intro_end}
+                  onClick={() => {
+                    videoRef.current.currentTime = video.intro_end;
+                    base44.analytics.track({ eventName: "intro_skipped", properties: { video_id: video.id } });
+                  }}
                   className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 border border-white/20 transition-all flex items-center gap-2 text-sm shadow-lg"
                 >
                   <SkipForward className="w-4 h-4" /> Skip Intro
@@ -421,7 +440,10 @@ export default function Watch() {
               )}
               {showSkipRecap && (
                 <button
-                  onClick={() => videoRef.current.currentTime = video.recap_end}
+                  onClick={() => {
+                    videoRef.current.currentTime = video.recap_end;
+                    base44.analytics.track({ eventName: "recap_skipped", properties: { video_id: video.id } });
+                  }}
                   className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 border border-white/20 transition-all flex items-center gap-2 text-sm shadow-lg"
                 >
                   <SkipForward className="w-4 h-4" /> Skip Recap

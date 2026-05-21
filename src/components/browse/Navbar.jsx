@@ -29,6 +29,7 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      base44.analytics.track({ eventName: "search_performed", properties: { query: searchQuery.trim() } });
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
       setSearchQuery("");
@@ -107,7 +108,10 @@ export default function Navbar() {
             <Button
               size="sm"
               className="gap-2 bg-primary hover:bg-primary/90"
-              onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+              onClick={() => {
+                base44.analytics.track({ eventName: "sign_in_initiated" });
+                base44.auth.redirectToLogin(window.location.pathname);
+              }}
             >
               <LogIn className="w-4 h-4" />
               Sign In

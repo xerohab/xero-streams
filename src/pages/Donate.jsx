@@ -29,6 +29,7 @@ export default function Donate() {
       setError("Please enter a valid amount.");
       return;
     }
+    base44.analytics.track({ eventName: "donation_initiated", properties: { amount: val } });
     setError("");
     setLoading(true);
     try {

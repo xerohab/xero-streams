@@ -142,7 +142,10 @@ export default function Search() {
                 ))}
               </select>
               <button 
-                onClick={() => setShowAdvanced(!showAdvanced)}
+                onClick={() => {
+                  setShowAdvanced(!showAdvanced);
+                  base44.analytics.track({ eventName: "advanced_search_toggled", properties: { open: !showAdvanced } });
+                }}
                 className={`h-12 w-12 flex items-center justify-center rounded-md border transition-colors ${showAdvanced ? 'bg-primary text-primary-foreground border-primary' : 'border-input bg-card text-foreground hover:bg-accent hover:text-accent-foreground'}`}
               >
                 <SlidersHorizontal className="w-5 h-5" />

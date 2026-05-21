@@ -30,6 +30,7 @@ export default function MovieDetail() {
 
   const handlePurchase = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
+    base44.analytics.track({ eventName: "video_purchase_initiated_from_detail", properties: { video_id: video.id, price: video.price } });
     setPurchasing(true);
     try {
       const res = await base44.functions.invoke("createPaypalOrder", { 
@@ -60,6 +61,15 @@ export default function MovieDetail() {
     enabled: !!videoId,
   });
 
+  useEffect(() => {
+    if (video) {
+      base44.analytics.track({
+        eventName: "movie_detail_viewed",
+        properties: { video_id: video.id, title: video.title }
+      });
+    }
+  }, [video?.id]);
+
   const { data: seriesList = [] } = useQuery({
     queryKey: ["series"],
     queryFn: () => base44.entities.Series.list(),
@@ -75,6 +85,7 @@ export default function MovieDetail() {
 
   const fetchCastInfo = async () => {
     if (!video) return;
+    base44.analytics.track({ eventName: "cast_info_fetched", properties: { video_id: video.id } });
     setLoadingCast(true);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
