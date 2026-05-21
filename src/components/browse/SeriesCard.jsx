@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Tv } from "lucide-react";
+import { Tv, Eye } from "lucide-react";
 
 export default function SeriesCard({ series, episodeCount, from }) {
   const linkPath = from ? `/series?id=${series.id}&from=${encodeURIComponent(from)}` : `/series?id=${series.id}`;
@@ -27,6 +27,14 @@ export default function SeriesCard({ series, episodeCount, from }) {
           )}
           {/* Hover overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300" />
+          
+          {/* Views badge */}
+          {(series.views || 0) > 0 && (
+            <div className="absolute top-2 right-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1 z-10">
+              <Eye className="w-3 h-3" />
+              {series.views}
+            </div>
+          )}
         </div>
 
         {/* Info */}

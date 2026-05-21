@@ -87,6 +87,10 @@
     "recap_end": {
       "type": "number"
     },
+    "views": {
+      "type": "number",
+      "default": 0
+    },
     "subtitles": {
       "type": "array",
       "items": {

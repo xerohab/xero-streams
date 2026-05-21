@@ -59,6 +59,16 @@ export default function Home() {
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
     .slice(0, 6);
 
+  const mostWatchedVideos = safeVideos
+    .filter((v) => (v.views || 0) > 0)
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 6);
+
+  const mostWatchedSeriesArr = safeSeries
+    .filter((s) => (s.views || 0) > 0)
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 6);
+
   // Movies: standalone movies only
   // Exclude anything with a series_id
   const movies = safeVideos.filter(
@@ -197,6 +207,31 @@ export default function Home() {
               title="Latest" 
               videos={latestVideos} 
             />
+          </div>
+        )}
+
+        {/* Most Watched Row */}
+        {mostWatchedVideos.length > 0 && activeTab === "all" && (
+          <div className="mb-12">
+            <VideoRow 
+              title="Most Watched Movies & Episodes" 
+              videos={mostWatchedVideos} 
+            />
+          </div>
+        )}
+        
+        {mostWatchedSeriesArr.length > 0 && activeTab === "all" && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Tv className="w-5 h-5 text-primary" /> Most Watched Series
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {mostWatchedSeriesArr.map((s) => (
+                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
+              ))}
+            </div>
           </div>
         )}
 

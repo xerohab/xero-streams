@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search } from "lucide-react";
+import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search, Eye } from "lucide-react";
 
 import { Layers } from "lucide-react";
 
@@ -89,6 +89,9 @@ export default function ManageSection({
                             Sub-franchise
                           </p>
                         )}
+                        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <Eye className="w-3 h-3" /> {f.views || 0} views
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -147,6 +150,7 @@ export default function ManageSection({
                         <div className="flex gap-1 mt-0.5 flex-wrap">
                           {s.category && <Badge variant="outline" className="text-xs">{s.category}</Badge>}
                           {s.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
+                          <Badge variant="outline" className="text-xs flex items-center gap-1"><Eye className="w-3 h-3" /> {s.views || 0}</Badge>
                         </div>
                       </div>
                     </div>
@@ -220,6 +224,7 @@ export default function ManageSection({
                             {v.content_type === "movie" && <Badge className="text-xs bg-blue-500/20 text-blue-400">Movie</Badge>}
                             {v.is_featured && <Badge className="text-xs bg-primary/20 text-primary">Featured</Badge>}
                             {v.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
+                            <Badge variant="outline" className="text-xs flex items-center gap-1"><Eye className="w-3 h-3" /> {v.views || 0}</Badge>
                           </div>
                         </div>
                       </div>

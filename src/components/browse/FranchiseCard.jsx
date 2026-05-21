@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Layers } from "lucide-react";
+import { Layers, Eye } from "lucide-react";
 
 export default function FranchiseCard({ franchise, itemCount, itemLabel }) {
   return (
@@ -28,6 +28,14 @@ export default function FranchiseCard({ franchise, itemCount, itemLabel }) {
           <div className="absolute bottom-2 left-2 right-2">
             <p className="text-white font-bold text-sm leading-tight line-clamp-2">{franchise.title}</p>
           </div>
+          
+          {/* Views badge */}
+          {(franchise.views || 0) > 0 && (
+            <div className="absolute top-2 right-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1 z-10">
+              <Eye className="w-3 h-3" />
+              {franchise.views}
+            </div>
+          )}
         </div>
         <div className="p-2">
           {itemCount > 0 && (

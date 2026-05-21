@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Play, Clock, CalendarClock } from "lucide-react";
+import { Play, Clock, CalendarClock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 
@@ -58,6 +58,14 @@ export default function VideoCard({ video, index, from, isAdult }) {
             <div className="absolute bottom-2 right-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {video.duration}
+            </div>
+          )}
+
+          {/* Views badge */}
+          {!isComingSoon && (video.views || 0) > 0 && (
+            <div className="absolute bottom-2 left-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1 z-10">
+              <Eye className="w-3 h-3" />
+              {video.views}
             </div>
           )}
 

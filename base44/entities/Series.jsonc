@@ -56,6 +56,10 @@
     "cast": {
       "type": "string",
       "description": "Comma-separated list of cast members"
+    },
+    "views": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [

@@ -52,6 +52,12 @@ export default function Watch() {
         eventName: "video_viewed",
         properties: { video_id: video.id, title: video.title, series_id: video.series_id || null, franchise_id: video.franchise_id || null }
       });
+      
+      base44.functions.invoke("incrementViews", {
+        video_id: video.id,
+        series_id: video.series_id || null,
+        franchise_id: video.franchise_id || null
+      }).catch(err => console.error("Failed to increment views:", err));
     }
   }, [video?.id]);
 
