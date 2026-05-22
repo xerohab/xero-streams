@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Replace, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function MassLinkUpdater({ videos, seriesList, franchises, onSuccess }) {
+  const [targetType, setTargetType] = useState("episode_video");
   const [scope, setScope] = useState("all"); // "all" | "series" | "franchise"
   const [selectedId, setSelectedId] = useState("");
   const [findText, setFindText] = useState("");
@@ -14,31 +15,99 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const getTargetVideos = () => {
-    if (scope === "all") return videos;
-    if (scope === "series") return videos.filter((v) => v.series_id === selectedId);
-    if (scope === "franchise") {
-      const seriesInFranchise = seriesList.filter((s) => s.franchise_id === selectedId).map((s) => s.id);
-      return videos.filter(
-        (v) => v.franchise_id === selectedId || seriesInFranchise.includes(v.series_id)
-      );
+  const targetOptions = [
+    { value: "episode_video", label: "TV Links (Episode URLs)" },
+    { value: "movie_video", label: "Movie Links (Movie URLs)" },
+    { value: "video_thumbnail", label: "Video Thumbnails" },
+    { value: "video_download", label: "Video Download URLs" },
+    { value: "series_cover", label: "Series Covers" },
+    { value: "franchise_cover", label: "Franchise Covers" },
+    { value: "gallery_image", label: "Image Gallery Links" },
+  ];
+
+  const getTargetEntities = async () => {
+    if (["episode_video", "movie_video", "video_thumbnail", "video_download"].includes(targetType)) {
+      let targets = videos;
+      if (scope === "series") targets = videos.filter((v) => v.series_id === selectedId);
+      if (scope === "franchise") {
+        const seriesInFranchise = seriesList.filter((s) => s.franchise_id === selectedId).map((s) => s.id);
+        targets = videos.filter(
+          (v) => v.franchise_id === selectedId || seriesInFranchise.includes(v.series_id)
+        );
+      }
+      
+      if (targetType === "episode_video") return targets.filter(v => v.content_type === "episode" || !v.content_type);
+      if (targetType === "movie_video") return targets.filter(v => v.content_type === "movie");
+      return targets; // thumbnail or download
     }
+    
+    if (targetType === "series_cover") {
+      if (scope === "all") return seriesList;
+      if (scope === "series") return seriesList.filter(s => s.id === selectedId);
+      if (scope === "franchise") return seriesList.filter(s => s.franchise_id === selectedId);
+    }
+    
+    if (targetType === "franchise_cover") {
+      if (scope === "all") return franchises;
+      if (scope === "franchise") return franchises.filter(f => f.id === selectedId);
+      return [];
+    }
+
+    if (targetType === "gallery_image") {
+      const allImages = await base44.entities.Image.list();
+      if (scope === "all") return allImages;
+      if (scope === "series") return allImages.filter(img => img.series_id === selectedId);
+      if (scope === "franchise") {
+        const seriesInFranchise = seriesList.filter((s) => s.franchise_id === selectedId).map((s) => s.id);
+        return allImages.filter(img => seriesInFranchise.includes(img.series_id));
+      }
+    }
+    
     return [];
   };
 
-  const handlePreview = () => {
+  const getFieldForTarget = () => {
+    if (targetType === "episode_video" || targetType === "movie_video") return "video_url";
+    if (targetType === "video_thumbnail") return "thumbnail_url";
+    if (targetType === "video_download") return "download_url";
+    if (targetType === "series_cover" || targetType === "franchise_cover") return "cover_image";
+    if (targetType === "gallery_image") return "image_url";
+    return "video_url";
+  };
+
+  const getEntityNameForTarget = () => {
+    if (["episode_video", "movie_video", "video_thumbnail", "video_download"].includes(targetType)) return "Video";
+    if (targetType === "series_cover") return "Series";
+    if (targetType === "franchise_cover") return "Franchise";
+    if (targetType === "gallery_image") return "Image";
+    return "Video";
+  };
+
+  const handlePreview = async () => {
     if (!findText.trim()) return;
     setResult(null);
-    const targets = getTargetVideos();
-    const affected = targets.filter((v) => v.video_url && v.video_url.includes(findText));
-    setPreview(
-      affected.map((v) => ({
-        id: v.id,
-        title: v.title,
-        old: v.video_url,
-        new: v.video_url.replaceAll(findText, replaceText),
-      }))
-    );
+    setLoading(true);
+    try {
+      const targets = await getTargetEntities();
+      const field = getFieldForTarget();
+      const entityName = getEntityNameForTarget();
+      
+      const affected = targets.filter((v) => v[field] && v[field].includes(findText));
+      setPreview(
+        affected.map((v) => ({
+          id: v.id,
+          title: v.title || v.name || "Untitled",
+          old: v[field],
+          new: v[field].replaceAll(findText, replaceText),
+          entityName,
+          field
+        }))
+      );
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleApply = async () => {
@@ -46,12 +115,13 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
     setLoading(true);
     setResult(null);
 
-    // Process in chunks of 5 with a 500ms pause between chunks to avoid rate limits
     const chunkSize = 5;
     let updated = 0;
     for (let i = 0; i < preview.length; i += chunkSize) {
       const chunk = preview.slice(i, i + chunkSize);
-      await Promise.all(chunk.map((item) => base44.entities.Video.update(item.id, { video_url: item.new })));
+      await Promise.all(chunk.map((item) => {
+        return base44.entities[item.entityName].update(item.id, { [item.field]: item.new });
+      }));
       updated += chunk.length;
       if (i + chunkSize < preview.length) {
         await new Promise((r) => setTimeout(r, 500));
@@ -65,13 +135,27 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
   };
 
   const scopeOptions = [
-    { value: "all", label: "All Videos" },
+    { value: "all", label: "All Items" },
     { value: "series", label: "By Series" },
     { value: "franchise", label: "By Franchise" },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Target Type selector */}
+      <div>
+        <p className="text-sm text-muted-foreground mb-2 font-medium">Target Link Type</p>
+        <select
+          value={targetType}
+          onChange={(e) => { setTargetType(e.target.value); setPreview(null); setResult(null); }}
+          className="w-full md:w-auto bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground"
+        >
+          {targetOptions.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Scope selector */}
       <div>
         <p className="text-sm text-muted-foreground mb-2 font-medium">Scope</p>
@@ -128,7 +212,7 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
       {/* Find & Replace inputs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <p className="text-sm text-muted-foreground mb-1.5 font-medium">Find (in video URLs)</p>
+          <p className="text-sm text-muted-foreground mb-1.5 font-medium">Find (in links)</p>
           <Input
             value={findText}
             onChange={(e) => { setFindText(e.target.value); setPreview(null); setResult(null); }}
@@ -161,7 +245,7 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
       {result && (
         <div className="flex items-center gap-2 text-green-400 bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm font-medium">Updated {result.updated} video URL{result.updated !== 1 ? "s" : ""} successfully.</span>
+          <span className="text-sm font-medium">Updated {result.updated} link{result.updated !== 1 ? "s" : ""} successfully.</span>
         </div>
       )}
 
@@ -171,14 +255,14 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
           {preview.length === 0 ? (
             <div className="flex items-center gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm">No video URLs contain "<strong>{findText}</strong>" in the selected scope.</span>
+              <span className="text-sm">No links contain "<strong>{findText}</strong>" in the selected scope and target.</span>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   <Badge className="mr-2 bg-primary/20 text-primary">{preview.length}</Badge>
-                  video{preview.length !== 1 ? "s" : ""} will be updated
+                  item{preview.length !== 1 ? "s" : ""} will be updated
                 </p>
                 <Button onClick={handleApply} disabled={loading} className="gap-2 bg-primary hover:bg-primary/90">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Replace className="w-4 h-4" />}
