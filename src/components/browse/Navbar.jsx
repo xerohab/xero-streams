@@ -76,9 +76,6 @@ export default function Navbar() {
             </Button>
           )}
 
-          <Link to="/live">
-            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-400 hover:bg-red-500/10">Live</Button>
-          </Link>
           <Link to="/books">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Books</Button>
           </Link>

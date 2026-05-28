@@ -17,10 +17,8 @@ import MovieDetail from '@/pages/MovieDetail';
 import Dashboard from '@/pages/Dashboard';
 import Donate from '@/pages/Donate';
 import Leaks from '@/pages/Leaks';
-import AdminAdult from '@/pages/AdminAdult';
 import LeaksSection from '@/pages/LeaksSection';
 import CastPlayer from '@/pages/CastPlayer';
-import LiveStreaming from '@/pages/LiveStreaming';
 import Books from '@/pages/Books';
 import PurchaseCallback from '@/pages/PurchaseCallback';
 
@@ -72,10 +70,8 @@ const AuthenticatedApp = () => {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/donate" element={<Donate />} />
       <Route path="/leaks" element={<Leaks />} />
-      <Route path="/admin/adult" element={<AdminAdult />} />
       <Route path="/leaks/section" element={<LeaksSection />} />
       <Route path="/cast" element={<CastPlayer />} />
-      <Route path="/live" element={<LiveStreaming />} />
       <Route path="/books" element={<Books />} />
       <Route path="/callback" element={<PurchaseCallback />} />
       <Route path="*" element={<PageNotFound />} />

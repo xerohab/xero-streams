@@ -50,10 +50,6 @@ export default function Home() {
   const safeVideos = videos.filter((v) => !v.is_adult);
   const safeSeries = seriesList.filter((s) => !s.is_adult);
 
-  // Adult-only content
-  const adultVideos = videos.filter((v) => v.is_adult);
-  const adultSeries = seriesList.filter((s) => s.is_adult);
-
   const latestVideos = safeVideos
     .filter((v) => new Date(v.created_date) >= sevenDaysAgo)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
@@ -135,12 +131,6 @@ export default function Home() {
     .filter((g) => g.movies.length > 0 && !g.franchise.title.toLowerCase().includes("wrestling"));
 
   const ungroupedMovies = movies.filter((v) => !v.franchise_id || !franchises.some((f) => f.id === v.franchise_id));
-
-  // Adult content groupings
-  const adultMovies = adultVideos.filter((v) => !v.series_id);
-  const adultSeriesWithEpisodes = adultSeries
-    .filter((s) => adultVideos.some((v) => v.series_id === s.id));
-  const adultEpisodeCount = (seriesId) => adultVideos.filter((v) => v.series_id === seriesId).length;
 
   const rows = user?.homepage_rows || ["hero", "latest", "continue_watching", "favourites", "tv", "movies"];
 

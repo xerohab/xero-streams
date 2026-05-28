@@ -22,7 +22,6 @@ import EditUserModal from "@/components/admin/EditUserModal";
 import DonationSettings from "@/components/admin/DonationSettings";
 import MassLinkUpdater from "@/components/admin/MassLinkUpdater";
 import BillingPlansManager from "@/components/admin/BillingPlansManager";
-import LiveStreamManager from "@/components/admin/LiveStreamManager";
 import BooksManager from "@/components/admin/BooksManager";
 import StoreManager from "@/components/admin/StoreManager";
 import RequestsManager from "@/components/admin/RequestsManager";
@@ -165,7 +164,6 @@ export default function Admin() {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="donations">Donations</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
-            <TabsTrigger value="livestream">Live Stream</TabsTrigger>
             <TabsTrigger value="books">Books</TabsTrigger>
             <TabsTrigger value="store">Store & Downloads</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
@@ -395,14 +393,6 @@ export default function Admin() {
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <BillingPlansManager />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="livestream">
-            <Card className="bg-card border-border">
-              <CardContent className="pt-6">
-                <LiveStreamManager />
               </CardContent>
             </Card>
           </TabsContent>
