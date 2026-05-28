@@ -15,6 +15,7 @@ import BulkEpisodeUpload from "@/components/admin/BulkEpisodeUpload";
 import WebScraper from "@/components/admin/WebScraper";
 import EditVideoModal from "@/components/admin/EditVideoModal";
 import EditSeriesModal from "@/components/admin/EditSeriesModal";
+import EditFranchiseModal from "@/components/admin/EditFranchiseModal";
 import FranchiseForm from "@/components/admin/FranchiseForm";
 import FranchiseMassEditor from "@/components/admin/FranchiseMassEditor";
 import SortOrderManager from "@/components/admin/SortOrderManager";
@@ -34,6 +35,7 @@ export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(null); // null = loading
   const [editingVideo, setEditingVideo] = useState(null);
   const [editingSeries, setEditingSeries] = useState(null);
+  const [editingFranchise, setEditingFranchise] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [fetchingPosterFor, setFetchingPosterFor] = useState(null);
   const queryClient = useQueryClient();
@@ -293,18 +295,19 @@ export default function Admin() {
 
           <TabsContent value="manage">
             <ManageSection
-              videos={videos}
-              seriesList={seriesList}
-              franchises={franchises}
-              loadingVideos={loadingVideos}
-              loadingSeries={loadingSeries}
-              fetchingPosterFor={fetchingPosterFor}
-              onEditVideo={setEditingVideo}
-              onDeleteVideo={deleteVideo}
-              onEditSeries={setEditingSeries}
-              onDeleteSeries={deleteSeries}
-              onDeleteFranchise={deleteFranchise}
-              onFetchPoster={fetchPoster}
+            videos={videos}
+            seriesList={seriesList}
+            franchises={franchises}
+            loadingVideos={loadingVideos}
+            loadingSeries={loadingSeries}
+            fetchingPosterFor={fetchingPosterFor}
+            onEditVideo={setEditingVideo}
+            onDeleteVideo={deleteVideo}
+            onEditSeries={setEditingSeries}
+            onDeleteSeries={deleteSeries}
+            onEditFranchise={setEditingFranchise}
+            onDeleteFranchise={deleteFranchise}
+            onFetchPoster={fetchPoster}
             />
           </TabsContent>
           <TabsContent value="users">
@@ -448,6 +451,15 @@ export default function Admin() {
           franchises={franchises}
           open={!!editingSeries}
           onClose={() => setEditingSeries(null)}
+          onSaved={refresh}
+        />
+      )}
+      {editingFranchise && (
+        <EditFranchiseModal
+          franchise={editingFranchise}
+          franchises={franchises}
+          open={!!editingFranchise}
+          onClose={() => setEditingFranchise(null)}
           onSaved={refresh}
         />
       )}

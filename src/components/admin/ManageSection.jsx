@@ -17,6 +17,7 @@ export default function ManageSection({
   onDeleteVideo,
   onEditSeries,
   onDeleteSeries,
+  onEditFranchise,
   onDeleteFranchise,
   onFetchPoster,
 }) {
@@ -95,6 +96,9 @@ export default function ManageSection({
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => onEditFranchise(f)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDeleteFranchise(f.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
