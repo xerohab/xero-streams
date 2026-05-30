@@ -33,10 +33,11 @@ export default function PurchaseCallback() {
           const pendingVideo = localStorage.getItem("pending_video_purchase");
 
           if (pendingBook) {
-            const { book_id } = JSON.parse(pendingBook);
+            const { book_id, format } = JSON.parse(pendingBook);
             await base44.entities.BookPurchase.create({
               user_id: user.id,
               book_id,
+              format: format || "default",
               status: "completed",
               paypal_order_id: token
             });

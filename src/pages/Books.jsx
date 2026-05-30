@@ -25,22 +25,27 @@ export default function Books() {
     enabled: !!user
   });
 
-  const handlePurchase = async (book) => {
+  const handlePurchase = async (book, format = "default") => {
     if (!user) {
       base44.auth.redirectToLogin(window.location.pathname);
       return;
     }
-    base44.analytics.track({ eventName: "book_purchase_initiated", properties: { book_id: book.id, price: book.price } });
-    setPurchasing(book.id);
+    
+    let price = book.price || 0;
+    if (format === "word" && book.price_word) price = book.price_word;
+    if (format === "ebook" && book.price_ebook) price = book.price_ebook;
+
+    base44.analytics.track({ eventName: "book_purchase_initiated", properties: { book_id: book.id, price, format } });
+    setPurchasing(book.id + format);
     try {
       const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: book.price,
+        amount: price,
         return_url: window.location.origin + "/callback?success=true",
         cancel_url: window.location.origin + "/callback?cancelled=true"
       });
       if (res.data?.approvalUrl) {
         // Save pending purchase info in localStorage to capture later (a bit hacky but works for simple flows)
-        localStorage.setItem("pending_book_purchase", JSON.stringify({ book_id: book.id }));
+        localStorage.setItem("pending_book_purchase", JSON.stringify({ book_id: book.id, format }));
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to start checkout");
@@ -72,7 +77,10 @@ export default function Books() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {books.map(book => {
-              const isPurchased = purchases.some(p => p.book_id === book.id && p.status === "completed");
+              const purchasedDefault = purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "default");
+              const purchasedWord = purchasedDefault || purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "word");
+              const purchasedEbook = purchasedDefault || purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "ebook");
+              // Default purchase grants access to all available formats.
 
               return (
                 <div key={book.id} className="bg-card border-border rounded-xl overflow-hidden shadow-lg flex flex-col">
@@ -89,20 +97,63 @@ export default function Books() {
                     <h3 className="text-xl font-bold mb-2">{book.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4 flex-1">{book.description}</p>
                     
-                    {isPurchased ? (
-                      <Button className="w-full gap-2" variant="default" onClick={() => window.open(book.file_url, '_blank')}>
-                        <Download className="w-4 h-4" /> Download Book
-                      </Button>
-                    ) : (
-                      <Button 
-                        className="w-full gap-2" 
-                        onClick={() => handlePurchase(book)}
-                        disabled={purchasing === book.id}
-                      >
-                        {purchasing === book.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
-                        Buy for ${book.price}
-                      </Button>
-                    )}
+                    <div className="space-y-2">
+                      {/* Word Format */}
+                      {book.price_word > 0 && (
+                        purchasedWord ? (
+                          <Button className="w-full gap-2" variant="default" onClick={() => window.open(book.file_url_word, '_blank')}>
+                            <Download className="w-4 h-4" /> Download Word Doc
+                          </Button>
+                        ) : (
+                          <Button 
+                            className="w-full gap-2" 
+                            variant="outline"
+                            onClick={() => handlePurchase(book, "word")}
+                            disabled={purchasing === book.id + "word"}
+                          >
+                            {purchasing === book.id + "word" ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                            Buy Word Doc (${book.price_word})
+                          </Button>
+                        )
+                      )}
+
+                      {/* Ebook Format */}
+                      {book.price_ebook > 0 && (
+                        purchasedEbook ? (
+                          <Button className="w-full gap-2" variant="default" onClick={() => window.open(book.file_url_ebook, '_blank')}>
+                            <Download className="w-4 h-4" /> Download Ebook
+                          </Button>
+                        ) : (
+                          <Button 
+                            className="w-full gap-2" 
+                            variant="outline"
+                            onClick={() => handlePurchase(book, "ebook")}
+                            disabled={purchasing === book.id + "ebook"}
+                          >
+                            {purchasing === book.id + "ebook" ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                            Buy Ebook (${book.price_ebook})
+                          </Button>
+                        )
+                      )}
+
+                      {/* Default Format (Legacy or general) */}
+                      {(!book.price_word && !book.price_ebook) && (
+                        purchasedDefault || purchasedWord || purchasedEbook ? (
+                          <Button className="w-full gap-2" variant="default" onClick={() => window.open(book.file_url || book.file_url_ebook || book.file_url_word, '_blank')}>
+                            <Download className="w-4 h-4" /> Download Book
+                          </Button>
+                        ) : (
+                          <Button 
+                            className="w-full gap-2" 
+                            onClick={() => handlePurchase(book, "default")}
+                            disabled={purchasing === book.id + "default"}
+                          >
+                            {purchasing === book.id + "default" ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                            Buy for ${book.price}
+                          </Button>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
               );

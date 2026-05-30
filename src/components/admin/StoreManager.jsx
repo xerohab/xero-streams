@@ -39,16 +39,26 @@ export default function StoreManager() {
         await base44.entities.BookPurchase.create({
           user_id: targetUser.id,
           book_id: editing.id,
+          format: "default",
           status: "completed",
           paypal_order_id: "admin_granted"
         });
       }
       
       try {
+        let downloadLinks = editing._download_url || "Log in to your dashboard to view the download link.";
+        if (editingType === "book") {
+          const links = [];
+          if (editing.file_url) links.push("Default: " + editing.file_url);
+          if (editing.file_url_word) links.push("Word: " + editing.file_url_word);
+          if (editing.file_url_ebook) links.push("Ebook: " + editing.file_url_ebook);
+          if (links.length > 0) downloadLinks = links.join("\n");
+        }
+
         await base44.integrations.Core.SendEmail({
           to: targetUser.email,
           subject: "You have been granted access to " + editing.title,
-          body: `Hi ${targetUser.full_name || 'there'},\n\nYou have been granted access to download ${editing.title}.\n\nYou can download it directly using this link:\n${editing._download_url || "Log in to your dashboard to view the download link."}\n\nAlternatively, log in to your dashboard to view all your downloads.`
+          body: `Hi ${targetUser.full_name || 'there'},\n\nYou have been granted access to download ${editing.title}.\n\nYou can download it directly using these links:\n${downloadLinks}\n\nAlternatively, log in to your dashboard to view all your downloads.`
         });
       } catch (e) {
         console.error("Email failed:", e);
@@ -102,9 +112,14 @@ export default function StoreManager() {
       updateBook.mutate({ 
         id: editing.id, 
         data: { 
-          ...data, 
+          title: data.title,
+          price: data.price,
+          price_word: parseFloat(formData.get("price_word") || 0),
+          price_ebook: parseFloat(formData.get("price_ebook") || 0),
           is_active: data.is_for_sale, // for books, is_active represents available for purchase
-          file_url: data.download_url
+          file_url: data.download_url,
+          file_url_word: formData.get("file_url_word") || "",
+          file_url_ebook: formData.get("file_url_ebook") || ""
         } 
       });
     }
@@ -172,16 +187,42 @@ export default function StoreManager() {
               <Input name="title" defaultValue={editing.title} required className="bg-background border-border" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Price ($)</label>
+              <label className="text-sm font-medium mb-1 block">Default Price ($)</label>
               <Input name="price" type="number" step="0.01" defaultValue={editing.price || 0} required className="bg-background border-border" />
             </div>
           </div>
           
+          {editingType === 'book' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Word Document Price ($)</label>
+                <Input name="price_word" type="number" step="0.01" defaultValue={editing.price_word || 0} className="bg-background border-border" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Ebook Price ($)</label>
+                <Input name="price_ebook" type="number" step="0.01" defaultValue={editing.price_ebook || 0} className="bg-background border-border" />
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="text-sm font-medium mb-1 block">Download Link (URL)</label>
+            <label className="text-sm font-medium mb-1 block">Default Download Link (URL)</label>
             <Input name="download_url" placeholder="https://... file link for purchasers" defaultValue={editing._download_url} className="bg-background border-border" />
             <p className="text-xs text-muted-foreground mt-1">Users who purchase this item will receive this link in their Downloads section.</p>
           </div>
+
+          {editingType === 'book' && (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Word Document Link (URL)</label>
+                <Input name="file_url_word" placeholder="https://... word file link" defaultValue={editing.file_url_word} className="bg-background border-border" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Ebook Link (URL)</label>
+                <Input name="file_url_ebook" placeholder="https://... ebook file link" defaultValue={editing.file_url_ebook} className="bg-background border-border" />
+              </div>
+            </>
+          )}
           
           <div className="flex items-center gap-3 p-3 bg-background border border-border rounded-lg">
             <Switch name="is_for_sale" defaultChecked={editing.is_for_sale} />

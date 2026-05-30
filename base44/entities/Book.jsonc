@@ -12,7 +12,15 @@
     },
     "price": {
       "type": "number",
-      "description": "Price of the book"
+      "description": "Price of the book (legacy or default)"
+    },
+    "price_word": {
+      "type": "number",
+      "description": "Price for Word Document format"
+    },
+    "price_ebook": {
+      "type": "number",
+      "description": "Price for Ebook format"
     },
     "cover_image": {
       "type": "string",
@@ -20,7 +28,15 @@
     },
     "file_url": {
       "type": "string",
-      "description": "URL to the book file (PDF, EPUB, etc.)"
+      "description": "URL to the book file (legacy or default)"
+    },
+    "file_url_word": {
+      "type": "string",
+      "description": "URL to the Word Document file"
+    },
+    "file_url_ebook": {
+      "type": "string",
+      "description": "URL to the Ebook file"
     },
     "is_active": {
       "type": "boolean",
@@ -28,7 +44,6 @@
     }
   },
   "required": [
-    "title",
-    "price"
+    "title"
   ]
 }

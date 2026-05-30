@@ -37,9 +37,13 @@ export default function BooksManager() {
     const data = {
       title: formData.get("title"),
       description: formData.get("description"),
-      price: parseFloat(formData.get("price")),
+      price: parseFloat(formData.get("price") || 0),
+      price_word: parseFloat(formData.get("price_word") || 0),
+      price_ebook: parseFloat(formData.get("price_ebook") || 0),
       cover_image: formData.get("cover_image"),
       file_url: formData.get("file_url"),
+      file_url_word: formData.get("file_url_word"),
+      file_url_ebook: formData.get("file_url_ebook"),
       is_active: formData.get("is_active") === "on"
     };
 
@@ -64,10 +68,23 @@ export default function BooksManager() {
           <Input name="title" placeholder="Book Title" defaultValue={editing.title} required />
           <Textarea name="description" placeholder="Description" defaultValue={editing.description} />
           <div className="flex gap-4">
-            <Input name="price" type="number" step="0.01" placeholder="Price" defaultValue={editing.price} required />
+            <div>
+              <label className="text-xs text-muted-foreground">Default Price</label>
+              <Input name="price" type="number" step="0.01" placeholder="Default Price" defaultValue={editing.price} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Word Document Price</label>
+              <Input name="price_word" type="number" step="0.01" placeholder="Word Price" defaultValue={editing.price_word} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Ebook Price</label>
+              <Input name="price_ebook" type="number" step="0.01" placeholder="Ebook Price" defaultValue={editing.price_ebook} />
+            </div>
           </div>
           <Input name="cover_image" placeholder="Cover Image URL" defaultValue={editing.cover_image} />
-          <Input name="file_url" placeholder="Book File URL / Purchase Link" defaultValue={editing.file_url} />
+          <Input name="file_url" placeholder="Default Book File URL / Purchase Link" defaultValue={editing.file_url} />
+          <Input name="file_url_word" placeholder="Word Document Download Link" defaultValue={editing.file_url_word} />
+          <Input name="file_url_ebook" placeholder="Ebook Download Link" defaultValue={editing.file_url_ebook} />
           
           <div className="flex items-center gap-2">
             <Switch name="is_active" defaultChecked={editing.is_active !== false} />

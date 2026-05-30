@@ -8,6 +8,15 @@
     "book_id": {
       "type": "string"
     },
+    "format": {
+      "type": "string",
+      "enum": [
+        "word",
+        "ebook",
+        "default"
+      ],
+      "default": "default"
+    },
     "status": {
       "type": "string",
       "enum": [
