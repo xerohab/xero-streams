@@ -109,6 +109,7 @@ export default function Dashboard() {
 
   const activeSub = subscriptions.length > 0 ? subscriptions[0] : null;
   const activePlan = activeSub ? plans.find(p => p.id === activeSub.plan_id) : null;
+  const hasAccess = subscriptions.length > 0 || user?.role === 'admin';
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
@@ -320,7 +321,11 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs capitalize">{user.role}</Badge>
-              {/* Age verified badge hidden */}
+              {activePlan && (
+                <Badge className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30">
+                  {activePlan.name} Subscriber
+                </Badge>
+              )}
             </div>
           </div>
           <div className="ml-auto">
@@ -339,7 +344,7 @@ export default function Dashboard() {
           </h2>
           <Card className="bg-card border-border">
             <CardContent className="p-6">
-              {!activeSub ? (
+              {!hasAccess ? (
                 <div className="text-center py-6">
                   <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <h3 className="text-lg font-semibold mb-1">Premium Feature</h3>
@@ -395,7 +400,7 @@ export default function Dashboard() {
           </h2>
           <Card className="bg-card border-border">
             <CardContent className="p-6">
-              {!activeSub ? (
+              {!hasAccess ? (
                 <div className="text-center py-6">
                   <DownloadIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <h3 className="text-lg font-semibold mb-1">Premium Feature</h3>
