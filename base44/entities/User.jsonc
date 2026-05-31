@@ -10,6 +10,13 @@
       ],
       "default": "user"
     },
+    "username": {
+      "type": "string"
+    },
+    "is_banned": {
+      "type": "boolean",
+      "default": false
+    },
     "age_verified": {
       "type": "boolean",
       "default": false
@@ -50,11 +57,5 @@
       }
     }
   },
-  "required": [
-    "date_of_birth",
-    "favourites",
-    "favourite_series",
-    "favourite_franchises",
-    "homepage_rows"
-  ]
+  "required": []
 }

@@ -62,7 +62,7 @@ export default function Admin() {
 
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ["allUsers"],
-    queryFn: () => base44.entities.User.list("-created_date", 100),
+    queryFn: () => base44.entities.User.list("-created_date", 5000), // Get all users
     enabled: isAdmin === true,
   });
 

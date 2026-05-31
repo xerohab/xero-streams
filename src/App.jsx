@@ -57,6 +57,15 @@ const AuthenticatedApp = () => {
     }
   }
 
+  if (user?.is_banned) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-3xl font-black text-destructive mb-2">Account Suspended</h1>
+        <p className="text-muted-foreground mb-6">Your account has been banned from accessing this site.</p>
+      </div>
+    );
+  }
+
   // Render the main app
   return (
     <Routes>

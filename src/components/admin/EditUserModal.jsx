@@ -7,19 +7,37 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShieldCheck, ShieldAlert, KeyRound, Trash2 } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, KeyRound, Trash2, Ban } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function EditUserModal({ user, open, onClose, onSaved }) {
   const [form, setForm] = useState({
     role: user?.role || "user",
     age_verified: user?.age_verified || false,
     date_of_birth: user?.date_of_birth || "",
+    full_name: user?.full_name || "",
+    username: user?.username || "",
+    email: user?.email || "",
+    is_banned: user?.is_banned || false,
   });
   const [newPassword, setNewPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [assigningPlan, setAssigningPlan] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+
+  const { data: plans = [] } = useQuery({
+    queryKey: ["subscription_plans"],
+    queryFn: () => base44.entities.SubscriptionPlan.list()
+  });
+
+  const { data: userSubs = [], refetch: refetchSubs } = useQuery({
+    queryKey: ["user_subscriptions", user?.id],
+    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user?.id }),
+    enabled: !!user?.id
+  });
 
   useEffect(() => {
     if (user) {
@@ -27,11 +45,42 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
         role: user.role || "user",
         age_verified: user.age_verified || false,
         date_of_birth: user.date_of_birth || "",
+        full_name: user.full_name || "",
+        username: user.username || "",
+        email: user.email || "",
+        is_banned: user.is_banned || false,
       });
       setNewPassword("");
       setConfirmDelete(false);
+      setSelectedPlanId("");
     }
   }, [user]);
+
+  const handleAssignPlan = async () => {
+    if (!selectedPlanId) return;
+    setAssigningPlan(true);
+    try {
+      await base44.entities.UserSubscription.create({
+        user_id: user.id,
+        plan_id: selectedPlanId,
+        status: "active",
+        paypal_order_id: "manual_admin_grant"
+      });
+      refetchSubs();
+      setSelectedPlanId("");
+    } catch(e) {
+      console.error(e);
+      alert("Failed to assign plan");
+    }
+    setAssigningPlan(false);
+  };
+
+  const handleCancelSub = async (subId) => {
+    if(confirm("Cancel this subscription?")) {
+      await base44.entities.UserSubscription.update(subId, { status: "cancelled" });
+      refetchSubs();
+    }
+  };
 
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -71,12 +120,32 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
           <DialogTitle className="text-foreground">Edit User</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
-          {/* User Info (read-only) */}
-          <div className="bg-secondary/50 rounded-lg p-3 space-y-1">
-            <p className="text-foreground font-semibold">{user.full_name || "—"}</p>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
-            <p className="text-xs text-muted-foreground">ID: {user.id}</p>
+        <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-2">
+          {/* User Info (Editable) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Full Name</Label>
+              <Input value={form.full_name} onChange={e => update("full_name", e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Username</Label>
+              <Input value={form.username} onChange={e => update("username", e.target.value)} className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-1.5 col-span-2">
+              <Label>Email</Label>
+              <Input value={form.email} onChange={e => update("email", e.target.value)} className="bg-secondary border-border" />
+            </div>
+          </div>
+
+          <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Ban className="w-4 h-4 text-destructive" />
+              <div>
+                <Label className="text-destructive">Ban User</Label>
+                <p className="text-xs text-muted-foreground">Revoke access to the site</p>
+              </div>
+            </div>
+            <Switch checked={form.is_banned} onCheckedChange={v => update("is_banned", v)} />
           </div>
 
           {/* Role */}
@@ -102,6 +171,44 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
               onChange={(e) => update("date_of_birth", e.target.value)}
               className="bg-secondary border-border"
             />
+          </div>
+
+          {/* Subscription Management */}
+          <div className="space-y-2 border-t border-border pt-4">
+            <Label>Subscriptions</Label>
+            <div className="space-y-2">
+              {userSubs.filter(s => s.status === 'active').map(sub => {
+                const p = plans.find(plan => plan.id === sub.plan_id);
+                return (
+                  <div key={sub.id} className="flex items-center justify-between bg-primary/10 border border-primary/20 p-2 rounded text-sm">
+                    <span className="font-semibold text-primary">{p?.name || "Unknown Plan"} (Active)</span>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-destructive hover:text-destructive" onClick={() => handleCancelSub(sub.id)}>Cancel</Button>
+                  </div>
+                );
+              })}
+              {userSubs.filter(s => s.status === 'active').length === 0 && (
+                <p className="text-xs text-muted-foreground">No active subscriptions.</p>
+              )}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select a plan to grant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name} (${p.price})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="secondary" 
+                onClick={handleAssignPlan} 
+                disabled={!selectedPlanId || assigningPlan}
+              >
+                {assigningPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : "Grant Access"}
+              </Button>
+            </div>
           </div>
 
           {/* Age Verification */}
