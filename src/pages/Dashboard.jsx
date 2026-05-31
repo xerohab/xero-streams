@@ -107,7 +107,11 @@ export default function Dashboard() {
     }
   };
 
-  const activeSub = subscriptions.find(s => s.status === 'active');
+  const activeSub = subscriptions.find(s => {
+    if (s.status === 'active') return true;
+    const plan = plans.find(p => p.id === s.plan_id);
+    return plan?.interval === 'lifetime';
+  });
   const activePlan = activeSub ? plans.find(p => p.id === activeSub.plan_id) : null;
   const hasAccess = !!activeSub || user?.role === 'admin';
 
