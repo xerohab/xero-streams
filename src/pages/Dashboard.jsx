@@ -107,9 +107,9 @@ export default function Dashboard() {
     }
   };
 
-  const activeSub = subscriptions.length > 0 ? subscriptions[0] : null;
+  const activeSub = subscriptions.find(s => s.status === 'active');
   const activePlan = activeSub ? plans.find(p => p.id === activeSub.plan_id) : null;
-  const hasAccess = subscriptions.length > 0 || user?.role === 'admin';
+  const hasAccess = !!activeSub || user?.role === 'admin';
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
@@ -321,9 +321,13 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs capitalize">{user.role}</Badge>
-              {activePlan && (
+              {activeSub ? (
                 <Badge className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30">
-                  {activePlan.name} Subscriber
+                  {activePlan?.name || "Pro"} Subscriber
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs">
+                  Free User
                 </Badge>
               )}
             </div>
@@ -790,8 +794,11 @@ export default function Dashboard() {
               {activeSub ? (
                 <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                   <div>
-                    <h3 className="text-xl font-bold text-foreground">Current Plan: {activePlan?.name || "Unknown"}</h3>
-                    <p className="text-muted-foreground">You are subscribed and have full access.</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-foreground">Current Plan: {activePlan?.name || "Unknown"}</h3>
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Pro User</Badge>
+                    </div>
+                    <p className="text-muted-foreground">You are subscribed and have full access to premium features.</p>
                   </div>
                   <Button variant="destructive" onClick={() => handleCancelSub(activeSub.id)}>Cancel Subscription</Button>
                 </div>
