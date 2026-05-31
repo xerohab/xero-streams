@@ -69,6 +69,18 @@ export default function Admin() {
     enabled: isAdmin === true,
   });
 
+  const { data: allSubscriptions = [] } = useQuery({
+    queryKey: ["allSubscriptions"],
+    queryFn: () => base44.entities.UserSubscription.list("-created_date", 5000),
+    enabled: isAdmin === true,
+  });
+
+  const { data: allPlans = [] } = useQuery({
+    queryKey: ["allPlans"],
+    queryFn: () => base44.entities.SubscriptionPlan.list(),
+    enabled: isAdmin === true,
+  });
+
   const setUserAgeVerified = async (userId, verified) => {
     await base44.functions.invoke("updateUser", { userId, data: { age_verified: verified } });
     refetchUsers();
@@ -339,6 +351,15 @@ export default function Admin() {
                             {u.age_verification_requested && !u.age_verified && (
                               <Badge className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Verification Pending</Badge>
                             )}
+                            {allSubscriptions.filter(s => s.user_id === u.id).length > 0 && (() => {
+                              const uSub = allSubscriptions.filter(s => s.user_id === u.id)[0];
+                              const p = allPlans.find(pl => pl.id === uSub.plan_id);
+                              return (
+                                <Badge className="text-xs bg-purple-500/20 text-purple-400 border-purple-500/30">
+                                  Plan: {p?.name || "Unknown"} {uSub.status !== "active" ? "(Inactive)" : ""}
+                                </Badge>
+                              );
+                            })()}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">{u.email}</p>
                           {u.date_of_birth && (

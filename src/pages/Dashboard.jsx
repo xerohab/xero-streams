@@ -68,7 +68,7 @@ export default function Dashboard() {
 
   const { data: plans = [] } = useQuery({
     queryKey: ["subscription_plans"],
-    queryFn: () => base44.entities.SubscriptionPlan.filter({ is_active: true })
+    queryFn: () => base44.entities.SubscriptionPlan.list()
   });
 
   const { data: subscriptions = [], refetch: refetchSubscriptions } = useQuery({
@@ -107,7 +107,7 @@ export default function Dashboard() {
     }
   };
 
-  const activeSub = subscriptions.find(s => s.status === "active");
+  const activeSub = subscriptions.length > 0 ? subscriptions[0] : null;
   const activePlan = activeSub ? plans.find(p => p.id === activeSub.plan_id) : null;
 
   const { data: videos = [] } = useQuery({
@@ -794,7 +794,7 @@ export default function Dashboard() {
                 <div>
                   <h3 className="text-xl font-bold text-foreground mb-4">Choose a Plan</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {plans.map(plan => (
+                    {plans.filter(p => p.is_active).map(plan => (
                       <div key={plan.id} className="border border-border rounded-lg p-5 flex flex-col">
                         <h4 className="text-lg font-bold">{plan.name}</h4>
                         <p className="text-2xl font-black text-primary my-2">${plan.price}<span className="text-sm text-muted-foreground font-normal">/{plan.interval}</span></p>
@@ -809,7 +809,7 @@ export default function Dashboard() {
                         </Button>
                       </div>
                     ))}
-                    {plans.length === 0 && <p className="text-muted-foreground">No active plans available.</p>}
+                    {plans.filter(p => p.is_active).length === 0 && <p className="text-muted-foreground">No active plans available.</p>}
                   </div>
                 </div>
               )}
