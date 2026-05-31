@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Pencil, Trash, Link as LinkIcon, BookOpen, Users } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash, Link as LinkIcon, BookOpen, Users, Wand2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export default function BooksManager() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(null);
   const [editingAuthor, setEditingAuthor] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const { data: books = [], isLoading } = useQuery({
     queryKey: ["books"],
@@ -77,6 +78,24 @@ export default function BooksManager() {
     }
   };
 
+  const handleAiInfo = async () => {
+    const titleInput = document.querySelector('input[name="title"]');
+    if (!titleInput || !titleInput.value) return alert("Enter a title first");
+    setIsAiLoading(true);
+    try {
+      const res = await base44.functions.invoke("aiMediaInfo", { title: titleInput.value, type: "book" });
+      if (res.data?.title) titleInput.value = res.data.title;
+      if (res.data?.description) {
+        const descInput = document.querySelector('textarea[name="description"]');
+        if (descInput) descInput.value = res.data.description;
+      }
+    } catch (e) {
+      alert("AI failed: " + e.message);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   const handleSaveAuthor = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -140,8 +159,14 @@ export default function BooksManager() {
 
       {editing !== null && !editingAuthor && (
         <form onSubmit={handleSave} className="bg-secondary p-4 rounded-lg space-y-4">
-          <Input name="title" placeholder="Book Title" defaultValue={editing.title} required />
-          <Textarea name="description" placeholder="Description" defaultValue={editing.description} />
+          <div className="flex gap-2">
+            <Input name="title" placeholder="Book Title" defaultValue={editing.title} required className="flex-1" />
+            <Button type="button" variant="secondary" onClick={handleAiInfo} disabled={isAiLoading} className="flex-shrink-0 border border-primary/20">
+              {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
+              {isAiLoading ? "" : "AI Info"}
+            </Button>
+          </div>
+          <Textarea name="description" placeholder="Description" defaultValue={editing.description} className="h-24" />
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">

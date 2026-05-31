@@ -32,6 +32,16 @@ Respond in JSON with:
   "title": "The correct movie title",
   "description": "A concise 2-3 sentence synopsis of the movie"
 }`;
+    } else if (type === "book") {
+      prompt = `I need information about a book titled "${title}".
+
+Please provide the correct book title and write a concise, engaging 2-3 sentence synopsis of this book.
+
+Respond in JSON with:
+{
+  "title": "The correct book title",
+  "description": "A concise 2-3 sentence synopsis of the book"
+}`;
     } else {
       prompt = `I need information about media titled "${title}".
 Write a concise, engaging 2-3 sentence description.
