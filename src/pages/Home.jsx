@@ -6,13 +6,26 @@ import HeroSection from "@/components/browse/HeroSection";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
-import { Loader2, Film, Tv } from "lucide-react";
+import { Loader2, Film, Tv, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 import VideoRow from "@/components/browse/VideoRow";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
   const [user, setUser] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem("xero_welcome_seen")) {
+      setShowWelcome(true);
+    }
+  }, []);
+
+  const closeWelcome = () => {
+    localStorage.setItem("xero_welcome_seen", "true");
+    setShowWelcome(false);
+  };
 
   const refreshUser = () => base44.auth.me().then(setUser).catch(() => {});
 
@@ -159,6 +172,42 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {showWelcome && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 relative animate-in fade-in zoom-in duration-300">
+            <button onClick={closeWelcome} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="text-center mb-6 mt-2">
+              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Film className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-black mb-2">Welcome to Xero Streams!</h2>
+              <p className="text-muted-foreground text-sm">Your new home for premium entertainment.</p>
+            </div>
+            
+            <div className="space-y-4 mb-8">
+              <div className="bg-secondary/50 p-4 rounded-lg">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Film className="w-4 h-4 text-primary" /> Free to Watch</h3>
+                <p className="text-sm text-muted-foreground">Enjoy our extensive library of movies and TV series completely free of charge.</p>
+              </div>
+              
+              <div className="bg-secondary/50 p-4 rounded-lg">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Tv className="w-4 h-4 text-primary" /> Premium Features</h3>
+                <p className="text-sm text-muted-foreground">Unlock the ability to <strong>request content</strong> and <strong>request downloads</strong> by purchasing a subscription.</p>
+              </div>
+
+              <div className="bg-secondary/50 p-4 rounded-lg">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Film className="w-4 h-4 text-primary" /> Library Store</h3>
+                <p className="text-sm text-muted-foreground">Visit our store to purchase books and expand your digital collection.</p>
+              </div>
+            </div>
+            
+            <Button onClick={closeWelcome} className="w-full font-bold">Start Watching</Button>
+          </div>
+        </div>
+      )}
+
       <Navbar />
 
       {/* Hero: latest 5 videos */}

@@ -1,0 +1,36 @@
+{
+  "name": "DownloadRequest",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "movie",
+        "series",
+        "episode"
+      ],
+      "default": "movie"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "fulfilled"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ]
+}

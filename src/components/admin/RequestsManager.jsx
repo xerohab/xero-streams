@@ -2,16 +2,25 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, MessageSquare, Mail } from "lucide-react";
+import { Loader2, CheckCircle2, MessageSquare, Mail, Download as DownloadIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function RequestsManager() {
   const queryClient = useQueryClient();
 
-  const { data: requests = [], isLoading } = useQuery({
+  const [activeTab, setActiveTab] = React.useState("content");
+
+  const { data: requests = [], isLoading: isLoadingContent } = useQuery({
     queryKey: ["content_requests_all"],
     queryFn: () => base44.entities.ContentRequest.list("-created_date")
   });
+
+  const { data: downloadRequests = [], isLoading: isLoadingDownload } = useQuery({
+    queryKey: ["download_requests_all"],
+    queryFn: () => base44.entities.DownloadRequest.list("-created_date")
+  });
+
+  const isLoading = isLoadingContent || isLoadingDownload;
 
   const { data: users = [] } = useQuery({
     queryKey: ["allUsers"],
@@ -41,16 +50,52 @@ export default function RequestsManager() {
     onSuccess: () => queryClient.invalidateQueries(["content_requests_all"])
   });
 
+  const markDownloadFulfilled = useMutation({
+    mutationFn: async (req) => {
+      await base44.entities.DownloadRequest.update(req.id, { status: "fulfilled" });
+      const user = users.find(u => u.id === req.user_id);
+      if (user?.email) {
+        await base44.integrations.Core.SendEmail({
+          to: user.email,
+          subject: `Your download request "${req.title}" is now available!`,
+          body: `Hi ${user.full_name || 'there'},\n\nGreat news! The download you requested ("${req.title}") is now available on our platform. Log in to check it out!\n\nEnjoy!`
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["download_requests_all"]);
+      toast.success("Download request marked as fulfilled and email sent!");
+    }
+  });
+
+  const deleteDownloadRequest = useMutation({
+    mutationFn: (id) => base44.entities.DownloadRequest.delete(id),
+    onSuccess: () => queryClient.invalidateQueries(["download_requests_all"])
+  });
+
   if (isLoading) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold flex items-center gap-2"><MessageSquare className="w-5 h-5 text-primary" /> User Content Requests</h3>
+        <div className="flex gap-4 border-b border-border w-full pb-2">
+          <button 
+            onClick={() => setActiveTab("content")} 
+            className={`font-semibold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'content' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
+          >
+            <span className="flex items-center gap-2"><MessageSquare className="w-4 h-4" /> Content Requests</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab("download")} 
+            className={`font-semibold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'download' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
+          >
+            <span className="flex items-center gap-2"><DownloadIcon className="w-4 h-4" /> Download Requests</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-3">
-        {requests.map(req => {
+      <div className="grid gap-3 mt-4">
+        {activeTab === "content" && requests.map(req => {
           const u = users.find(user => user.id === req.user_id);
           return (
             <div key={req.id} className={`p-4 rounded-lg border ${req.status === 'fulfilled' ? 'bg-secondary/50 border-border' : 'bg-secondary border-primary/30'}`}>
@@ -78,8 +123,43 @@ export default function RequestsManager() {
             </div>
           );
         })}
-        {requests.length === 0 && (
+        {activeTab === "content" && requests.length === 0 && (
           <p className="text-center py-8 text-muted-foreground bg-secondary rounded-lg">No content requests yet.</p>
+        )}
+
+        {activeTab === "download" && downloadRequests.map(req => {
+          const u = users.find(user => user.id === req.user_id);
+          return (
+            <div key={req.id} className={`p-4 rounded-lg border ${req.status === 'fulfilled' ? 'bg-secondary/50 border-border' : 'bg-secondary border-primary/30'}`}>
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <h4 className="font-bold text-lg flex items-center gap-2">
+                    {req.title}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full border uppercase text-muted-foreground">{req.content_type}</span>
+                  </h4>
+                  {req.description && <p className="text-muted-foreground text-sm mt-1">{req.description}</p>}
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <UserIcon className="w-3 h-3" /> {u?.email || "Unknown User"}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {req.status === "pending" ? (
+                    <Button size="sm" onClick={() => markDownloadFulfilled.mutate(req)} disabled={markDownloadFulfilled.isPending} className="bg-green-600 hover:bg-green-700">
+                      <CheckCircle2 className="w-4 h-4 mr-2" /> Mark Fulfilled & Notify
+                    </Button>
+                  ) : (
+                    <span className="text-xs font-semibold text-green-500 bg-green-500/10 px-2 py-1 rounded">Fulfilled</span>
+                  )}
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive h-8" onClick={() => deleteDownloadRequest.mutate(req.id)}>
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {activeTab === "download" && downloadRequests.length === 0 && (
+          <p className="text-center py-8 text-muted-foreground bg-secondary rounded-lg">No download requests yet.</p>
         )}
       </div>
     </div>
