@@ -1,0 +1,21 @@
+{
+  "name": "BookAuthor",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Author name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short bio or description of the author"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Author photo"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

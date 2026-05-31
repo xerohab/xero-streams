@@ -41,6 +41,10 @@
     "is_active": {
       "type": "boolean",
       "default": true
+    },
+    "author_id": {
+      "type": "string",
+      "description": "ID of the BookAuthor"
     }
   },
   "required": [

@@ -19,6 +19,11 @@ export default function Books() {
     queryFn: () => base44.entities.Book.filter({ is_active: true })
   });
 
+  const { data: authors = [], isLoading: loadingAuthors } = useQuery({
+    queryKey: ["book_authors"],
+    queryFn: () => base44.entities.BookAuthor.list()
+  });
+
   const { data: purchases = [], refetch: refetchPurchases } = useQuery({
     queryKey: ["book_purchases", user?.id],
     queryFn: () => base44.entities.BookPurchase.filter({ user_id: user.id }),
@@ -70,14 +75,22 @@ export default function Books() {
           </div>
         </div>
 
-        {isLoading ? (
+        {isLoading || loadingAuthors ? (
           <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : books.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">No books available at the moment.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {books.map(book => {
-              const purchasedDefault = purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "default");
+          <div className="space-y-12">
+            {/* Group by Author if applicable */}
+            {(() => {
+              // Get unique authors that have active books
+              const authorsWithBooks = authors.filter(a => books.some(b => b.author_id === a.id));
+              const booksWithoutAuthor = books.filter(b => !b.author_id || !authors.find(a => a.id === b.author_id));
+
+              const renderBookGrid = (bookList) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {bookList.map(book => {
+                    const purchasedDefault = purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "default");
               const purchasedWord = purchasedDefault || purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "word");
               const purchasedEbook = purchasedDefault || purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "ebook");
               // Default purchase grants access to all available formats.
@@ -95,6 +108,11 @@ export default function Books() {
                   )}
                   <div className="p-5 flex-1 flex flex-col">
                     <h3 className="text-xl font-bold mb-2">{book.title}</h3>
+                    {authors.find(a => a.id === book.author_id) && (
+                      <p className="text-sm font-semibold text-primary mb-2">
+                        By {authors.find(a => a.id === book.author_id).name}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground mb-4 flex-1">{book.description}</p>
                     
                     <div className="space-y-2">
@@ -158,6 +176,33 @@ export default function Books() {
                 </div>
               );
             })}
+                </div>
+              );
+
+              return (
+                <>
+                  {authorsWithBooks.map(author => (
+                    <div key={author.id} className="space-y-4">
+                      <div className="flex items-center gap-4 border-b border-border pb-4">
+                        {author.avatar_url && <img src={author.avatar_url} className="w-12 h-12 rounded-full object-cover" alt={author.name} />}
+                        <div>
+                          <h2 className="text-2xl font-bold text-foreground">{author.name}</h2>
+                          {author.description && <p className="text-sm text-muted-foreground">{author.description}</p>}
+                        </div>
+                      </div>
+                      {renderBookGrid(books.filter(b => b.author_id === author.id))}
+                    </div>
+                  ))}
+
+                  {booksWithoutAuthor.length > 0 && (
+                    <div className="space-y-4">
+                      {authorsWithBooks.length > 0 && <h2 className="text-2xl font-bold text-foreground border-b border-border pb-4">Other Books</h2>}
+                      {renderBookGrid(booksWithoutAuthor)}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
