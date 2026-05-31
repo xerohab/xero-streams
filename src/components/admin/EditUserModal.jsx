@@ -86,7 +86,7 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.User.update(user.id, form);
+    await base44.functions.invoke("updateUser", { userId: user.id, data: form });
     setSaving(false);
     onSaved();
     onClose();
@@ -95,8 +95,7 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
   const handlePasswordChange = async () => {
     if (!newPassword.trim() || newPassword.length < 6) return;
     setChangingPassword(true);
-    await base44.asServiceRole?.entities?.User?.update?.(user.id, { password: newPassword }).catch(() => {});
-    // Note: password changes via entity update may not be supported - this is best-effort
+    await base44.functions.invoke("updateUser", { userId: user.id, data: { password: newPassword } }).catch(() => {});
     setChangingPassword(false);
     setNewPassword("");
     alert("Password change submitted. Note: password changes require backend support.");
@@ -105,7 +104,7 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
     setDeleting(true);
-    await base44.entities.User.delete(user.id);
+    await base44.functions.invoke("deleteUser", { userId: user.id });
     setDeleting(false);
     onSaved();
     onClose();

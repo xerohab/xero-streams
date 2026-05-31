@@ -62,12 +62,15 @@ export default function Admin() {
 
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ["allUsers"],
-    queryFn: () => base44.entities.User.list("-created_date", 5000), // Get all users
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getAllUsers", {});
+      return res.data?.users || [];
+    },
     enabled: isAdmin === true,
   });
 
   const setUserAgeVerified = async (userId, verified) => {
-    await base44.entities.User.update(userId, { age_verified: verified });
+    await base44.functions.invoke("updateUser", { userId, data: { age_verified: verified } });
     refetchUsers();
   };
 
