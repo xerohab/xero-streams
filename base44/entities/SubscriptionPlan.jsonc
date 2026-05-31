@@ -18,7 +18,8 @@
       "type": "string",
       "enum": [
         "monthly",
-        "yearly"
+        "yearly",
+        "lifetime"
       ],
       "default": "monthly",
       "description": "Billing interval"

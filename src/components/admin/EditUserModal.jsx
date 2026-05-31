@@ -197,7 +197,7 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
                 </SelectTrigger>
                 <SelectContent>
                   {plans.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name} (${p.price})</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>{p.name} (${p.price}) {!p.is_active ? "(Inactive)" : ""}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

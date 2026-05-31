@@ -67,6 +67,7 @@ export default function BillingPlansManager() {
             <select name="interval" defaultValue={editing.interval || "monthly"} className="bg-background border border-input rounded-md px-3 py-1">
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
+              <option value="lifetime">Lifetime</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
