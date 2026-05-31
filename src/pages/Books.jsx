@@ -17,7 +17,7 @@ export default function Books() {
 
   const { data: books = [], isLoading } = useQuery({
     queryKey: ["books"],
-    queryFn: () => base44.entities.Book.filter({ is_active: true })
+    queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order")
   });
 
   const { data: authors = [], isLoading: loadingAuthors } = useQuery({

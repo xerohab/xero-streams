@@ -14,7 +14,7 @@ export default function BooksManager() {
 
   const { data: books = [], isLoading } = useQuery({
     queryKey: ["books"],
-    queryFn: () => base44.entities.Book.list()
+    queryFn: () => base44.entities.Book.list("sort_order")
   });
 
   const { data: authors = [], isLoading: loadingAuthors } = useQuery({
@@ -59,6 +59,7 @@ export default function BooksManager() {
       title: formData.get("title"),
       description: formData.get("description"),
       author_id: formData.get("author_id"),
+      sort_order: parseFloat(formData.get("sort_order") || 0),
       price: parseFloat(formData.get("price") || 0),
       price_word: parseFloat(formData.get("price_word") || 0),
       price_ebook: parseFloat(formData.get("price_ebook") || 0),
@@ -142,18 +143,24 @@ export default function BooksManager() {
           <Input name="title" placeholder="Book Title" defaultValue={editing.title} required />
           <Textarea name="description" placeholder="Description" defaultValue={editing.description} />
           
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Author (Optional)</label>
-            <select 
-              name="author_id" 
-              defaultValue={editing.author_id || ""} 
-              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">No specific author</option>
-              {authors.map(a => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Author (Optional)</label>
+              <select 
+                name="author_id" 
+                defaultValue={editing.author_id || ""} 
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">No specific author</option>
+                {authors.map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Sort Order</label>
+              <Input name="sort_order" type="number" placeholder="0" defaultValue={editing.sort_order || 0} />
+            </div>
           </div>
 
           <div className="flex gap-4">
