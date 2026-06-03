@@ -26,24 +26,53 @@
     "status"
   ],
   "rls": {
-    "read": {
-      "user_condition": {
-        "$or": [
-          {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
             "role": "admin"
-          },
-          {
-            "id": "user_id"
           }
-        ]
-      }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
     },
-    "create": null,
-    "update": null,
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
+    },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
     }
   }
 }
