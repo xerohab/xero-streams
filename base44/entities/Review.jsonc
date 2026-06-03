@@ -32,28 +32,33 @@
     "rating"
   ],
   "rls": {
-    "read": null,
     "create": {
-      "user_condition": {
-        "id": "user_id"
-      }
+      "data.user_id": "{{user.id}}"
     },
+    "read": null,
     "update": {
-      "user_condition": {
-        "id": "user_id"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
     },
     "delete": {
-      "user_condition": {
-        "$or": [
-          {
+      "$or": [
+        {
+          "user_condition": {
             "role": "admin"
-          },
-          {
-            "id": "user_id"
           }
-        ]
-      }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
     }
   }
 }
