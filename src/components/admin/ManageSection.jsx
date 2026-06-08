@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search, Eye } from "lucide-react";
+import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search, Eye, RefreshCw } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 import { Layers } from "lucide-react";
 
@@ -27,6 +28,47 @@ export default function ManageSection({
   const [franchiseSearch, setFranchiseSearch] = useState("");
   const [seriesSearch, setSeriesSearch] = useState("");
   const [videosSearch, setVideosSearch] = useState("");
+  const [detectingQualities, setDetectingQualities] = useState(false);
+  const [detectProgress, setDetectProgress] = useState(0);
+
+  const handleAutoDetectQualities = async (e) => {
+    e.stopPropagation();
+    if (!confirm("This will scan all videos and assign quality (HD, Full HD, etc.) based on titles/URLs. Continue?")) return;
+    
+    setDetectingQualities(true);
+    setDetectProgress(0);
+    let count = 0;
+    let index = 0;
+    
+    for (const v of videos) {
+      index++;
+      setDetectProgress(Math.round((index / videos.length) * 100));
+      
+      if (v.quality && v.quality !== "Unknown") continue;
+
+      const text = `${v.title || ''} ${v.video_url || ''} ${v.description || ''}`.toLowerCase();
+      let q = "Unknown";
+      
+      if (text.includes("4k") || text.includes("2160") || text.includes("uhd")) q = "4K";
+      else if (text.includes("1080") || text.includes("full hd") || text.includes("fhd")) q = "Full HD";
+      else if (text.includes("720") || text.includes(" hd") || text.includes("hd ") || text.endsWith("hd")) q = "HD";
+      else if (text.includes("cam") || text.includes("ts") || text.includes("telesync") || text.includes("hdcam")) q = "CAM";
+      
+      if (q !== "Unknown") {
+        try {
+          await base44.entities.Video.update(v.id, { quality: q });
+          count++;
+          // Small delay to prevent hitting API rate limits from the browser
+          await new Promise(r => setTimeout(r, 200));
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
+    
+    setDetectingQualities(false);
+    alert(`Updated ${count} videos! Please refresh the page to see changes.`);
+  };
 
   const filteredFranchises = franchises.filter((f) =>
     f.title?.toLowerCase().includes(franchiseSearch.toLowerCase())
@@ -184,8 +226,26 @@ export default function ManageSection({
             <Video className="w-4 h-4" />
             Videos
             <Badge variant="secondary" className="ml-1 text-xs">{videos.length}</Badge>
+            
+            {detectingQualities && (
+              <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
+                Scanning... {detectProgress}%
+              </Badge>
+            )}
           </div>
-          {videosOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-7 text-xs" 
+              onClick={handleAutoDetectQualities}
+              disabled={detectingQualities}
+            >
+              {detectingQualities ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+              Auto-detect Qualities
+            </Button>
+            {videosOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+          </div>
         </button>
 
         {videosOpen && (
