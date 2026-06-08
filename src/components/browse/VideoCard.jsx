@@ -76,6 +76,13 @@ export default function VideoCard({ video, index, from, isAdult }) {
             </div>
           )}
 
+          {/* Quality badge */}
+          {!isComingSoon && video.quality && video.quality !== "Unknown" && (
+            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm border border-white/20 text-[10px] uppercase text-white font-bold px-1.5 py-0.5 rounded tracking-wide">
+              {video.quality}
+            </div>
+          )}
+
           {/* Coming Soon badge top-right */}
           {isComingSoon && (
             <div className="absolute top-2 right-2 bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded">

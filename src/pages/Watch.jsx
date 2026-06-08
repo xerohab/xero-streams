@@ -528,6 +528,9 @@ export default function Watch() {
               <h1 className="text-2xl md:text-4xl font-black text-foreground mb-3">{video.title}</h1>
 
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
+                {video.quality && video.quality !== "Unknown" && (
+                  <span className="flex items-center gap-1.5 font-bold text-primary border border-primary/50 px-1.5 py-0.5 rounded text-xs uppercase">{video.quality}</span>
+                )}
                 {video.duration && (
                   <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{video.duration}</span>
                 )}

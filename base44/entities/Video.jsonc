@@ -30,6 +30,18 @@
     "duration": {
       "type": "string"
     },
+    "quality": {
+      "type": "string",
+      "enum": [
+        "CAM",
+        "HD",
+        "Full HD",
+        "4K",
+        "Unknown"
+      ],
+      "default": "Unknown",
+      "description": "Video quality resolution"
+    },
     "is_featured": {
       "type": "boolean",
       "default": false

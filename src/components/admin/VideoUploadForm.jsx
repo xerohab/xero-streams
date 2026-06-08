@@ -27,6 +27,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     is_featured: false,
     is_adult: false,
     content_type: "movie",
+    quality: "Unknown",
     coming_soon: false,
     release_date: "",
     is_for_sale: false,
@@ -68,6 +69,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       franchise_id: form.franchise_id || undefined,
       // Auto-correct content_type based on series assignment
       content_type: seriesId ? "episode" : "movie",
+      quality: form.quality,
       is_for_sale: form.is_for_sale,
       price: form.price ? Number(form.price) : undefined,
       download_url: form.download_url || undefined,
@@ -91,6 +93,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       is_featured: false,
       is_adult: false,
       content_type: "movie",
+      quality: "Unknown",
       coming_soon: false,
       release_date: "",
       is_for_sale: false,
@@ -485,6 +488,22 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
           <SelectContent>
             <SelectItem value="movie">Movie</SelectItem>
             <SelectItem value="episode">TV Episode</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Quality</Label>
+        <Select value={form.quality} onValueChange={(v) => update("quality", v)}>
+          <SelectTrigger className="bg-secondary border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Unknown">Unknown / Auto</SelectItem>
+            <SelectItem value="4K">4K</SelectItem>
+            <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
+            <SelectItem value="HD">HD (720p)</SelectItem>
+            <SelectItem value="CAM">CAM / TS</SelectItem>
           </SelectContent>
         </Select>
       </div>
