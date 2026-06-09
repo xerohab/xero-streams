@@ -11,6 +11,7 @@ import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles, Search, AudioLines 
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
+import { detectVideoQuality } from "@/lib/qualityDetection";
 
 export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
   const [uploading, setUploading] = useState(false);
@@ -62,8 +63,17 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
   const handleSubmit = async (e) => {
     e.preventDefault();
     const seriesId = form.series_id?.trim() || undefined;
+    
+    let finalQuality = form.quality;
+    if (finalQuality === "Unknown" && form.video_url) {
+      const toastId = toast.loading("Auto-detecting video quality...");
+      finalQuality = await detectVideoQuality(form.video_url, form.title);
+      toast.success(`Quality detected as ${finalQuality}`, { id: toastId });
+    }
+
     const payload = {
       ...form,
+      quality: finalQuality,
       episode_number: form.episode_number ? Number(form.episode_number) : undefined,
       series_id: seriesId,
       franchise_id: form.franchise_id || undefined,

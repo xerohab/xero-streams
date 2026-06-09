@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon, Sparkles, Film, Tv, Globe, X } from "lucide-react";
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
+import { detectVideoQuality } from "@/lib/qualityDetection";
 
 export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [url, setUrl] = useState("");
@@ -59,7 +60,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     setScanning(false);
     if (res.data.error) { toast.error(res.data.error); return; }
     if (res.data.episodes.length === 0) { toast.error("No files or links found at that URL"); return; }
-    setItems(res.data.episodes);
+    setItems(res.data.episodes.map(ep => ({ ...ep, quality: "Unknown" })));
     setScanMode(res.data.mode);
     const msg = res.data.mode === "page_links"
       ? `Found ${res.data.total} links — URLs are download pages, not direct video files`
@@ -150,34 +151,34 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     if (contentMode === "tv" && !selectedSeries) { toast.error("Select a series first"); return; }
     if (items.length === 0) { toast.error("No items to import"); return; }
     setSaving(true);
+    const toastId = toast.loading("Processing & auto-detecting qualities...");
 
-    let records;
-    if (contentMode === "tv") {
-      const seriesCover = seriesList?.find(s => s.id === selectedSeries)?.cover_image;
-      records = items.map(item => ({
+    let records = [];
+    const seriesCover = contentMode === "tv" ? seriesList?.find(s => s.id === selectedSeries)?.cover_image : undefined;
+
+    for (const item of items) {
+      let finalQuality = item.quality || "Unknown";
+      if (finalQuality === "Unknown" && item.video_url && scanMode !== "page_links") {
+        // Only auto-detect if we have a direct video link, page links won't work in video elements
+        finalQuality = await detectVideoQuality(item.video_url, item.title);
+      }
+
+      records.push({
         title: item.title,
         description: item.description || undefined,
         video_url: item.video_url,
         thumbnail_url: item.thumbnail_url || seriesCover || undefined,
-        series_id: selectedSeries,
+        series_id: contentMode === "tv" ? selectedSeries : undefined,
+        franchise_id: contentMode !== "tv" ? selectedFranchise || undefined : undefined,
         episode_number: item.episode_number,
-        content_type: "episode",
+        content_type: contentMode === "tv" ? "episode" : "movie",
         is_featured: false,
-      }));
-    } else {
-      records = items.map(item => ({
-        title: item.title,
-        description: item.description || undefined,
-        video_url: item.video_url,
-        thumbnail_url: item.thumbnail_url || undefined,
-        franchise_id: selectedFranchise || undefined,
-        content_type: "movie",
-        is_featured: false,
-      }));
+        quality: finalQuality,
+      });
     }
 
     await base44.entities.Video.bulkCreate(records);
-    toast.success(`Imported ${records.length} ${contentMode === "tv" ? "episode" : "movie"}${records.length !== 1 ? "s" : ""}!`);
+    toast.success(`Imported ${records.length} ${contentMode === "tv" ? "episode" : "movie"}${records.length !== 1 ? "s" : ""}!`, { id: toastId });
     setItems([]);
     setUrl("");
     setSelectedSeries("");
@@ -363,7 +364,21 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
                         )}
                       </div>
                     )}
-                    <p className="text-xs text-muted-foreground truncate">{item.video_url}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground truncate flex-1">{item.video_url}</p>
+                      <Select value={item.quality || "Unknown"} onValueChange={(v) => updateItem(index, "quality", v)}>
+                        <SelectTrigger className="w-28 bg-secondary border-border h-6 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Unknown">Auto Quality</SelectItem>
+                          <SelectItem value="4K">4K</SelectItem>
+                          <SelectItem value="Full HD">Full HD</SelectItem>
+                          <SelectItem value="HD">HD</SelectItem>
+                          <SelectItem value="CAM">CAM</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">
                     {isTV && (

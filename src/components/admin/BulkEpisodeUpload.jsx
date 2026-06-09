@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { detectVideoQuality } from "@/lib/qualityDetection";
 
 const emptyEpisode = () => ({
   title: "",
@@ -16,6 +17,7 @@ const emptyEpisode = () => ({
   thumbnail_url: "",
   episode_number: "",
   duration: "",
+  quality: "Unknown",
   uploading: false,
   uploaded: false,
 });
@@ -60,20 +62,32 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
     const valid = episodes.filter((ep) => ep.title && ep.video_url);
     if (valid.length === 0) { toast.error("Add at least one episode with a title and video"); return; }
     setSaving(true);
+    const toastId = toast.loading("Processing & auto-detecting qualities...");
     const seriesCover = seriesList?.find((s) => s.id === selectedSeries)?.cover_image;
-    const records = valid.map((ep) => ({
-      title: ep.title,
-      description: ep.description || undefined,
-      video_url: ep.video_url,
-      thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
-      series_id: selectedSeries,
-      episode_number: ep.episode_number ? Number(ep.episode_number) : undefined,
-      duration: ep.duration || undefined,
-      content_type: "episode",
-      is_featured: false,
-    }));
+    
+    const records = [];
+    for (const ep of valid) {
+      let finalQuality = ep.quality;
+      if (finalQuality === "Unknown" && ep.video_url) {
+        finalQuality = await detectVideoQuality(ep.video_url, ep.title);
+      }
+      
+      records.push({
+        title: ep.title,
+        description: ep.description || undefined,
+        video_url: ep.video_url,
+        thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
+        series_id: selectedSeries,
+        episode_number: ep.episode_number ? Number(ep.episode_number) : undefined,
+        duration: ep.duration || undefined,
+        content_type: "episode",
+        is_featured: false,
+        quality: finalQuality,
+      });
+    }
+    
     await base44.entities.Video.bulkCreate(records);
-    toast.success(`${records.length} episode${records.length > 1 ? "s" : ""} added!`);
+    toast.success(`${records.length} episode${records.length > 1 ? "s" : ""} added!`, { id: toastId });
     setEpisodes([emptyEpisode()]);
     setSelectedSeries("");
     setSaving(false);
@@ -164,9 +178,26 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">Duration</Label>
-              <Input value={ep.duration} onChange={(e) => updateEp(index, "duration", e.target.value)} placeholder="e.g. 24:30" className="bg-secondary border-border h-9" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Duration</Label>
+                <Input value={ep.duration} onChange={(e) => updateEp(index, "duration", e.target.value)} placeholder="e.g. 24:30" className="bg-secondary border-border h-9" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Quality</Label>
+                <Select value={ep.quality || "Unknown"} onValueChange={(v) => updateEp(index, "quality", v)}>
+                  <SelectTrigger className="bg-secondary border-border h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Unknown">Auto Detect</SelectItem>
+                    <SelectItem value="4K">4K</SelectItem>
+                    <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
+                    <SelectItem value="HD">HD (720p)</SelectItem>
+                    <SelectItem value="CAM">CAM / TS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         ))}
