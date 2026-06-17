@@ -77,9 +77,10 @@ export default function VideoCard({ video, index, from, isAdult }) {
           )}
 
           {/* Quality badge */}
-          {!isComingSoon && video.quality && video.quality !== "Unknown" && (
-            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm border border-white/20 text-[10px] uppercase text-white font-bold px-1.5 py-0.5 rounded tracking-wide">
-              {video.quality}
+          {!isComingSoon && ((video.quality && video.quality !== "Unknown") || video.quality_notes) && (
+            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm border border-white/20 text-[10px] uppercase text-white font-bold px-1.5 py-0.5 rounded tracking-wide flex flex-col items-end gap-0.5">
+              {video.quality && video.quality !== "Unknown" && <span>{video.quality}</span>}
+              {video.quality_notes && <span className="text-[9px] text-muted-foreground capitalize">{video.quality_notes}</span>}
             </div>
           )}
 

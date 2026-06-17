@@ -18,6 +18,7 @@ const emptyEpisode = () => ({
   episode_number: "",
   duration: "",
   quality: "Unknown",
+  quality_notes: "",
   uploading: false,
   uploaded: false,
 });
@@ -83,6 +84,7 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
         content_type: "episode",
         is_featured: false,
         quality: finalQuality,
+        quality_notes: ep.quality_notes || undefined,
       });
     }
     
@@ -185,18 +187,21 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Quality</Label>
-                <Select value={ep.quality || "Unknown"} onValueChange={(v) => updateEp(index, "quality", v)}>
-                  <SelectTrigger className="bg-secondary border-border h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Unknown">Auto Detect</SelectItem>
-                    <SelectItem value="4K">4K</SelectItem>
-                    <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
-                    <SelectItem value="HD">HD (720p)</SelectItem>
-                    <SelectItem value="CAM">CAM / TS</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={ep.quality || "Unknown"} onValueChange={(v) => updateEp(index, "quality", v)}>
+                    <SelectTrigger className="bg-secondary border-border h-9 w-32 shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Unknown">Auto Detect</SelectItem>
+                      <SelectItem value="4K">4K</SelectItem>
+                      <SelectItem value="Full HD">Full HD</SelectItem>
+                      <SelectItem value="HD">HD</SelectItem>
+                      <SelectItem value="CAM">CAM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input value={ep.quality_notes || ""} onChange={(e) => updateEp(index, "quality_notes", e.target.value)} placeholder="Notes (e.g. HC Subs)" className="bg-secondary border-border h-9 flex-1" />
+                </div>
               </div>
             </div>
           </div>

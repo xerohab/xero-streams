@@ -27,6 +27,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     is_adult: video?.is_adult || false,
     content_type: video?.content_type || "movie",
     quality: video?.quality || "Unknown",
+    quality_notes: video?.quality_notes || "",
     coming_soon: video?.coming_soon || false,
     release_date: video?.release_date || "",
     release_year: video?.release_year ?? "",
@@ -168,6 +169,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
         is_adult: video.is_adult || false,
         content_type: video.content_type || "movie",
         quality: video.quality || "Unknown",
+        quality_notes: video.quality_notes || "",
         coming_soon: video.coming_soon || false,
         release_date: video.release_date || "",
         release_year: video.release_year ?? "",
@@ -207,6 +209,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
       cast: form.cast || undefined,
       is_for_sale: form.is_for_sale,
       quality: form.quality,
+      quality_notes: form.quality_notes || undefined,
       price: form.price !== "" ? Number(form.price) : undefined,
       download_url: form.download_url || undefined,
       intro_start: form.intro_start !== "" ? Number(form.intro_start) : undefined,
@@ -274,20 +277,26 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
-            <Label>Quality</Label>
-            <Select value={form.quality} onValueChange={(v) => update("quality", v)}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Unknown">Unknown / Auto</SelectItem>
-                <SelectItem value="4K">4K</SelectItem>
-                <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
-                <SelectItem value="HD">HD (720p)</SelectItem>
-                <SelectItem value="CAM">CAM / TS</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Quality</Label>
+              <Select value={form.quality} onValueChange={(v) => update("quality", v)}>
+                <SelectTrigger className="bg-secondary border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Unknown">Unknown / Auto</SelectItem>
+                  <SelectItem value="4K">4K</SelectItem>
+                  <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
+                  <SelectItem value="HD">HD (720p)</SelectItem>
+                  <SelectItem value="CAM">CAM / TS</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Quality Notes</Label>
+              <Input value={form.quality_notes} onChange={(e) => update("quality_notes", e.target.value)} className="bg-secondary border-border" placeholder="e.g. Chinese Subs, Hardcoded" />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">

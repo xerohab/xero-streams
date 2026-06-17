@@ -531,6 +531,9 @@ export default function Watch() {
                 {video.quality && video.quality !== "Unknown" && (
                   <span className="flex items-center gap-1.5 font-bold text-primary border border-primary/50 px-1.5 py-0.5 rounded text-xs uppercase">{video.quality}</span>
                 )}
+                {video.quality_notes && (
+                  <span className="flex items-center gap-1.5 font-semibold text-muted-foreground border border-border px-1.5 py-0.5 rounded text-xs capitalize">{video.quality_notes}</span>
+                )}
                 {video.duration && (
                   <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{video.duration}</span>
                 )}

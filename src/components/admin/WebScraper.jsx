@@ -60,7 +60,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     setScanning(false);
     if (res.data.error) { toast.error(res.data.error); return; }
     if (res.data.episodes.length === 0) { toast.error("No files or links found at that URL"); return; }
-    setItems(res.data.episodes.map(ep => ({ ...ep, quality: "Unknown" })));
+    setItems(res.data.episodes.map(ep => ({ ...ep, quality: "Unknown", quality_notes: "" })));
     setScanMode(res.data.mode);
     const msg = res.data.mode === "page_links"
       ? `Found ${res.data.total} links — URLs are download pages, not direct video files`
@@ -174,6 +174,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
         content_type: contentMode === "tv" ? "episode" : "movie",
         is_featured: false,
         quality: finalQuality,
+        quality_notes: item.quality_notes || undefined,
       });
     }
 
@@ -366,6 +367,12 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
                     )}
                     <div className="flex items-center gap-2">
                       <p className="text-xs text-muted-foreground truncate flex-1">{item.video_url}</p>
+                      <Input
+                        value={item.quality_notes || ""}
+                        onChange={e => updateItem(index, "quality_notes", e.target.value)}
+                        placeholder="Quality notes (e.g. HC subs)"
+                        className="w-32 bg-secondary border-border h-6 text-xs"
+                      />
                       <Select value={item.quality || "Unknown"} onValueChange={(v) => updateItem(index, "quality", v)}>
                         <SelectTrigger className="w-28 bg-secondary border-border h-6 text-xs">
                           <SelectValue />

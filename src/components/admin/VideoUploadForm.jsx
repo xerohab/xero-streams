@@ -29,6 +29,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     is_adult: false,
     content_type: "movie",
     quality: "Unknown",
+    quality_notes: "",
     coming_soon: false,
     release_date: "",
     is_for_sale: false,
@@ -74,6 +75,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     const payload = {
       ...form,
       quality: finalQuality,
+      quality_notes: form.quality_notes || undefined,
       episode_number: form.episode_number ? Number(form.episode_number) : undefined,
       series_id: seriesId,
       franchise_id: form.franchise_id || undefined,
@@ -104,6 +106,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       is_adult: false,
       content_type: "movie",
       quality: "Unknown",
+      quality_notes: "",
       coming_soon: false,
       release_date: "",
       is_for_sale: false,
@@ -502,20 +505,26 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label>Quality</Label>
-        <Select value={form.quality} onValueChange={(v) => update("quality", v)}>
-          <SelectTrigger className="bg-secondary border-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Unknown">Unknown / Auto</SelectItem>
-            <SelectItem value="4K">4K</SelectItem>
-            <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
-            <SelectItem value="HD">HD (720p)</SelectItem>
-            <SelectItem value="CAM">CAM / TS</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Quality</Label>
+          <Select value={form.quality} onValueChange={(v) => update("quality", v)}>
+            <SelectTrigger className="bg-secondary border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Unknown">Unknown / Auto</SelectItem>
+              <SelectItem value="4K">4K</SelectItem>
+              <SelectItem value="Full HD">Full HD (1080p)</SelectItem>
+              <SelectItem value="HD">HD (720p)</SelectItem>
+              <SelectItem value="CAM">CAM / TS</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Quality Notes</Label>
+          <Input value={form.quality_notes} onChange={(e) => update("quality_notes", e.target.value)} className="bg-secondary border-border" placeholder="e.g. Chinese Subs, Hardcoded" />
+        </div>
       </div>
 
       <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">

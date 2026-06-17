@@ -175,6 +175,16 @@ export default function MovieDetail() {
                 <Clock className="w-4 h-4" /> {video.duration || castInfo.runtime}
               </span>
             )}
+            {video.quality && video.quality !== "Unknown" && (
+              <span className="flex items-center gap-1 text-sm text-muted-foreground uppercase font-semibold">
+                {video.quality}
+              </span>
+            )}
+            {video.quality_notes && (
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                ({video.quality_notes})
+              </span>
+            )}
             {castInfo?.genre && (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Film className="w-4 h-4" /> {castInfo.genre}
