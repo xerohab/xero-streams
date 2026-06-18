@@ -9,45 +9,40 @@ Deno.serve(async (req) => {
     const { title, type, seriesName, episodeNumber } = await req.json();
 
     let prompt;
-    if (type === "episode" && seriesName && episodeNumber) {
+    if (type === "episode") {
       prompt = `I need information about a TV series episode.
-Series: "${seriesName}"
-Episode Number: ${episodeNumber}
-Episode Title (if known): "${title || 'unknown'}"
+Series: "${seriesName || 'Unknown (extract from title)'}"
+Episode Number: ${episodeNumber || 'Unknown (extract from title)'}
+Original Filename / Title: "${title || 'unknown'}"
 
-Please find the correct episode title and write a concise, engaging 2-3 sentence description of this episode's plot/content. If you know the exact episode, use real information. If the title is unknown, find the episode by number.
+Please figure out the actual series name, the episode number, and the correct episode title based on the filename or title provided. Then write a concise, engaging 2-3 sentence description of this episode's plot.
+If you can't determine the exact episode, provide a general description for the series or guess based on the filename.
 
-Respond in JSON with:
+Respond in JSON with exactly these keys:
 {
-  "title": "The correct episode title",
+  "title": "The correct episode title (just the episode title, clean without series name or video quality tags, e.g., 'Pilot', not 'Show - Pilot' or 'Dexter.S02.720p')",
   "description": "A concise 2-3 sentence description of this episode"
 }`;
     } else if (type === "movie") {
-      prompt = `I need information about a movie titled "${title}".
+      prompt = `I need information about a movie. The provided title or filename is: "${title}".
 
-Please provide the correct movie title and write a concise, engaging 2-3 sentence description/synopsis of this movie.
+Please figure out the actual correct movie title, removing any extra tags like 1080p, x264, Web-DL, years, etc.
+Then write a concise, engaging 2-3 sentence description/synopsis of this movie.
 
-Respond in JSON with:
+Respond in JSON with exactly these keys:
 {
-  "title": "The correct movie title",
+  "title": "The correct, clean movie title",
   "description": "A concise 2-3 sentence synopsis of the movie"
 }`;
-    } else if (type === "book") {
-      prompt = `I need information about a book titled "${title}".
-
-Please provide the correct book title and write a concise, engaging 2-3 sentence synopsis of this book.
-
-Respond in JSON with:
-{
-  "title": "The correct book title",
-  "description": "A concise 2-3 sentence synopsis of the book"
-}`;
     } else {
-      prompt = `I need information about media titled "${title}".
-Write a concise, engaging 2-3 sentence description.
-Respond in JSON with:
+      prompt = `I need information about media. The provided title or filename is: "${title}".
+
+Please figure out the actual correct title, removing any extra tags like 1080p, x264, Web-DL, years, etc.
+Then write a concise, engaging 2-3 sentence description/synopsis.
+
+Respond in JSON with exactly these keys:
 {
-  "title": "${title}",
+  "title": "The correct, clean title",
   "description": "A concise 2-3 sentence description"
 }`;
     }
