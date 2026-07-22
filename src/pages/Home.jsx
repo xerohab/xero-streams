@@ -63,10 +63,25 @@ export default function Home() {
   const safeVideos = videos.filter((v) => !v.is_adult);
   const safeSeries = seriesList.filter((s) => !s.is_adult);
 
-  const latestVideos = safeVideos
+  const allLatestVideos = safeVideos
     .filter((v) => new Date(v.created_date) >= sevenDaysAgo)
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-    .slice(0, 6);
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+
+  const deduplicatedLatestVideos = [];
+  const seenSeriesIds = new Set();
+  
+  for (const v of allLatestVideos) {
+    if (v.series_id) {
+      if (!seenSeriesIds.has(v.series_id)) {
+        seenSeriesIds.add(v.series_id);
+        deduplicatedLatestVideos.push(v);
+      }
+    } else {
+      deduplicatedLatestVideos.push(v);
+    }
+  }
+
+  const latestVideos = deduplicatedLatestVideos.slice(0, 6);
 
   const mostWatchedVideos = safeVideos
     .filter((v) => (v.views || 0) > 0)
