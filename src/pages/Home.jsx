@@ -67,21 +67,38 @@ export default function Home() {
     .filter((v) => new Date(v.created_date) >= sevenDaysAgo)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
-  const deduplicatedLatestVideos = [];
+  const latestItems = [];
+  const seriesUploadCount = {};
+
+  for (const v of allLatestVideos) {
+    if (v.series_id) {
+      seriesUploadCount[v.series_id] = (seriesUploadCount[v.series_id] || 0) + 1;
+    }
+  }
+
   const seenSeriesIds = new Set();
   
   for (const v of allLatestVideos) {
     if (v.series_id) {
       if (!seenSeriesIds.has(v.series_id)) {
         seenSeriesIds.add(v.series_id);
-        deduplicatedLatestVideos.push(v);
+        if (seriesUploadCount[v.series_id] > 1) {
+          const seriesObj = safeSeries.find(s => s.id === v.series_id);
+          if (seriesObj) {
+            latestItems.push({ type: 'series', data: seriesObj });
+          } else {
+            latestItems.push({ type: 'video', data: v });
+          }
+        } else {
+          latestItems.push({ type: 'video', data: v });
+        }
       }
     } else {
-      deduplicatedLatestVideos.push(v);
+      latestItems.push({ type: 'video', data: v });
     }
   }
 
-  const latestVideos = deduplicatedLatestVideos.slice(0, 6);
+  const finalLatestItems = latestItems.slice(0, 6);
 
   const mostWatchedVideos = safeVideos
     .filter((v) => (v.views || 0) > 0)
@@ -255,12 +272,18 @@ export default function Home() {
 
       <div className="relative z-10 pb-16 px-6 md:px-16">
         {/* Latest Row */}
-        {rows.includes("latest") && latestVideos.length > 0 && activeTab === "all" && (
-          <div className="mb-12">
-            <VideoRow 
-              title="Latest" 
-              videos={latestVideos} 
-            />
+        {rows.includes("latest") && finalLatestItems.length > 0 && activeTab === "all" && (
+          <div className="mb-12 -mx-6 md:-mx-16">
+            <div className="px-6 md:px-16 mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground">Latest</h2>
+            </div>
+            <div className="px-6 md:px-16 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {finalLatestItems.map((item, i) => (
+                item.type === 'series' 
+                  ? <SeriesCard key={`series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} />
+                  : <VideoCard key={`video-${item.data.id}`} video={item.data} />
+              ))}
+            </div>
           </div>
         )}
 
