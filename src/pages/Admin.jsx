@@ -169,6 +169,7 @@ export default function Admin() {
         <Tabs defaultValue="upload" className="space-y-6">
           <TabsList className="bg-secondary flex-wrap h-auto gap-1 justify-start">
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
+            <TabsTrigger value="bulkmovies">Bulk Add Movies</TabsTrigger>
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
             <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
             <TabsTrigger value="imagescrape">Image Scraper</TabsTrigger>
@@ -205,6 +206,17 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <BulkEpisodeUpload seriesList={seriesList} onSuccess={refresh} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bulkmovies">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Bulk Add Movies</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BulkEpisodeUpload seriesList={seriesList} isMovieMode={true} onSuccess={refresh} />
               </CardContent>
             </Card>
           </TabsContent>

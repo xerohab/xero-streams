@@ -60,7 +60,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     setScanning(false);
     if (res.data.error) { toast.error(res.data.error); return; }
     if (res.data.episodes.length === 0) { toast.error("No files or links found at that URL"); return; }
-    setItems(res.data.episodes.map(ep => ({ ...ep, quality: "Unknown", quality_notes: "" })));
+    setItems(res.data.episodes.map(ep => ({ ...ep, episode_number: contentMode === "tv" ? ep.episode_number : "", quality: "Unknown", quality_notes: "" })));
     setScanMode(res.data.mode);
     const msg = res.data.mode === "page_links"
       ? `Found ${res.data.total} links — URLs are download pages, not direct video files`
@@ -164,14 +164,14 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       }
 
       records.push({
-        title: item.title,
-        description: item.description || undefined,
-        video_url: item.video_url,
-        thumbnail_url: item.thumbnail_url || seriesCover || undefined,
-        series_id: contentMode === "tv" ? selectedSeries : undefined,
-        franchise_id: contentMode !== "tv" ? selectedFranchise || undefined : undefined,
-        episode_number: item.episode_number,
-        content_type: contentMode === "tv" ? "episode" : "movie",
+      title: item.title,
+      description: item.description || undefined,
+      video_url: item.video_url,
+      thumbnail_url: item.thumbnail_url || seriesCover || undefined,
+      series_id: contentMode === "tv" ? selectedSeries : undefined,
+      franchise_id: contentMode !== "tv" ? selectedFranchise || undefined : undefined,
+      episode_number: item.episode_number || undefined,
+      content_type: contentMode === "tv" ? "episode" : "movie",
         is_featured: false,
         quality: finalQuality,
         quality_notes: item.quality_notes || undefined,
@@ -207,7 +207,10 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
           </button>
           <button
             type="button"
-            onClick={() => setContentMode("movies")}
+            onClick={() => {
+              setContentMode("movies");
+              setItems(prev => prev.map(item => ({ ...item, episode_number: "" })));
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
               !isTV ? "bg-primary text-primary-foreground border-primary" : "bg-secondary border-border text-muted-foreground hover:text-foreground"
             }`}
@@ -288,9 +291,9 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
             <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
               {items.map((item, index) => (
                 <div key={index} className="bg-secondary/50 border border-border rounded-lg px-3 py-2 flex gap-3">
-                  {isTV && (
-                    <span className="text-xs font-mono text-muted-foreground w-6 text-center pt-1.5">{item.episode_number}</span>
-                  )}
+                  <span className="text-xs font-mono text-muted-foreground w-6 text-center pt-1.5">
+                    {item.episode_number || "-"}
+                  </span>
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-center gap-1">
                       <Input
@@ -388,14 +391,13 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">
-                    {isTV && (
-                      <Input
-                        type="number"
-                        value={item.episode_number}
-                        onChange={e => updateItem(index, "episode_number", Number(e.target.value))}
-                        className="bg-secondary border-border h-7 text-sm w-16"
-                      />
-                    )}
+                    <Input
+                      type="number"
+                      value={item.episode_number || ""}
+                      onChange={e => updateItem(index, "episode_number", Number(e.target.value))}
+                      placeholder="Ep #"
+                      className="bg-secondary border-border h-7 text-sm w-16"
+                    />
                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removeItem(index)}>
                       <Trash2 className="w-3 h-3" />
                     </Button>

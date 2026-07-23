@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import { detectVideoQuality } from "@/lib/qualityDetection";
 
@@ -21,13 +22,17 @@ const emptyEpisode = () => ({
   quality_notes: "",
   uploading: false,
   uploaded: false,
+  coming_soon: false,
+  release_date: "",
 });
 
-export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
+export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onSuccess }) {
   const [selectedSeries, setSelectedSeries] = useState("");
-  const [episodes, setEpisodes] = useState([{ ...emptyEpisode(), episode_number: "1" }]);
+  const [episodes, setEpisodes] = useState([{ ...emptyEpisode(), episode_number: isMovieMode ? "" : "1" }]);
   const [saving, setSaving] = useState(false);
   const [sourceTab, setSourceTab] = useState("link");
+  const [fetchingAiFor, setFetchingAiFor] = useState(null);
+  const [fetchingAiAll, setFetchingAiAll] = useState(false);
 
   const updateEp = (index, field, value) => {
     setEpisodes((prev) => prev.map((ep, i) => i === index ? { ...ep, [field]: value } : ep));
@@ -41,6 +46,65 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
     });
   };
   const removeEpisode = (index) => setEpisodes((prev) => prev.filter((_, i) => i !== index));
+
+  const handleAiFetch = async (index) => {
+    const ep = episodes[index];
+    setFetchingAiFor(index);
+    try {
+      const type = isMovieMode ? "movie" : "episode";
+      const seriesName = isMovieMode ? undefined : seriesList?.find(s => s.id === selectedSeries)?.title;
+      const res = await base44.functions.invoke("aiMediaInfo", {
+        title: ep.title || "",
+        type,
+        seriesName,
+        episodeNumber: isMovieMode ? undefined : ep.episode_number,
+      });
+      if (res.data?.title || res.data?.description) {
+        if (res.data.title) updateEp(index, "title", res.data.title);
+        if (res.data.description) updateEp(index, "description", res.data.description);
+        toast.success("AI info applied!");
+      } else {
+        toast.error("Couldn't find info for that title");
+      }
+    } catch (e) {
+      toast.error("AI info failed");
+    }
+    setFetchingAiFor(null);
+  };
+
+  const handleAiFetchAll = async () => {
+    setFetchingAiAll(true);
+    const type = isMovieMode ? "movie" : "episode";
+    const seriesName = isMovieMode ? undefined : seriesList?.find(s => s.id === selectedSeries)?.title;
+
+    const results = await Promise.allSettled(
+      episodes.map((ep, i) =>
+        base44.functions.invoke("aiMediaInfo", {
+          title: ep.title || "",
+          type,
+          seriesName,
+          episodeNumber: isMovieMode ? undefined : ep.episode_number,
+        }).then(res => ({ index: i, data: res.data }))
+      )
+    );
+
+    setEpisodes(prev => {
+      const updated = [...prev];
+      results.forEach(result => {
+        if (result.status === "fulfilled" && result.value?.data) {
+          const { index, data } = result.value;
+          updated[index] = {
+            ...updated[index],
+            ...(data.title ? { title: data.title } : {}),
+            ...(data.description ? { description: data.description } : {}),
+          };
+        }
+      });
+      return updated;
+    });
+    setFetchingAiAll(false);
+    toast.success("AI info applied to all!");
+  };
 
   const handleVideoFileUpload = async (index, e) => {
     const file = e.target.files[0];
@@ -59,32 +123,34 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedSeries) { toast.error("Please select a series"); return; }
-    const valid = episodes.filter((ep) => ep.title && ep.video_url);
-    if (valid.length === 0) { toast.error("Add at least one episode with a title and video"); return; }
+    if (!isMovieMode && !selectedSeries) { toast.error("Please select a series"); return; }
+    const valid = episodes.filter((ep) => ep.title && (ep.video_url || ep.coming_soon));
+    if (valid.length === 0) { toast.error("Add at least one item with a title and video (or Coming Soon)"); return; }
     setSaving(true);
     const toastId = toast.loading("Processing & auto-detecting qualities...");
-    const seriesCover = seriesList?.find((s) => s.id === selectedSeries)?.cover_image;
+    const seriesCover = !isMovieMode ? seriesList?.find((s) => s.id === selectedSeries)?.cover_image : undefined;
     
     const records = [];
     for (const ep of valid) {
       let finalQuality = ep.quality;
-      if (finalQuality === "Unknown" && ep.video_url) {
+      if (finalQuality === "Unknown" && ep.video_url && !ep.coming_soon) {
         finalQuality = await detectVideoQuality(ep.video_url, ep.title);
       }
       
       records.push({
         title: ep.title,
         description: ep.description || undefined,
-        video_url: ep.video_url,
+        video_url: ep.coming_soon ? "" : ep.video_url,
         thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
-        series_id: selectedSeries,
-        episode_number: ep.episode_number ? Number(ep.episode_number) : undefined,
+        series_id: isMovieMode ? undefined : selectedSeries,
+        episode_number: (!isMovieMode && ep.episode_number) ? Number(ep.episode_number) : undefined,
         duration: ep.duration || undefined,
-        content_type: "episode",
+        content_type: isMovieMode ? "movie" : "episode",
         is_featured: false,
         quality: finalQuality,
         quality_notes: ep.quality_notes || undefined,
+        coming_soon: ep.coming_soon,
+        release_date: ep.release_date || undefined,
       });
     }
     
@@ -98,28 +164,43 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label>Series *</Label>
-        <Select value={selectedSeries} onValueChange={setSelectedSeries}>
-          <SelectTrigger className="bg-secondary border-border">
-            <SelectValue placeholder="Select a series to add episodes to" />
-          </SelectTrigger>
-          <SelectContent>
-            {seriesList?.map((s) => (
-              <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {!isMovieMode && (
+        <div className="space-y-2">
+          <Label>Series *</Label>
+          <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+            <SelectTrigger className="bg-secondary border-border">
+              <SelectValue placeholder="Select a series to add episodes to" />
+            </SelectTrigger>
+            <SelectContent>
+              {seriesList?.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-      <div className="space-y-2">
-        <Label>Video Source Mode</Label>
-        <Tabs value={sourceTab} onValueChange={setSourceTab} className="w-full">
-          <TabsList className="bg-secondary">
-            <TabsTrigger value="link" className="gap-2"><LinkIcon className="w-4 h-4" /> Links</TabsTrigger>
-            <TabsTrigger value="upload" className="gap-2"><Upload className="w-4 h-4" /> Upload Files</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Label>Video Source Mode</Label>
+          <Tabs value={sourceTab} onValueChange={setSourceTab} className="w-full">
+            <TabsList className="bg-secondary">
+              <TabsTrigger value="link" className="gap-2"><LinkIcon className="w-4 h-4" /> Links</TabsTrigger>
+              <TabsTrigger value="upload" className="gap-2"><Upload className="w-4 h-4" /> Upload Files</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={handleAiFetchAll}
+          disabled={fetchingAiAll || (!isMovieMode && !selectedSeries)}
+          className="gap-2 h-9 mt-6"
+        >
+          {fetchingAiAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          AI Auto-Fill All
+        </Button>
       </div>
 
       <div className="space-y-4">
@@ -137,12 +218,27 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Title *</Label>
-                <Input value={ep.title} onChange={(e) => updateEp(index, "title", e.target.value)} placeholder="Episode title" className="bg-secondary border-border h-9" required />
+                <div className="flex items-center gap-1">
+                  <Input value={ep.title} onChange={(e) => updateEp(index, "title", e.target.value)} placeholder={isMovieMode ? "Movie title" : "Episode title"} className="bg-secondary border-border h-9 flex-1" required />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-primary hover:text-primary/80"
+                    title="AI Auto-Fill"
+                    disabled={fetchingAiFor === index || (!isMovieMode && !selectedSeries)}
+                    onClick={() => handleAiFetch(index)}
+                  >
+                    {fetchingAiFor === index ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Episode #</Label>
-                <Input type="number" value={ep.episode_number} onChange={(e) => updateEp(index, "episode_number", e.target.value)} placeholder="1" className="bg-secondary border-border h-9" />
-              </div>
+              {!isMovieMode && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Episode #</Label>
+                  <Input type="number" value={ep.episode_number} onChange={(e) => updateEp(index, "episode_number", e.target.value)} placeholder="1" className="bg-secondary border-border h-9" />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -152,7 +248,7 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Video {sourceTab === "upload" ? "File" : "URL"} *</Label>
+                <Label className="text-xs">Video {sourceTab === "upload" ? "File" : "URL"} {!ep.coming_soon && "*"}</Label>
                 {sourceTab === "link" ? (
                   <Input value={ep.video_url} onChange={(e) => updateEp(index, "video_url", e.target.value)} placeholder="https://..." className="bg-secondary border-border h-9" />
                 ) : (
@@ -203,6 +299,19 @@ export default function BulkEpisodeUpload({ seriesList, onSuccess }) {
                   <Input value={ep.quality_notes || ""} onChange={(e) => updateEp(index, "quality_notes", e.target.value)} placeholder="Notes (e.g. HC Subs)" className="bg-secondary border-border h-9 flex-1" />
                 </div>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-md">
+              <div className="flex items-center gap-2">
+                <Switch checked={ep.coming_soon} onCheckedChange={(v) => updateEp(index, "coming_soon", v)} />
+                <Label className="text-xs text-amber-400 font-semibold">Coming Soon</Label>
+              </div>
+              {ep.coming_soon && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs shrink-0 text-amber-400/80">Release Date</Label>
+                  <Input type="date" value={ep.release_date || ""} onChange={(e) => updateEp(index, "release_date", e.target.value)} className="bg-secondary border-border h-8 text-xs max-w-[150px]" />
+                </div>
+              )}
             </div>
           </div>
         ))}

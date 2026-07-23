@@ -76,7 +76,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       ...form,
       quality: finalQuality,
       quality_notes: form.quality_notes || undefined,
-      episode_number: form.episode_number ? Number(form.episode_number) : undefined,
+      episode_number: seriesId ? (form.episode_number ? Number(form.episode_number) : undefined) : undefined,
       series_id: seriesId,
       franchise_id: form.franchise_id || undefined,
       // Auto-correct content_type based on series assignment
@@ -267,7 +267,9 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         setForm(prev => ({
           ...prev,
           title: prev.title || title,
-          episode_number: prev.episode_number || (episodeNumber ? String(episodeNumber) : prev.episode_number)
+          episode_number: prev.content_type === "movie" || !prev.series_id 
+            ? prev.episode_number 
+            : (prev.episode_number || (episodeNumber ? String(episodeNumber) : prev.episode_number))
         }));
       } catch (e) {}
     }
