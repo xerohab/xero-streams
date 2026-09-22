@@ -2,38 +2,18 @@ import { base44 } from "@/api/base44Client";
 
 /**
  * Downloads a single video through the proxy function.
- * The origin URL is never exposed to the browser — the file is fetched
- * server-side and returned with a Content-Disposition: attachment header.
+ * Uses a hidden iframe so the download starts instantly with the browser's
+ * native progress bar — no blob buffering in JS memory, no page navigation.
+ * The origin URL is never exposed to the browser.
  */
-export async function downloadSingleVideo(videoId) {
-  const response = await base44.functions.fetch("/proxyDownload", {
-    method: "POST",
-    body: JSON.stringify({ video_id: videoId }),
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    let errMsg = "Download failed. Please try again.";
-    try {
-      const errData = await response.json();
-      errMsg = errData.error || errMsg;
-    } catch {}
-    throw new Error(errMsg);
-  }
-
-  const contentDisposition = response.headers.get("Content-Disposition") || "";
-  const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
-  const filename = filenameMatch ? filenameMatch[1] : "download.mp4";
-
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+export function downloadSingleVideo(videoId) {
+  const iframe = document.createElement("iframe");
+  iframe.style.display = "none";
+  iframe.src = `/functions/proxyDownload?video_id=${encodeURIComponent(videoId)}`;
+  document.body.appendChild(iframe);
+  setTimeout(() => {
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  }, 120000);
 }
 
 /**

@@ -17,14 +17,20 @@ export default async function(req) {
       return Response.json({ error: 'Premium subscription required for downloads.' }, { status: 403 });
     }
 
-    // Get video_id from request body
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return Response.json({ error: 'Invalid request body' }, { status: 400 });
+    // Get video_id from query string (GET) or request body (POST)
+    let videoId;
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      videoId = url.searchParams.get('video_id');
+    } else {
+      let body;
+      try {
+        body = await req.json();
+      } catch {
+        return Response.json({ error: 'Invalid request body' }, { status: 400 });
+      }
+      videoId = body.video_id;
     }
-    const videoId = body.video_id;
     if (!videoId) return Response.json({ error: 'Missing video_id' }, { status: 400 });
 
     // Get video
