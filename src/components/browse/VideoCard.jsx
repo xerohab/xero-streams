@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Play, Clock, CalendarClock, Eye, Download } from "lucide-react";
+import { Play, Clock, CalendarClock, Eye, Download, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 
 export default function VideoCard({ video, index, from, isAdult, onDownload }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // A video is "coming soon" if flagged OR if it has no playable URL
   const isComingSoon = video.coming_soon || !video.video_url;
@@ -54,11 +55,17 @@ export default function VideoCard({ video, index, from, isAdult, onDownload }) {
                 {onDownload && (
                   <button
                     type="button"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDownload(video); }}
+                    disabled={isDownloading}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDownloading(true);
+                      try { await onDownload(video); } finally { setIsDownloading(false); }
+                    }}
                     className="w-10 h-10 rounded-full bg-green-600/90 hover:bg-green-500 flex items-center justify-center backdrop-blur-sm transition-colors"
                     title="Download this episode"
                   >
-                    <Download className="w-4 h-4 text-white" />
+                    {isDownloading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Download className="w-4 h-4 text-white" />}
                   </button>
                 )}
               </div>
