@@ -18,11 +18,11 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-xl font-bold text-foreground mb-2">1. Introduction</h2>
             <p>
-              Xero Streams ("we", "us", or "our") operates the website xerostreams.com (the "Service"), a video
-              discovery and streaming platform. This Privacy Policy explains in detail what personal data we
-              collect, why we collect it, how it is used, who it is shared with, and the rights you have over
-              your information. By creating an account or using the Service, you acknowledge and consent to the
-              practices described here.
+              [Registered Business Name], operating as Xero Streams ("we", "us", or "our"), operates the website
+              xerostreams.com (the "Service"), a video discovery and streaming platform. This Privacy Policy
+              explains in detail what personal data we collect, why we collect it, how it is used, who it is
+              shared with, and the rights you have over your information. By creating an account or using the
+              Service, you acknowledge and consent to the practices described here.
             </p>
           </section>
 
@@ -114,6 +114,12 @@ export default function PrivacyPolicy() {
               data at any time by contacting us (see Contact Us). Upon deletion, we remove your Google email address,
               name, and linked identifier from our active systems within 30 days, subject to any legal retention
               obligations.
+            </p>
+            <p className="mt-2">
+              <strong className="text-foreground">Google API Limited Use Disclosure:</strong> Xero Streams' use and
+              transfer to any other app of information received from Google APIs will adhere to the{" "}
+              <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google API Services User Data Policy</a>,
+              including the Limited Use requirements.
             </p>
           </section>
 
@@ -235,7 +241,13 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-bold text-foreground mb-2">13. Contact Us</h2>
             <p>
               If you have questions, requests, or complaints about this Privacy Policy or your personal data,
-              please contact our Data Protection team at <a href="mailto:privacy@xerostreams.com" className="text-primary underline">privacy@xerostreams.com</a>.
+              please contact our Data Protection team:
+            </p>
+            <ul className="list-disc pl-6 mt-2 space-y-1">
+              <li><strong className="text-foreground">Email:</strong> <a href="mailto:privacy@xerostreams.com" className="text-primary underline">privacy@xerostreams.com</a></li>
+              <li><strong className="text-foreground">Postal address:</strong> [Registered Business Name], [Insert Registered Office Address], [City], [Country]</li>
+            </ul>
+            <p className="mt-2">
               We will respond in accordance with applicable data-protection law, generally within 30 days. For
               account-specific requests, please also reach out through the support options available on xerostreams.com.
             </p>
