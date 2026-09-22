@@ -149,7 +149,11 @@ export default function SeriesDetail() {
           <h2 className="text-xl font-bold text-foreground mb-6">All Episodes</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {sortedEpisodes.map((ep) => (
-              <VideoCard key={ep.id} video={ep} />
+              <VideoCard
+                key={ep.id}
+                video={ep}
+                onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => window.open(`/dl/video/${v.id}/${encodeURIComponent(v.title.replace(/\s+/g, '_'))}.mp4`, '_blank') : undefined}
+              />
             ))}
           </div>
         </div>

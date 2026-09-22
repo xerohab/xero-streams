@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Play, Clock, CalendarClock, Eye } from "lucide-react";
+import { Play, Clock, CalendarClock, Eye, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 
-export default function VideoCard({ video, index, from, isAdult }) {
+export default function VideoCard({ video, index, from, isAdult, onDownload }) {
   const [isHovered, setIsHovered] = useState(false);
 
   // A video is "coming soon" if flagged OR if it has no playable URL
@@ -47,8 +47,20 @@ export default function VideoCard({ video, index, from, isAdult }) {
           ) : (
             /* Hover overlay — only when not coming soon */
             <div className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center backdrop-blur-sm">
-                <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center backdrop-blur-sm">
+                  <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
+                </div>
+                {onDownload && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDownload(video); }}
+                    className="w-10 h-10 rounded-full bg-green-600/90 hover:bg-green-500 flex items-center justify-center backdrop-blur-sm transition-colors"
+                    title="Download this episode"
+                  >
+                    <Download className="w-4 h-4 text-white" />
+                  </button>
+                )}
               </div>
             </div>
           )}

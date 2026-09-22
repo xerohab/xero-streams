@@ -99,6 +99,13 @@ export default function Watch() {
 
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
 
+  const { data: premiumSubs = [] } = useQuery({
+    queryKey: ["active_subscription", user?.id],
+    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
+    enabled: !!user
+  });
+  const isPremium = user?.role === "admin" || premiumSubs.length > 0;
+
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
     queryKey: ["videos"],
     queryFn: () => base44.entities.Video.list("sort_order"),
@@ -608,6 +615,15 @@ export default function Watch() {
                       {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
                     </Button>
                   )
+                )}
+                {!video.is_for_sale && isPremium && !isComingSoon && (
+                  <Button
+                    variant="secondary"
+                    className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
+                    onClick={() => window.open(`/dl/video/${video.id}/${encodeURIComponent(video.title.replace(/\s+/g, '_'))}.mp4`, '_blank')}
+                  >
+                    <DownloadIcon className="w-4 h-4" /> Download
+                  </Button>
                 )}
               </div>
             </div>
