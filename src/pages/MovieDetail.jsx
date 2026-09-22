@@ -19,7 +19,6 @@ export default function MovieDetail() {
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -243,17 +242,15 @@ export default function MovieDetail() {
                 onClick={async () => {
                   try {
                     setIsDownloading(true);
-                    setDownloadProgress(0);
-                    await downloadSingleVideo(video.id, (pct) => setDownloadProgress(pct));
+                    await downloadSingleVideo(video.id);
                   } catch (err) {
                     console.error(err);
                   } finally {
                     setIsDownloading(false);
-                    setDownloadProgress(null);
                   }
                 }}
               >
-                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} {isDownloading ? `Downloading ${downloadProgress}%` : "Download"}
+                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} {isDownloading ? "Preparing..." : "Download"}
               </Button>
             )}
 

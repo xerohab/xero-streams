@@ -39,12 +39,6 @@ export default async function(req) {
       return Response.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // Fetch the file from the origin server
-    const fileResponse = await fetch(video.video_url, { redirect: 'follow' });
-    if (!fileResponse.ok) {
-      return Response.json({ error: 'File unavailable on origin server' }, { status: 502 });
-    }
-
     // Build a safe filename
     const safeTitle = (video.title || 'download').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
     const filename = `${safeTitle}.mp4`;
@@ -61,16 +55,12 @@ export default async function(req) {
       item_count: 1,
     }).catch(() => {}));
 
-    // Stream the file back with download headers — origin URL is never exposed to the browser
-    const headers = new Headers();
-    headers.set('Content-Type', fileResponse.headers.get('Content-Type') || 'video/mp4');
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`);
-    const contentLength = fileResponse.headers.get('Content-Length');
-    if (contentLength) headers.set('Content-Length', contentLength);
-
-    return new Response(fileResponse.body, {
-      status: 200,
-      headers,
+    // Return the direct download URL — the browser downloads directly from
+    // the origin, avoiding serverless function timeouts on large files.
+    // The browser's native download manager shows a progress bar.
+    return Response.json({
+      download_url: video.video_url,
+      filename,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
