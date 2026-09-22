@@ -4,6 +4,7 @@ import { Play, Shield, LogOut, Search, User, LogIn, Crown } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePremiumModal } from "@/lib/PremiumModalContext";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const inputRef = useRef(null);
+  const { open: openPremium } = usePremiumModal();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -80,12 +82,10 @@ export default function Navbar() {
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Books</Button>
           </Link>
 
-          <Link to="/dashboard#billing-section">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2">
-              <Crown className="w-4 h-4 text-primary" />
-              <span className="hidden md:inline">Premium</span>
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2" onClick={() => openPremium()}>
+            <Crown className="w-4 h-4 text-primary" />
+            <span className="hidden md:inline">Premium</span>
+          </Button>
 
           {isAdmin && (
             <Link to="/admin">

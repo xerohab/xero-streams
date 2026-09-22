@@ -24,6 +24,8 @@ import PurchaseCallback from '@/pages/PurchaseCallback';
 import DownloadProxy from '@/pages/DownloadProxy';
 import { DownloadManagerProvider } from '@/lib/DownloadManagerContext';
 import DownloadManagerPopup from '@/components/browse/DownloadManagerPopup';
+import { PremiumModalProvider } from '@/lib/PremiumModalContext';
+import PremiumModal from '@/components/browse/PremiumModal';
 
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -72,6 +74,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <>
+    <PremiumModalProvider>
     <DownloadManagerProvider>
     <Routes>
       <Route path="/" element={<Home />} />
@@ -93,6 +96,8 @@ const AuthenticatedApp = () => {
     </Routes>
     <DownloadManagerPopup />
     </DownloadManagerProvider>
+    <PremiumModal />
+    </PremiumModalProvider>
     </>
   );
 };

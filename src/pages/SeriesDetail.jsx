@@ -9,6 +9,7 @@ import VideoCard from "@/components/browse/VideoCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
+import { usePremiumModal } from "@/lib/PremiumModalContext";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,7 @@ export default function SeriesDetail() {
   const from = searchParams.get("from") || "/";
 
   const [user, setUser] = useState(null);
+  const { open: openPremium } = usePremiumModal();
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
@@ -143,7 +145,7 @@ export default function SeriesDetail() {
             <p className="text-xs text-muted-foreground mb-6 flex items-center gap-1.5 flex-wrap">
               <Download className="w-3.5 h-3.5" />
               <span>Downloading is only available for premium members. Hover over an episode and click the download button to save it — progress appears in the download popup.</span>
-              <Link to="/dashboard#billing-section" className="text-primary underline hover:text-primary/80">View subscription plans</Link>
+              <button type="button" onClick={openPremium} className="text-primary underline hover:text-primary/80">View subscription plans</button>
             </p>
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
