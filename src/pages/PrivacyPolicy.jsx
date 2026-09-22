@@ -57,6 +57,18 @@ export default function PrivacyPolicy() {
               view, or store your full card numbers or banking details — those are handled entirely by the payment
               provider under its own privacy policy.
             </p>
+
+            <h3 className="text-base font-semibold text-foreground mt-4 mb-1">2.4 Authentication & sign-in data</h3>
+            <p>
+              When you register or sign in, we collect your email address and full name to create and identify your
+              account. If you sign in through a third-party identity provider (such as Google, Microsoft, Apple, or
+              Facebook single sign-on), we receive the profile information that provider shares with us — typically
+              your verified email address, display name, and a profile identifier — to authenticate your session and
+              link it to your Xero Streams account. We do not receive, request, or store your identity-provider
+              password. We use this authentication data to verify your identity, keep you signed in, protect against
+              unauthorised access, and display your name within the Service. Your email address may also be used to
+              send you service notifications, security alerts, and responses to your enquiries.
+            </p>
           </section>
 
           <section>
@@ -177,8 +189,9 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-bold text-foreground mb-2">13. Contact Us</h2>
             <p>
               If you have questions, requests, or complaints about this Privacy Policy or your personal data,
-              please reach out through the support options available on xerostreams.com. We will respond in
-              accordance with applicable data-protection law.
+              please contact our Data Protection team at <a href="mailto:privacy@xerostreams.com" className="text-primary underline">privacy@xerostreams.com</a>.
+              We will respond in accordance with applicable data-protection law, generally within 30 days. For
+              account-specific requests, please also reach out through the support options available on xerostreams.com.
             </p>
           </section>
         </div>
