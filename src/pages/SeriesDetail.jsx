@@ -139,13 +139,12 @@ export default function SeriesDetail() {
       {sortedEpisodes.length > 0 && (
         <div className="px-6 md:px-16 py-10">
           <h2 className="text-xl font-bold text-foreground mb-2">All Episodes</h2>
-          {isPremium && sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) ? (
-            <p className="text-xs text-muted-foreground mb-6 flex items-center gap-1.5">
+          {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+            <p className="text-xs text-muted-foreground mb-6 flex items-center gap-1.5 flex-wrap">
               <Download className="w-3.5 h-3.5" />
-              Tip: hover over an episode and click the download button to save it. Progress appears in the download popup.
+              <span>Downloading is only available for premium members. Hover over an episode and click the download button to save it — progress appears in the download popup.</span>
+              <Link to="/dashboard#billing-section" className="text-primary underline hover:text-primary/80">View subscription plans</Link>
             </p>
-          ) : (
-            <div className="mb-6" />
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {sortedEpisodes.map((ep) => (

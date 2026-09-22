@@ -66,6 +66,15 @@ export default function Dashboard() {
 
   useEffect(() => { fetchUser(); }, []);
 
+  useEffect(() => {
+    if (loadingUser) return;
+    const hash = window.location.hash.replace("#", "");
+    if (hash) {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [loadingUser]);
+
   const { data: plans = [] } = useQuery({
     queryKey: ["subscription_plans"],
     queryFn: () => base44.entities.SubscriptionPlan.list()

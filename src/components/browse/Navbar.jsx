@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Shield, LogOut, Search, User, LogIn } from "lucide-react";
+import { Play, Shield, LogOut, Search, User, LogIn, Crown } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,13 @@ export default function Navbar() {
 
           <Link to="/books">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Books</Button>
+          </Link>
+
+          <Link to="/dashboard#billing-section">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2">
+              <Crown className="w-4 h-4 text-primary" />
+              <span className="hidden md:inline">Premium</span>
+            </Button>
           </Link>
 
           {isAdmin && (
