@@ -55,23 +55,43 @@ export default function DownloadProxy() {
       setStatus("Preparing download...");
 
       if (type === "video") {
-        const [video] = await base44.entities.Video.filter({ id });
-        if (!video || !video.video_url) {
-          setError("Video file not found.");
+        setStatus("Fetching your file...");
+
+        const response = await base44.functions.fetch("/proxyDownload", {
+          method: "POST",
+          body: JSON.stringify({ video_id: id }),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          let errMsg = "Download failed. Please try again.";
+          try {
+            const errData = await response.json();
+            errMsg = errData.error || errMsg;
+          } catch {}
+          setError(errMsg);
           return;
         }
 
-        // Log the single download
-        await logDownload({
-          content_type: video.content_type === "episode" ? "episode" : "movie",
-          content_id: id,
-          content_title: video.title,
-          download_type: "single",
-          item_count: 1,
-        });
+        // Extract filename from Content-Disposition header
+        const contentDisposition = response.headers.get("Content-Disposition") || "";
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        const filename = filenameMatch ? filenameMatch[1] : "download.mp4";
 
-        setStatus("Redirecting...");
-        window.location.replace(video.video_url);
+        setStatus("Downloading file...");
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        setTimeout(() => {
+          setStatus("Download started! Check your downloads folder.");
+        }, 500);
       } else if (type === "series" || type === "franchise") {
         // Fetch the series/franchise title for the ZIP filename
         let title = type === "series" ? "Series" : "Franchise";
