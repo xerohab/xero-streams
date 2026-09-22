@@ -69,6 +69,52 @@ export default function PrivacyPolicy() {
               unauthorised access, and display your name within the Service. Your email address may also be used to
               send you service notifications, security alerts, and responses to your enquiries.
             </p>
+
+            <h3 className="text-base font-semibold text-foreground mt-4 mb-1">2.5 Google user data</h3>
+            <p>
+              If you choose to sign in with Google, Xero Streams accesses the following Google user data through the
+              Google Sign-In API, limited to the basic profile scopes you authorise:
+            </p>
+            <ul className="list-disc pl-6 mt-2 space-y-1">
+              <li><strong className="text-foreground">Email address</strong> — your Google account's primary email, used to identify and create your Xero Streams account.</li>
+              <li><strong className="text-foreground">Name / basic profile</strong> — your Google display name (and, where you authorise it, basic profile information such as a profile picture URL) to personalise your account and show your name within the Service.</li>
+              <li><strong className="text-foreground">OpenID / account identifier</strong> — a stable identifier returned by Google to link your Google account to your Xero Streams account.</li>
+            </ul>
+            <p className="mt-2">
+              <strong className="text-foreground">How we use Google user data:</strong> We use Google user data
+              solely to provide or improve Xero Streams' functionality — specifically to authenticate your sign-in,
+              create and link your account, keep you signed in, display your name, and protect against unauthorised
+              access. We do <strong className="text-foreground">not</strong> use Google user data to serve
+              personalised advertising, and we do not use it for any purpose unrelated to providing or improving the
+              Service.
+            </p>
+            <p className="mt-2">
+              <strong className="text-foreground">How we store Google user data:</strong> Your Google email address,
+              name, and linked identifier are stored on our servers in your account record for as long as your
+              account is active. We do not store your Google password or OAuth access tokens beyond the duration
+              needed to complete authentication.
+            </p>
+            <p className="mt-2">
+              <strong className="text-foreground">Sharing, transfer, and disclosure:</strong> We do not sell Google
+              user data and do not transfer it to third parties for reasons other than providing or improving the
+              Service. We may share the minimum necessary Google user data only with: (a) our hosting and
+              infrastructure providers who process it on our behalf to operate the Service, and (b) authorities where
+              required by law. Apart from these limited cases, Google user data is not shared, transferred, or
+              disclosed.
+            </p>
+            <p className="mt-2">
+              <strong className="text-foreground">Data protection:</strong> Google user data is protected using the
+              same technical and organisational measures described in the Data Security section, including encrypted
+              transmission, access controls, and row-level security that restricts each user's data to themselves and
+              authorised administrators.
+            </p>
+            <p className="mt-2">
+              <strong className="text-foreground">Retention and deletion:</strong> Google user data is retained for
+              the lifetime of your account. You may request deletion of your account and all associated Google user
+              data at any time by contacting us (see Contact Us). Upon deletion, we remove your Google email address,
+              name, and linked identifier from our active systems within 30 days, subject to any legal retention
+              obligations.
+            </p>
           </section>
 
           <section>
