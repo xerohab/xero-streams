@@ -27,6 +27,7 @@ import BooksManager from "@/components/admin/BooksManager";
 import StoreManager from "@/components/admin/StoreManager";
 import RequestsManager from "@/components/admin/RequestsManager";
 import EmailManager from "@/components/admin/EmailManager";
+import DownloadsManager from "@/components/admin/DownloadsManager";
 import { Toaster } from "react-hot-toast";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -185,6 +186,7 @@ export default function Admin() {
             <TabsTrigger value="books">Books</TabsTrigger>
             <TabsTrigger value="store">Store & Downloads</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
+            <TabsTrigger value="downloads">Downloads</TabsTrigger>
             <TabsTrigger value="emails">Emails</TabsTrigger>
           </TabsList>
 
@@ -458,6 +460,10 @@ export default function Admin() {
                 <RequestsManager />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="downloads">
+            <DownloadsManager />
           </TabsContent>
 
           <TabsContent value="emails">

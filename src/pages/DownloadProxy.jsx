@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Download, AlertCircle } from "lucide-react";
+import { Loader2, Download, AlertCircle, FileArchive } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ export default function DownloadProxy() {
   const { user, isLoadingAuth } = useAuth();
   const [status, setStatus] = useState("Checking permissions...");
   const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(null);
 
   useEffect(() => {
     if (isLoadingAuth) return;
@@ -23,14 +24,27 @@ export default function DownloadProxy() {
     checkAndDownload();
   }, [user, isLoadingAuth, type, id]);
 
+  const logDownload = async (params) => {
+    try {
+      await base44.entities.DownloadLog.create({
+        user_id: user.id,
+        user_email: user.email,
+        user_name: user.full_name,
+        ...params,
+      });
+    } catch {
+      // logging is best-effort
+    }
+  };
+
   const checkAndDownload = async () => {
     try {
       // Check subscription
-      const subscriptions = await base44.entities.UserSubscription.filter({ 
-        user_id: user.id, 
-        status: "active" 
+      const subscriptions = await base44.entities.UserSubscription.filter({
+        user_id: user.id,
+        status: "active",
       });
-      
+
       const isSubscribed = user.role === "admin" || subscriptions.length > 0;
 
       if (!isSubscribed) {
@@ -46,33 +60,60 @@ export default function DownloadProxy() {
           setError("Video file not found.");
           return;
         }
+
+        // Log the single download
+        await logDownload({
+          content_type: video.content_type === "episode" ? "episode" : "movie",
+          content_id: id,
+          content_title: video.title,
+          download_type: "single",
+          item_count: 1,
+        });
+
         setStatus("Redirecting...");
-        // Redirect to the actual URL
         window.location.replace(video.video_url);
-      } 
-      else if (type === "series" || type === "franchise") {
-        const query = type === "series" ? { series_id: id } : { franchise_id: id };
-        const videos = await base44.entities.Video.filter(query, 'sort_order');
-        
-        if (videos.length === 0) {
-          setError("No episodes found for this content.");
+      } else if (type === "series" || type === "franchise") {
+        // Fetch the series/franchise title for the ZIP filename
+        let title = type === "series" ? "Series" : "Franchise";
+        if (type === "series") {
+          const [series] = await base44.entities.Series.filter({ id });
+          if (series) title = series.title;
+        } else {
+          const [franchise] = await base44.entities.Franchise.filter({ id });
+          if (franchise) title = franchise.title;
+        }
+
+        setStatus(`Bundling ${title} into a ZIP file...`);
+        setProgress("Fetching and compressing episodes — this may take a moment...");
+
+        const res = await base44.functions.invoke("downloadSeriesZip", {
+          type,
+          id,
+          title,
+        });
+
+        if (res.data?.error) {
+          setError(res.data.error);
           return;
         }
 
-        setStatus(`Found ${videos.length} items. Starting downloads...`);
-        
-        // Open each video in a new tab with a slight delay
-        for (let i = 0; i < videos.length; i++) {
-          if (videos[i].video_url) {
-            setTimeout(() => {
-              window.open(videos[i].video_url, '_blank');
-            }, i * 1500); // 1.5s delay between popups to avoid aggressive blocking
-          }
+        if (!res.data?.signed_url) {
+          setError("Failed to generate download link.");
+          return;
         }
-        
+
+        setStatus("Your ZIP is ready! Starting download...");
+        // Trigger the download
+        const a = document.createElement("a");
+        a.href = res.data.signed_url;
+        a.download = res.data.filename || `${title}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
         setTimeout(() => {
-          setStatus("Downloads initiated! Check your browser's pop-up blocker if some files didn't download.");
-        }, videos.length * 1500);
+          setStatus(`Download started! ${res.data.item_count} episode(s) bundled in your ZIP file.`);
+        }, 1500);
       } else {
         setError("Invalid download type.");
       }
@@ -95,9 +136,14 @@ export default function DownloadProxy() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-      <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+      {type === "series" || type === "franchise" ? (
+        <FileArchive className="w-12 h-12 text-primary mb-4 animate-pulse" />
+      ) : (
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+      )}
       <h1 className="text-2xl font-bold mb-2">Please wait</h1>
       <p className="text-muted-foreground">{status}</p>
+      {progress && <p className="text-muted-foreground/70 text-sm mt-2">{progress}</p>}
     </div>
   );
 }

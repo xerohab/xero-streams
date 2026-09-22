@@ -1,0 +1,86 @@
+{
+  "name": "DownloadLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who downloaded"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user at time of download"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name of the user at time of download"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "movie",
+        "episode",
+        "series",
+        "franchise"
+      ],
+      "description": "What type of content was downloaded"
+    },
+    "content_id": {
+      "type": "string",
+      "description": "ID of the downloaded content"
+    },
+    "content_title": {
+      "type": "string",
+      "description": "Title of the downloaded content"
+    },
+    "download_type": {
+      "type": "string",
+      "enum": [
+        "single",
+        "zip"
+      ],
+      "default": "single",
+      "description": "Whether this was a single file or a ZIP bundle"
+    },
+    "item_count": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of items included in the download"
+    },
+    "file_size_bytes": {
+      "type": "number",
+      "description": "Size of the downloaded file in bytes (if known)"
+    }
+  },
+  "required": [
+    "user_id",
+    "content_type",
+    "content_title"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        }
+      ]
+    },
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
