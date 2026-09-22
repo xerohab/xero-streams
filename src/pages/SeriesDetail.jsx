@@ -8,6 +8,7 @@ import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
+import { downloadSingleVideo, downloadSeriesZip } from "@/lib/downloadUtils";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -15,6 +16,7 @@ export default function SeriesDetail() {
   const from = searchParams.get("from") || "/";
 
   const [user, setUser] = useState(null);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
@@ -134,9 +136,18 @@ export default function SeriesDetail() {
               <Button
                 variant="secondary"
                 className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
-                onClick={() => window.open(`/dl/series/${series.id}/download_all`, '_blank')}
+                onClick={async () => {
+                  try {
+                    setIsDownloadingAll(true);
+                    await downloadSeriesZip("series", series.id, series.title);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsDownloadingAll(false);
+                  }
+                }}
               >
-                <DownloadIcon className="w-4 h-4" /> Download All Episodes
+                {isDownloadingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} Download All Episodes
               </Button>
             )}
           </div>
@@ -152,7 +163,7 @@ export default function SeriesDetail() {
               <VideoCard
                 key={ep.id}
                 video={ep}
-                onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => window.open(`/dl/video/${v.id}/${encodeURIComponent(v.title.replace(/\s+/g, '_'))}.mp4`, '_blank') : undefined}
+                onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => downloadSingleVideo(v.id).catch(console.error) : undefined}
               />
             ))}
           </div>

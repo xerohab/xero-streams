@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, CalendarClock, Clock, Film, Play, Loader2, Users, Star, Download as DownloadIcon, ShoppingCart } from "lucide-react";
+import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
@@ -17,6 +18,7 @@ export default function MovieDetail() {
   const [loadingCast, setLoadingCast] = useState(false);
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -237,15 +239,31 @@ export default function MovieDetail() {
               <Button
                 variant="secondary"
                 className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
-                onClick={() => window.open(`/dl/video/${video.id}/${encodeURIComponent(video.title.replace(/\s+/g, '_'))}.mp4`, '_blank')}
+                onClick={async () => {
+                  try {
+                    setIsDownloading(true);
+                    await downloadSingleVideo(video.id);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setIsDownloading(false);
+                  }
+                }}
               >
-                <DownloadIcon className="w-4 h-4" /> Download
+                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} Download
               </Button>
             )}
 
             {video.is_for_sale && (
               isPurchased ? (
-                <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => window.open(video.download_url, '_blank')}>
+                <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = video.download_url;
+                  a.download = "";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}>
                   <DownloadIcon className="w-4 h-4" /> Download
                 </Button>
               ) : (

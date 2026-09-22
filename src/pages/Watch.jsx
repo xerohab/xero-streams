@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import useHls from "@/hooks/useHls";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart, Download as DownloadIcon, ShoppingCart } from "lucide-react";
+import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
 import Navbar from "@/components/browse/Navbar";
@@ -35,6 +36,7 @@ export default function Watch() {
   const [isFavourited, setIsFavourited] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [showSkipRecap, setShowSkipRecap] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const lastSaveRef = useRef(0);
   const countdownStartedRef = useRef(false);
@@ -607,7 +609,14 @@ export default function Watch() {
                 </Button>
                 {video.is_for_sale && (
                   isPurchased ? (
-                    <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => window.open(video.download_url, '_blank')}>
+                    <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => {
+                      const a = document.createElement("a");
+                      a.href = video.download_url;
+                      a.download = "";
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }}>
                       <DownloadIcon className="w-4 h-4" /> Download
                     </Button>
                   ) : (
@@ -620,9 +629,18 @@ export default function Watch() {
                   <Button
                     variant="secondary"
                     className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
-                    onClick={() => window.open(`/dl/video/${video.id}/${encodeURIComponent(video.title.replace(/\s+/g, '_'))}.mp4`, '_blank')}
+                    onClick={async () => {
+                      try {
+                        setIsDownloading(true);
+                        await downloadSingleVideo(video.id);
+                      } catch (err) {
+                        console.error(err);
+                      } finally {
+                        setIsDownloading(false);
+                      }
+                    }}
                   >
-                    <DownloadIcon className="w-4 h-4" /> Download
+                    {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} Download
                   </Button>
                 )}
               </div>
