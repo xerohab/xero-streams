@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Film, Loader2 } from "lucide-react";
+import { ArrowLeft, Film, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -138,7 +138,15 @@ export default function SeriesDetail() {
       {/* Episodes Grid */}
       {sortedEpisodes.length > 0 && (
         <div className="px-6 md:px-16 py-10">
-          <h2 className="text-xl font-bold text-foreground mb-6">All Episodes</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">All Episodes</h2>
+          {isPremium && sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) ? (
+            <p className="text-xs text-muted-foreground mb-6 flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5" />
+              Tip: hover over an episode and click the download button to save it. Progress appears in the download popup.
+            </p>
+          ) : (
+            <div className="mb-6" />
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {sortedEpisodes.map((ep) => (
               <VideoCard

@@ -22,6 +22,8 @@ import CastPlayer from '@/pages/CastPlayer';
 import Books from '@/pages/Books';
 import PurchaseCallback from '@/pages/PurchaseCallback';
 import DownloadProxy from '@/pages/DownloadProxy';
+import { DownloadManagerProvider } from '@/lib/DownloadManagerContext';
+import DownloadManagerPopup from '@/components/browse/DownloadManagerPopup';
 
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -69,6 +71,8 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
+    <>
+    <DownloadManagerProvider>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/watch" element={<Watch />} />
@@ -87,6 +91,9 @@ const AuthenticatedApp = () => {
       <Route path="/dl/:type/:id/*" element={<DownloadProxy />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    <DownloadManagerPopup />
+    </DownloadManagerProvider>
+    </>
   );
 };
 
