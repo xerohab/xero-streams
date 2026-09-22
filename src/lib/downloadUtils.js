@@ -77,24 +77,43 @@ function triggerBlobDownload(blob, filename) {
 }
 
 /**
- * Downloads a full series or franchise as a ZIP bundle.
+ * Downloads all episodes in a series or franchise sequentially.
+ * Each file goes through the browser's native download manager
+ * (avoids serverless memory/timeout limits on large video files).
+ * onProgress receives { current, total, title }.
  */
-export async function downloadSeriesZip(type, id, title) {
-  let res;
-  try {
-    res = await base44.functions.invoke("downloadSeriesZip", { type, id, title });
-  } catch (err) {
-    const msg = err?.response?.data?.error || err?.data?.error || err.message;
-    throw new Error(msg);
+export async function downloadSeriesZip(type, id, title, onProgress) {
+  const query = type === "series" ? { series_id: id } : { franchise_id: id };
+  const videos = await base44.entities.Video.filter(query, "sort_order");
+
+  const downloadable = videos.filter((v) => v.video_url && !v.coming_soon);
+  if (downloadable.length === 0) {
+    throw new Error("No downloadable episodes found.");
   }
 
-  if (res.data?.error) throw new Error(res.data.error);
-  if (!res.data?.signed_url) throw new Error("Failed to generate download link.");
+  for (let i = 0; i < downloadable.length; i++) {
+    const video = downloadable[i];
+    if (onProgress) onProgress({ current: i + 1, total: downloadable.length, title: video.title });
 
-  const a = document.createElement("a");
-  a.href = res.data.signed_url;
-  a.download = res.data.filename || `${title}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+    // Validate auth + log the download via backend, then trigger direct browser download
+    let res;
+    try {
+      res = await base44.functions.invoke("proxyDownload", { video_id: video.id });
+    } catch (err) {
+      const msg = err?.response?.data?.error || err?.data?.error || err.message;
+      throw new Error(msg);
+    }
+    if (res.data?.error) throw new Error(res.data.error);
+    if (!res.data?.download_url) throw new Error("No download URL returned.");
+
+    const a = document.createElement("a");
+    a.href = res.data.download_url;
+    a.download = res.data.filename || "";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Give the browser time to register the download before starting the next
+    await new Promise((r) => setTimeout(r, 1500));
+  }
 }

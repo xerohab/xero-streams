@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, Download, AlertCircle, FileArchive } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
+import { downloadSeriesZip } from "@/lib/downloadUtils";
 
 export default function DownloadProxy() {
   const { type, id } = useParams(); // type can be 'video', 'series', 'franchise'
@@ -93,7 +94,6 @@ export default function DownloadProxy() {
           setStatus("Download started! Check your downloads folder.");
         }, 500);
       } else if (type === "series" || type === "franchise") {
-        // Fetch the series/franchise title for the ZIP filename
         let title = type === "series" ? "Series" : "Franchise";
         if (type === "series") {
           const [series] = await base44.entities.Series.filter({ id });
@@ -103,37 +103,14 @@ export default function DownloadProxy() {
           if (franchise) title = franchise.title;
         }
 
-        setStatus(`Bundling ${title} into a ZIP file...`);
-        setProgress("Fetching and compressing episodes — this may take a moment...");
+        setStatus(`Starting downloads for ${title}...`);
+        setProgress("Each episode will download to your browser's download folder.");
 
-        const res = await base44.functions.invoke("downloadSeriesZip", {
-          type,
-          id,
-          title,
+        await downloadSeriesZip(type, id, title, (p) => {
+          setStatus(`Downloading ${p.current} of ${p.total}: ${p.title}`);
         });
 
-        if (res.data?.error) {
-          setError(res.data.error);
-          return;
-        }
-
-        if (!res.data?.signed_url) {
-          setError("Failed to generate download link.");
-          return;
-        }
-
-        setStatus("Your ZIP is ready! Starting download...");
-        // Trigger the download
-        const a = document.createElement("a");
-        a.href = res.data.signed_url;
-        a.download = res.data.filename || `${title}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        setTimeout(() => {
-          setStatus(`Download started! ${res.data.item_count} episode(s) bundled in your ZIP file.`);
-        }, 1500);
+        setStatus(`All downloads started! Check your browser's download manager.`);
       } else {
         setError("Invalid download type.");
       }

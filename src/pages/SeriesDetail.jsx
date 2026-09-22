@@ -18,6 +18,7 @@ export default function SeriesDetail() {
 
   const [user, setUser] = useState(null);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [downloadAllProgress, setDownloadAllProgress] = useState(null);
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
@@ -140,17 +141,24 @@ export default function SeriesDetail() {
                 onClick={async () => {
                   try {
                     setIsDownloadingAll(true);
-                    await downloadSeriesZip("series", series.id, series.title);
-                    toast.success("Download started!");
+                    setDownloadAllProgress(null);
+                    await downloadSeriesZip("series", series.id, series.title, (p) => setDownloadAllProgress(p));
+                    toast.success("All episodes downloaded!");
                   } catch (err) {
                     console.error(err);
                     toast.error(err.message || "Download failed.");
                   } finally {
                     setIsDownloadingAll(false);
+                    setDownloadAllProgress(null);
                   }
                 }}
               >
-                {isDownloadingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} Download All Episodes
+                {isDownloadingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}{" "}
+                {isDownloadingAll
+                  ? downloadAllProgress
+                    ? `Downloading ${downloadAllProgress.current}/${downloadAllProgress.total}`
+                    : "Starting..."
+                  : "Download All Episodes"}
               </Button>
             )}
           </div>
