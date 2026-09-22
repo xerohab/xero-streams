@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, Film, Loader2, Download as DownloadIcon } from "lucide-react";
+import { ArrowLeft, Film, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
-import { downloadSingleVideo, downloadSeriesZip } from "@/lib/downloadUtils";
-import toast from "react-hot-toast";
+import { downloadSingleVideo } from "@/lib/downloadUtils";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -17,8 +16,6 @@ export default function SeriesDetail() {
   const from = searchParams.get("from") || "/";
 
   const [user, setUser] = useState(null);
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-  const [downloadAllProgress, setDownloadAllProgress] = useState(null);
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
@@ -134,33 +131,6 @@ export default function SeriesDetail() {
               {isFavourited ? "Favourited" : "Favourite Series"}
             </Button>
 
-            {isPremium && sortedEpisodes.length > 0 && (
-              <Button
-                variant="secondary"
-                className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
-                onClick={async () => {
-                  try {
-                    setIsDownloadingAll(true);
-                    setDownloadAllProgress(null);
-                    await downloadSeriesZip("series", series.id, series.title, (p) => setDownloadAllProgress(p));
-                    toast.success("All episodes downloaded!");
-                  } catch (err) {
-                    console.error(err);
-                    toast.error(err.message || "Download failed.");
-                  } finally {
-                    setIsDownloadingAll(false);
-                    setDownloadAllProgress(null);
-                  }
-                }}
-              >
-                {isDownloadingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}{" "}
-                {isDownloadingAll
-                  ? downloadAllProgress
-                    ? `Downloading ${downloadAllProgress.current}/${downloadAllProgress.total}`
-                    : "Starting..."
-                  : "Download All Episodes"}
-              </Button>
-            )}
           </div>
         </div>
       </div>

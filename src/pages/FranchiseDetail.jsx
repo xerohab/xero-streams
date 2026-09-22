@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Film, Loader2, Tv, Download as DownloadIcon } from "lucide-react";
+import { ArrowLeft, Film, Loader2, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -134,16 +134,6 @@ export default function FranchiseDetail() {
               <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
               {isFavourited ? "Favourited" : "Favourite Franchise"}
             </Button>
-            
-            {isPremium && (franchiseSeries.length > 0 || franchiseMovies.length > 0) && (
-              <Button
-                variant="secondary"
-                className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
-                onClick={() => window.open(`/dl/franchise/${franchise.id}/download_all`, '_blank')}
-              >
-                <DownloadIcon className="w-4 h-4" /> Download Collection
-              </Button>
-            )}
           </div>
         </div>
       </div>
