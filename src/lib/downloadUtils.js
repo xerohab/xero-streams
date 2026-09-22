@@ -80,7 +80,13 @@ function triggerBlobDownload(blob, filename) {
  * Downloads a full series or franchise as a ZIP bundle.
  */
 export async function downloadSeriesZip(type, id, title) {
-  const res = await base44.functions.invoke("downloadSeriesZip", { type, id, title });
+  let res;
+  try {
+    res = await base44.functions.invoke("downloadSeriesZip", { type, id, title });
+  } catch (err) {
+    const msg = err?.response?.data?.error || err?.data?.error || err.message;
+    throw new Error(msg);
+  }
 
   if (res.data?.error) throw new Error(res.data.error);
   if (!res.data?.signed_url) throw new Error("Failed to generate download link.");

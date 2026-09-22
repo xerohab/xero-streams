@@ -25,7 +25,7 @@ export default async function(req: Request): Promise<Response> {
     const videos = await base44.asServiceRole.entities.Video.filter(query, 'sort_order');
 
     if (videos.length === 0) {
-      return Response.json({ error: 'No episodes found for this content.' }, { status: 404 });
+      return Response.json({ error: 'No episodes found for this content.' });
     }
 
     const zip = new JSZip();
@@ -55,7 +55,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     if (count === 0) {
-      return Response.json({ error: 'No downloadable video files found.' }, { status: 404 });
+      return Response.json({ error: 'No downloadable video files found. Episodes may be streaming-only (HLS).' });
     }
 
     const zipBuffer = await zip.generateAsync({
