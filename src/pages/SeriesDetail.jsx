@@ -163,7 +163,7 @@ export default function SeriesDetail() {
               <VideoCard
                 key={ep.id}
                 video={ep}
-                onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => downloadSingleVideo(v.id).catch(console.error) : undefined}
+                onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => downloadSingleVideo(v.id) : undefined}
               />
             ))}
           </div>
