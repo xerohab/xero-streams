@@ -11,7 +11,7 @@ import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
 import WatchlistButton from "@/components/browse/WatchlistButton";
-import { saveProgress, getProgress, removeProgress } from "@/hooks/useContinueWatching";
+import { saveProgress, getProgress, removeProgress, addWatched } from "@/hooks/useContinueWatching";
 
 import { useCast } from "@/lib/CastContext";
 
@@ -307,7 +307,10 @@ export default function Watch() {
   }, [video, startCountdown]);
 
   const handleEnded = useCallback(() => {
-    if (video?.id) removeProgress(video.id);
+    if (video?.id) {
+      removeProgress(video.id);
+      addWatched(video.id);
+    }
     if (!countdownStartedRef.current) {
       startCountdown(0);
     }

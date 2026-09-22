@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/browse/Navbar";
 import {
-  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Radio, Download as DownloadIcon, Palette, MessageSquare, Plus, Tv, ListVideo, Trash2
+  User, Heart, Clock, ShieldCheck, ShieldAlert, LogOut, Loader2, Play, CheckCircle2, Camera, XCircle, Star, TrendingUp, Film, Home, Book, Download as DownloadIcon, Palette, MessageSquare, Plus, Tv, ListVideo, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,20 +15,30 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function useContinueWatching() {
-  const raw = localStorage.getItem("xero_progress");
-  if (!raw) return { inProgress: [], completed: [] };
-  try {
-    const obj = JSON.parse(raw);
-    const all = Object.entries(obj)
-      .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => b.updatedAt - a.updatedAt);
-    return {
-      inProgress: all.filter((x) => x.percent < 0.95),
-      completed: all.filter((x) => x.percent >= 0.95),
+  const [data, setData] = useState({ inProgress: [], completed: [] });
+  useEffect(() => {
+    const read = () => {
+      try {
+        const inProgress = (JSON.parse(localStorage.getItem("xero_continue_watching")) || [])
+          .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        const completed = (JSON.parse(localStorage.getItem("xero_watched")) || []);
+        return { inProgress, completed: completed.map((id) => ({ id })) };
+      } catch {
+        return { inProgress: [], completed: [] };
+      }
     };
-  } catch {
-    return { inProgress: [], completed: [] };
-  }
+    setData(read());
+    const handler = () => setData(read());
+    window.addEventListener("storage", handler);
+    window.addEventListener("focus", handler);
+    window.addEventListener("xero-progress-updated", handler);
+    return () => {
+      window.removeEventListener("storage", handler);
+      window.removeEventListener("focus", handler);
+      window.removeEventListener("xero-progress-updated", handler);
+    };
+  }, []);
+  return data;
 }
 
 export default function Dashboard() {
@@ -65,6 +75,13 @@ export default function Dashboard() {
     });
 
   useEffect(() => { fetchUser(); }, []);
+
+  // Refresh user data (favourites etc.) when the tab regains focus
+  useEffect(() => {
+    const onFocus = () => { if (user) fetchUser(); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user]);
 
   useEffect(() => {
     if (loadingUser) return;
@@ -142,6 +159,12 @@ export default function Dashboard() {
     enabled: !!user
   });
 
+  const { data: downloadLogs = [] } = useQuery({
+    queryKey: ["download_logs", user?.id],
+    queryFn: () => base44.entities.DownloadLog.filter({ user_id: user.id }, "-created_date"),
+    enabled: !!user
+  });
+
   const { data: books = [] } = useQuery({
     queryKey: ["books"],
     queryFn: () => base44.entities.Book.list()
@@ -204,7 +227,7 @@ export default function Dashboard() {
   const favouriteSeries = allSeries.filter((s) => user?.favourite_series?.includes(s.id));
   const favouriteFranchises = allFranchises.filter((f) => user?.favourite_franchises?.includes(f.id));
   const cwVideos = continueWatching
-    .map(({ id, percent, currentTime }) => ({ video: videos.find((v) => v.id === id), percent, currentTime }))
+    .map(({ id, progress, currentTime }) => ({ video: videos.find((v) => v.id === id), percent: (progress || 0) / 100, currentTime }))
     .filter((x) => x.video);
 
   const completedVideos = watchedHistory
@@ -539,49 +562,87 @@ export default function Dashboard() {
             <DownloadIcon className="w-5 h-5 text-primary" /> My Downloads
           </h2>
           
-          {(bookPurchases.length === 0 && videoPurchases.length === 0) ? (
+          {(downloadLogs.length === 0 && bookPurchases.length === 0 && videoPurchases.length === 0) ? (
             <div className="bg-secondary border border-border rounded-xl p-8 text-center">
               <DownloadIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-1">No Downloads Yet</h3>
-              <p className="text-muted-foreground text-sm">You haven't purchased or been granted access to any downloadable content.</p>
-              <Link to="/books">
-                <Button className="mt-4" variant="outline">Browse Store</Button>
-              </Link>
+              <p className="text-muted-foreground text-sm">Content you download across the site will appear here.</p>
+              <Link to="/"><Button className="mt-4" variant="outline">Browse Content</Button></Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {bookPurchases.map(p => {
-                const book = books.find(b => b.id === p.book_id);
-                if (!book) return null;
-                return (
-                  <div key={p.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Book className="w-8 h-8 text-muted-foreground" />
-                      <div>
-                        <p className="font-bold text-sm line-clamp-1">{book.title}</p>
-                        <p className="text-xs text-muted-foreground">Book</p>
-                      </div>
-                    </div>
-                    <Button size="sm" onClick={() => window.open(book.file_url, '_blank')}>Download</Button>
+            <div className="space-y-6">
+              {downloadLogs.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><DownloadIcon className="w-4 h-4" /> Download History</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {downloadLogs.map(log => {
+                      const video = (log.content_type === "movie" || log.content_type === "episode") ? videos.find(v => v.id === log.content_id) : null;
+                      return (
+                        <div key={log.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {video?.thumbnail_url ? (
+                              <img src={video.thumbnail_url} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="w-10 h-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                <DownloadIcon className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm line-clamp-1">{log.content_title}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{log.content_type} · {new Date(log.created_date).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          {(log.content_type === "movie" || log.content_type === "episode") && (
+                            <Link to={`/dl/${log.content_type}/${log.content_id}`}>
+                              <Button size="sm" variant="outline">Download</Button>
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                )
-              })}
-              {videoPurchases.map(p => {
-                const video = videos.find(v => v.id === p.video_id);
-                if (!video) return null;
-                return (
-                  <div key={p.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Film className="w-8 h-8 text-muted-foreground" />
-                      <div>
-                        <p className="font-bold text-sm line-clamp-1">{video.title}</p>
-                        <p className="text-xs text-muted-foreground">Video</p>
-                      </div>
-                    </div>
-                    <Button size="sm" onClick={() => window.open(video.download_url, '_blank')}>Download</Button>
+                </div>
+              )}
+
+              {(bookPurchases.length > 0 || videoPurchases.length > 0) && (
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Book className="w-4 h-4" /> Purchased Content</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {bookPurchases.map(p => {
+                      const book = books.find(b => b.id === p.book_id);
+                      if (!book) return null;
+                      return (
+                        <div key={p.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Book className="w-8 h-8 text-muted-foreground" />
+                            <div>
+                              <p className="font-bold text-sm line-clamp-1">{book.title}</p>
+                              <p className="text-xs text-muted-foreground">Book</p>
+                            </div>
+                          </div>
+                          <Button size="sm" onClick={() => window.open(book.file_url, '_blank')}>Download</Button>
+                        </div>
+                      );
+                    })}
+                    {videoPurchases.map(p => {
+                      const video = videos.find(v => v.id === p.video_id);
+                      if (!video) return null;
+                      return (
+                        <div key={p.id} className="bg-secondary rounded-lg p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Film className="w-8 h-8 text-muted-foreground" />
+                            <div>
+                              <p className="font-bold text-sm line-clamp-1">{video.title}</p>
+                              <p className="text-xs text-muted-foreground">Video</p>
+                            </div>
+                          </div>
+                          <Button size="sm" onClick={() => window.open(video.download_url, '_blank')}>Download</Button>
+                        </div>
+                      );
+                    })}
                   </div>
-                )
-              })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -592,7 +653,6 @@ export default function Dashboard() {
             { label: "Browse All", icon: Home, to: "/" },
             { label: "Movies", icon: Film, to: "/?tab=movies" },
             { label: "TV Series", icon: TrendingUp, to: "/?tab=tv" },
-            { label: "Live", icon: Radio, to: "/live" },
             { label: "Books", icon: Book, to: "/books" },
           ].map(({ label, icon: Icon, to }) => (
             <Link key={label} to={to}>
@@ -846,7 +906,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Card className="bg-card border-border text-center">
             <CardContent className="py-5">
-              <p className="text-3xl font-black text-primary">{favouriteVideos.length}</p>
+              <p className="text-3xl font-black text-primary">{favouriteVideos.length + favouriteSeries.length + favouriteFranchises.length}</p>
               <p className="text-sm text-muted-foreground mt-1">Favourites</p>
             </CardContent>
           </Card>
