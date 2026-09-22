@@ -9,6 +9,7 @@ import VideoCard from "@/components/browse/VideoCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
 import { downloadSingleVideo, downloadSeriesZip } from "@/lib/downloadUtils";
+import toast from "react-hot-toast";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -140,8 +141,10 @@ export default function SeriesDetail() {
                   try {
                     setIsDownloadingAll(true);
                     await downloadSeriesZip("series", series.id, series.title);
+                    toast.success("Download started!");
                   } catch (err) {
                     console.error(err);
+                    toast.error(err.message || "Download failed.");
                   } finally {
                     setIsDownloadingAll(false);
                   }

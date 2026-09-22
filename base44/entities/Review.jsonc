@@ -35,7 +35,7 @@
     "create": {
       "data.user_id": "{{user.id}}"
     },
-    "read": null,
+    "read": {},
     "update": {
       "$or": [
         {
