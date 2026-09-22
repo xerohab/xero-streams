@@ -22,6 +22,8 @@ import CastPlayer from '@/pages/CastPlayer';
 import Books from '@/pages/Books';
 import PurchaseCallback from '@/pages/PurchaseCallback';
 import DownloadProxy from '@/pages/DownloadProxy';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import TermsOfService from '@/pages/TermsOfService';
 import { DownloadManagerProvider } from '@/lib/DownloadManagerContext';
 import DownloadManagerPopup from '@/components/browse/DownloadManagerPopup';
 import { PremiumModalProvider } from '@/lib/PremiumModalContext';
@@ -92,6 +94,8 @@ const AuthenticatedApp = () => {
       <Route path="/books" element={<Books />} />
       <Route path="/callback" element={<PurchaseCallback />} />
       <Route path="/dl/:type/:id/*" element={<DownloadProxy />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     <DownloadManagerPopup />

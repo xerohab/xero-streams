@@ -10,6 +10,7 @@ import { Loader2, Film, Tv, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 import VideoRow from "@/components/browse/VideoRow";
+import Footer from "@/components/browse/Footer";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -401,6 +402,7 @@ export default function Home() {
         {/* Adult tab - only shown for age-verified users */}
 
       </div>
+      <Footer />
     </div>
   );
 }
