@@ -226,7 +226,7 @@ export default function Home() {
               
               <div className="bg-secondary/50 p-4 rounded-lg">
                 <h3 className="font-bold mb-1 flex items-center gap-2"><Tv className="w-4 h-4 text-primary" /> Premium Features</h3>
-                <p className="text-sm text-muted-foreground">Unlock the ability to <strong>request content</strong> and <strong>request downloads</strong> by purchasing a subscription.</p>
+                <p className="text-sm text-muted-foreground">Subscribers can <strong>download individual episodes and movies</strong>, or grab a <strong>whole series at once</strong> with the Download All button.</p>
               </div>
 
               <div className="bg-secondary/50 p-4 rounded-lg">
