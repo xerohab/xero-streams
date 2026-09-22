@@ -28,6 +28,14 @@ export default function MovieDetail() {
     enabled: !!user
   });
 
+  const { data: premiumSubs = [] } = useQuery({
+    queryKey: ["active_subscription", user?.id],
+    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
+    enabled: !!user
+  });
+  
+  const isPremium = user?.role === "admin" || premiumSubs.length > 0;
+
   const handlePurchase = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
     base44.analytics.track({ eventName: "video_purchase_initiated_from_detail", properties: { video_id: video.id, price: video.price } });
@@ -224,6 +232,17 @@ export default function MovieDetail() {
               </Button>
             )}
             <WatchlistButton videoId={video.id} variant="secondary" />
+            
+            {!video.is_for_sale && isPremium && !video.coming_soon && video.video_url && (
+              <Button
+                variant="secondary"
+                className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
+                onClick={() => window.open(`/dl/video/${video.id}/${encodeURIComponent(video.title.replace(/\s+/g, '_'))}.mp4`, '_blank')}
+              >
+                <DownloadIcon className="w-4 h-4" /> Download
+              </Button>
+            )}
+
             {video.is_for_sale && (
               isPurchased ? (
                 <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => window.open(video.download_url, '_blank')}>

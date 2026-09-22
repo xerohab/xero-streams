@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Film, Loader2, Tv } from "lucide-react";
+import { ArrowLeft, Film, Loader2, Tv, Download as DownloadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -53,6 +53,14 @@ export default function FranchiseDetail() {
     queryKey: ["franchises"],
     queryFn: () => base44.entities.Franchise.list("-created_date"),
   });
+
+  const { data: premiumSubs = [] } = useQuery({
+    queryKey: ["active_subscription", user?.id],
+    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
+    enabled: !!user
+  });
+  
+  const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   const subFranchises = allFranchises
     .filter((f) => f.parent_id === franchiseId)
@@ -117,7 +125,7 @@ export default function FranchiseDetail() {
               {franchise.description}
             </p>
           )}
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3">
             <Button
               variant={isFavourited ? "default" : "outline"}
               className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
@@ -126,6 +134,16 @@ export default function FranchiseDetail() {
               <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
               {isFavourited ? "Favourited" : "Favourite Franchise"}
             </Button>
+            
+            {isPremium && (franchiseSeries.length > 0 || franchiseMovies.length > 0) && (
+              <Button
+                variant="secondary"
+                className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
+                onClick={() => window.open(`/dl/franchise/${franchise.id}/download_all`, '_blank')}
+              >
+                <DownloadIcon className="w-4 h-4" /> Download Collection
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -21,6 +21,7 @@ import LeaksSection from '@/pages/LeaksSection';
 import CastPlayer from '@/pages/CastPlayer';
 import Books from '@/pages/Books';
 import PurchaseCallback from '@/pages/PurchaseCallback';
+import DownloadProxy from '@/pages/DownloadProxy';
 
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
       <Route path="/cast" element={<CastPlayer />} />
       <Route path="/books" element={<Books />} />
       <Route path="/callback" element={<PurchaseCallback />} />
+      <Route path="/dl/:type/:id/*" element={<DownloadProxy />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

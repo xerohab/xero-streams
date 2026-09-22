@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Clock, Film, Loader2 } from "lucide-react";
+import { ArrowLeft, Clock, Film, Loader2, Download as DownloadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -48,6 +48,14 @@ export default function SeriesDetail() {
     queryFn: () => base44.entities.Image.filter({ series_id: seriesId }, "-created_date"),
     enabled: !!seriesId,
   });
+
+  const { data: premiumSubs = [] } = useQuery({
+    queryKey: ["active_subscription", user?.id],
+    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
+    enabled: !!user
+  });
+  
+  const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   const sortedEpisodes = [...episodes].sort((a, b) => {
     if (a.episode_number && b.episode_number) return a.episode_number - b.episode_number;
@@ -112,7 +120,7 @@ export default function SeriesDetail() {
               {sortedEpisodes.length} episode{sortedEpisodes.length !== 1 ? "s" : ""}
             </p>
           )}
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3">
             <Button
               variant={isFavourited ? "default" : "outline"}
               className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
@@ -121,6 +129,16 @@ export default function SeriesDetail() {
               <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
               {isFavourited ? "Favourited" : "Favourite Series"}
             </Button>
+
+            {isPremium && sortedEpisodes.length > 0 && (
+              <Button
+                variant="secondary"
+                className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
+                onClick={() => window.open(`/dl/series/${series.id}/download_all`, '_blank')}
+              >
+                <DownloadIcon className="w-4 h-4" /> Download All Episodes
+              </Button>
+            )}
           </div>
         </div>
       </div>
