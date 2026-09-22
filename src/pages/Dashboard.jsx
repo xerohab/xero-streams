@@ -59,11 +59,6 @@ export default function Dashboard() {
   const [requestDesc, setRequestDesc] = useState("");
   const [requesting, setRequesting] = useState(false);
 
-  const [downloadReqTitle, setDownloadReqTitle] = useState("");
-  const [downloadReqType, setDownloadReqType] = useState("movie");
-  const [downloadReqDesc, setDownloadReqDesc] = useState("");
-  const [downloadRequesting, setDownloadRequesting] = useState(false);
-
   const fetchUser = () =>
     base44.auth.me().then((u) => {
       setUser(u);
@@ -186,12 +181,6 @@ export default function Dashboard() {
     enabled: !!user
   });
 
-  const { data: myDownloadRequests = [], refetch: refetchDownloadRequests } = useQuery({
-    queryKey: ["my_download_requests", user?.id],
-    queryFn: () => base44.entities.DownloadRequest.filter({ user_id: user.id }),
-    enabled: !!user
-  });
-
   const { data: watchlists = [], refetch: refetchWatchlists } = useQuery({
     queryKey: ["watchlists", user?.id],
     queryFn: () => base44.entities.Watchlist.filter({ user_id: user.id }),
@@ -256,32 +245,6 @@ export default function Dashboard() {
       alert("Failed to submit request: " + (err.message || "Unknown error"));
     } finally {
       setRequesting(false);
-    }
-  };
-
-  const submitDownloadRequest = async (e) => {
-    e.preventDefault();
-    if (!downloadReqTitle) return;
-    setDownloadRequesting(true);
-    try {
-      const payload = {
-        user_id: user.id,
-        title: downloadReqTitle,
-        content_type: downloadReqType,
-        status: "pending"
-      };
-      if (downloadReqDesc) {
-        payload.description = downloadReqDesc;
-      }
-      await base44.entities.DownloadRequest.create(payload);
-      setDownloadReqTitle("");
-      setDownloadReqDesc("");
-      refetchDownloadRequests();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to submit download request: " + (err.message || "Unknown error"));
-    } finally {
-      setDownloadRequesting(false);
     }
   };
 
@@ -433,73 +396,6 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Download Requests */}
-        <div>
-          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-            <DownloadIcon className="w-5 h-5 text-primary" /> Request Download
-          </h2>
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              {!hasAccess ? (
-                <div className="text-center py-6">
-                  <DownloadIcon className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <h3 className="text-lg font-semibold mb-1">Premium Feature</h3>
-                  <p className="text-muted-foreground text-sm mb-4">You need an active subscription to request downloads.</p>
-                  <Button variant="outline" onClick={() => document.getElementById("billing-section")?.scrollIntoView({behavior: "smooth"})}>View Plans</Button>
-                </div>
-              ) : (
-                <>
-                  <form onSubmit={submitDownloadRequest} className="space-y-4 mb-6 border-b border-border pb-6">
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Movie / TV Series / Episode Title *</label>
-                      <Input value={downloadReqTitle} onChange={e => setDownloadReqTitle(e.target.value)} required placeholder="e.g. The Matrix" className="bg-secondary" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Content Type</label>
-                      <select value={downloadReqType} onChange={e => setDownloadReqType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                        <option value="movie">Movie</option>
-                        <option value="series">TV Series</option>
-                        <option value="episode">Episode</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Additional Details (Optional)</label>
-                      <Textarea value={downloadReqDesc} onChange={e => setDownloadReqDesc(e.target.value)} placeholder="e.g. Any specific format or season?" className="bg-secondary" />
-                    </div>
-                    <Button type="submit" disabled={downloadRequesting || !downloadReqTitle}>
-                      {downloadRequesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <DownloadIcon className="w-4 h-4 mr-2" />}
-                      Submit Download Request
-                    </Button>
-                  </form>
-
-                  <div>
-                    <h3 className="font-semibold mb-3">My Download Requests</h3>
-                    {myDownloadRequests.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">You haven't requested any downloads yet.</p>
-                    ) : (
-                      <div className="grid gap-3">
-                        {myDownloadRequests.map(req => (
-                          <div key={req.id} className="flex items-center justify-between bg-secondary p-3 rounded-lg">
-                            <div>
-                              <p className="font-semibold flex items-center gap-2">
-                                {req.title}
-                                <Badge variant="outline" className="text-[10px] uppercase">{req.content_type}</Badge>
-                              </p>
-                            </div>
-                            <Badge variant={req.status === 'fulfilled' ? 'default' : 'secondary'} className={req.status === 'fulfilled' ? 'bg-green-600' : ''}>
-                              {req.status === 'fulfilled' ? 'Available' : 'Pending'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Customisation */}
         <div>
           <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
@@ -592,11 +488,6 @@ export default function Dashboard() {
                               <p className="text-xs text-muted-foreground capitalize">{log.content_type} · {new Date(log.created_date).toLocaleDateString()}</p>
                             </div>
                           </div>
-                          {(log.content_type === "movie" || log.content_type === "episode") && (
-                            <Link to={`/dl/${log.content_type}/${log.content_id}`}>
-                              <Button size="sm" variant="outline">Download</Button>
-                            </Link>
-                          )}
                         </div>
                       );
                     })}
