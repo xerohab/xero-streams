@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Layers, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export default function FranchiseCard({ franchise, itemCount, itemLabel }) {
+export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdated }) {
   return (
     <Link 
       to={`/franchise?id=${franchise.id}`} 
@@ -32,7 +32,12 @@ export default function FranchiseCard({ franchise, itemCount, itemLabel }) {
         </div>
 
         {/* Persistent top badges */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10">
+          {isUpdated && (
+            <Badge className="bg-green-600/90 hover:bg-green-600/90 text-white border-none text-[10px] uppercase font-bold tracking-wider shadow-lg">
+              Updated
+            </Badge>
+          )}
           <Badge variant="secondary" className="bg-primary/90 text-primary-foreground border-none text-[10px] uppercase font-bold tracking-wider shadow-lg">
             Collection
           </Badge>

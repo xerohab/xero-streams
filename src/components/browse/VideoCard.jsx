@@ -4,7 +4,7 @@ import { Clock, Film, Eye, Heart, Download } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
-export default function VideoCard({ video }) {
+export default function VideoCard({ video, isUpdated }) {
   const navigate = useNavigate();
 
   if (!video) return null;
@@ -50,8 +50,13 @@ export default function VideoCard({ video }) {
         </div>
 
         {/* Persistent top badges */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-          {video.episode_number && (
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10">
+          {isUpdated && (
+            <Badge className="bg-green-600/90 hover:bg-green-600/90 text-white border-none text-[10px] uppercase font-bold tracking-wider shadow-lg">
+              Updated
+            </Badge>
+          )}
+          {video.episode_number && video.content_type === "episode" && (
             <Badge variant="secondary" className="bg-black/70 backdrop-blur-sm text-white border-none text-[10px] uppercase font-bold tracking-wider">
               Ep {video.episode_number}
             </Badge>

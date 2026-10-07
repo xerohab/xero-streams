@@ -109,9 +109,14 @@ export default function Books() {
                         <div className="p-5 w-full flex-1 flex flex-col">
                           <h3 className="text-xl font-bold mb-2">{book.title}</h3>
                           {authors.find(a => a.id === book.author_id) && (
-                            <p className="text-sm font-semibold text-primary mb-2">
-                              By {authors.find(a => a.id === book.author_id).name}
-                            </p>
+                            <div className="mb-2 flex items-center justify-between">
+                              <p className="text-sm font-semibold text-primary">
+                                By {authors.find(a => a.id === book.author_id).name}
+                              </p>
+                              {authors.find(a => a.id === book.author_id).name.toLowerCase().includes("asher") && (
+                                <span className="bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[10px] uppercase font-bold">Exclusive</span>
+                              )}
+                            </div>
                           )}
                           <p className="text-sm text-muted-foreground mb-4 flex-1">{book.description}</p>
                           

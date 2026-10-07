@@ -125,6 +125,7 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
     setSaving(true);
     await base44.entities.Franchise.update(franchise.id, {
       ...form,
+      content_updated_at: new Date().toISOString(),
       category: form.category || undefined,
       parent_id: form.parent_id || undefined,
     });

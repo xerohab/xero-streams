@@ -201,6 +201,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], ope
     setSaving(true);
     await base44.entities.Video.update(video.id, {
       ...form,
+      content_updated_at: new Date().toISOString(),
       episode_number: form.episode_number ? Number(form.episode_number) : null,
       sort_order: form.sort_order !== "" ? Number(form.sort_order) : 0,
       series_id: form.series_id || null,

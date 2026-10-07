@@ -107,6 +107,11 @@
       "type": "number",
       "default": 0
     },
+    "content_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last genuine admin edit, used for 'UPDATED' badging"
+    },
     "subtitles": {
       "type": "array",
       "items": {

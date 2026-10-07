@@ -64,59 +64,6 @@ export default function Home() {
   const safeVideos = videos.filter((v) => !v.is_adult);
   const safeSeries = seriesList.filter((s) => !s.is_adult);
 
-  const allLatestVideos = safeVideos
-    .filter((v) => new Date(v.created_date) >= sevenDaysAgo)
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-
-  const latestItems = [];
-  const seriesUploadCount = {};
-
-  for (const v of allLatestVideos) {
-    if (v.series_id) {
-      seriesUploadCount[v.series_id] = (seriesUploadCount[v.series_id] || 0) + 1;
-    }
-  }
-
-  const seenSeriesIds = new Set();
-  
-  for (const v of allLatestVideos) {
-    if (v.series_id) {
-      if (!seenSeriesIds.has(v.series_id)) {
-        seenSeriesIds.add(v.series_id);
-        if (seriesUploadCount[v.series_id] > 1) {
-          const seriesObj = safeSeries.find(s => s.id === v.series_id);
-          if (seriesObj) {
-            latestItems.push({ type: 'series', data: seriesObj });
-          } else {
-            latestItems.push({ type: 'video', data: v });
-          }
-        } else {
-          latestItems.push({ type: 'video', data: v });
-        }
-      }
-    } else {
-      latestItems.push({ type: 'video', data: v });
-    }
-  }
-
-  const finalLatestItems = latestItems.slice(0, 6);
-
-  const mostWatchedVideos = safeVideos
-    .filter((v) => (v.views || 0) > 0)
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 6);
-
-  const mostWatchedSeriesArr = safeSeries
-    .filter((s) => (s.views || 0) > 0)
-    .sort((a, b) => (b.views || 0) - (a.views || 0))
-    .slice(0, 6);
-
-  // Movies: standalone movies only
-  // Exclude anything with a series_id
-  const movies = safeVideos.filter(
-    (v) => !v.series_id
-  );
-
   const getAllFranchiseIds = (fId, allFranchises) => {
     const ids = new Set([fId]);
     let added = true;
@@ -131,6 +78,94 @@ export default function Home() {
     }
     return Array.from(ids);
   };
+
+  const getTopLevelGroup = () => {
+    const topLevelMap = new Map();
+    
+    // Add all top-level franchises
+    const rootFranchises = franchises.filter(f => !f.parent_id && !f.is_adult);
+    rootFranchises.forEach(f => {
+       topLevelMap.set(f.id, { type: 'franchise', data: f, latestActivityAt: new Date(f.content_updated_at || f.created_date).getTime(), totalViews: f.views || 0 });
+    });
+
+    safeSeries.forEach(s => {
+       let rootFId = null;
+       if (s.franchise_id) {
+          const possibleF = franchises.find(f => f.id === s.franchise_id);
+          rootFId = possibleF ? (possibleF.parent_id || possibleF.id) : null;
+          while (rootFId) {
+             const parent = franchises.find(f => f.id === rootFId);
+             if (parent && parent.parent_id) rootFId = parent.parent_id;
+             else break;
+          }
+       }
+       const activity = new Date(s.content_updated_at || s.created_date).getTime();
+       if (rootFId && topLevelMap.has(rootFId)) {
+          const group = topLevelMap.get(rootFId);
+          group.latestActivityAt = Math.max(group.latestActivityAt, activity);
+          group.totalViews += (s.views || 0);
+       } else if (!rootFId) {
+          topLevelMap.set(s.id, { type: 'series', data: s, latestActivityAt: activity, totalViews: s.views || 0 });
+       }
+    });
+
+    safeVideos.forEach(v => {
+       let targetGroup = null;
+       
+       if (v.franchise_id) {
+          let rootFId = v.franchise_id;
+          while (rootFId) {
+             const parent = franchises.find(f => f.id === rootFId);
+             if (parent && parent.parent_id) rootFId = parent.parent_id;
+             else break;
+          }
+          if (rootFId && topLevelMap.has(rootFId)) {
+             targetGroup = topLevelMap.get(rootFId);
+          }
+       } else if (v.series_id) {
+          const s = safeSeries.find(s => s.id === v.series_id);
+          if (s && s.franchise_id) {
+             let rootFId = s.franchise_id;
+             while (rootFId) {
+                const parent = franchises.find(f => f.id === rootFId);
+                if (parent && parent.parent_id) rootFId = parent.parent_id;
+                else break;
+             }
+             if (rootFId && topLevelMap.has(rootFId)) targetGroup = topLevelMap.get(rootFId);
+          } else if (s && topLevelMap.has(s.id)) {
+             targetGroup = topLevelMap.get(s.id);
+          }
+       }
+       
+       const activity = new Date(v.content_updated_at || v.created_date).getTime();
+       if (targetGroup) {
+          targetGroup.latestActivityAt = Math.max(targetGroup.latestActivityAt, activity);
+          targetGroup.totalViews += (v.views || 0);
+       } else if (!v.series_id && !v.franchise_id) {
+          topLevelMap.set(v.id, { type: 'video', data: v, latestActivityAt: activity, totalViews: v.views || 0 });
+       }
+    });
+
+    return Array.from(topLevelMap.values());
+  };
+
+  const topLevelItems = getTopLevelGroup();
+
+  const finalLatestItems = topLevelItems
+    .filter(item => item.latestActivityAt >= sevenDaysAgo.getTime())
+    .sort((a, b) => b.latestActivityAt - a.latestActivityAt)
+    .slice(0, 10);
+
+  const finalMostWatchedItems = topLevelItems
+    .filter(item => item.totalViews > 0)
+    .sort((a, b) => b.totalViews - a.totalViews)
+    .slice(0, 10);
+
+  // Movies: standalone movies only
+  // Exclude anything with a series_id
+  const movies = safeVideos.filter(
+    (v) => !v.series_id
+  );
 
   // Franchises with content (safe only — no adult), newest first
   const franchisesWithContent = franchises
@@ -279,36 +314,28 @@ export default function Home() {
               <h2 className="text-lg md:text-xl font-bold text-foreground">Latest</h2>
             </div>
             <div className="px-6 md:px-16 grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
-              {finalLatestItems.map((item, i) => (
-                item.type === 'series' 
-                  ? <SeriesCard key={`series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} />
-                  : <VideoCard key={`video-${item.data.id}`} video={item.data} />
-              ))}
+              {finalLatestItems.map((item) => {
+                const isUpdated = item.latestActivityAt >= sevenDaysAgo.getTime();
+                if (item.type === 'franchise') return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} isUpdated={isUpdated} />;
+                if (item.type === 'series') return <SeriesCard key={`series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} isUpdated={isUpdated} />;
+                return <VideoCard key={`video-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
+              })}
             </div>
           </div>
         )}
 
         {/* Most Watched Row */}
-        {mostWatchedVideos.length > 0 && activeTab === "all" && (
-          <div className="mb-12">
-            <VideoRow 
-              title="Most Watched Movies & Episodes" 
-              videos={mostWatchedVideos} 
-            />
-          </div>
-        )}
-        
-        {mostWatchedSeriesArr.length > 0 && activeTab === "all" && (
+        {finalMostWatchedItems.length > 0 && activeTab === "all" && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Tv className="w-5 h-5 text-primary" /> Most Watched Series
-              </h2>
+              <h2 className="text-lg md:text-xl font-bold text-foreground">Most Watched</h2>
             </div>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
-              {mostWatchedSeriesArr.map((s) => (
-                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
-              ))}
+              {finalMostWatchedItems.map((item) => {
+                if (item.type === 'franchise') return <FranchiseCard key={`mw-franchise-${item.data.id}`} franchise={item.data} />;
+                if (item.type === 'series') return <SeriesCard key={`mw-series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} />;
+                return <VideoCard key={`mw-video-${item.data.id}`} video={item.data} />;
+              })}
             </div>
           </div>
         )}
@@ -352,7 +379,7 @@ export default function Home() {
                 const combined = [...franchiseItems, ...seriesItems]
                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                   .map((item) => item.el);
-                return activeTab === "all" ? combined.slice(0, 8) : combined;
+                return activeTab === "all" ? combined.slice(0, 10) : combined;
               })()}
             </div>
           </div>
@@ -385,7 +412,7 @@ export default function Home() {
                 const combined = [...franchiseItems, ...movieItems]
                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                   .map((item) => item.el);
-                return activeTab === "all" ? combined.slice(0, 8) : combined;
+                return activeTab === "all" ? combined.slice(0, 10) : combined;
               })()}
             </div>
           </div>

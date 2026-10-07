@@ -116,6 +116,7 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     setSaving(true);
     await base44.entities.Series.update(series.id, {
       ...form,
+      content_updated_at: new Date().toISOString(),
       sort_order: form.sort_order !== "" ? Number(form.sort_order) : 0,
     });
     toast.success("Series updated!");
