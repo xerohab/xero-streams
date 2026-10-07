@@ -13,7 +13,9 @@ export default function useHomeCatalog() {
   const safeSeries = series.filter((s) => !s.is_adult);
   const populated = (items) => items.filter((item) => item.type !== "franchise" || item.items > 0).sort((a, b) => b.latestActivityAt - a.latestActivityAt);
   const latest = populated(getCatalogMedia(franchises, safeSeries, safeVideos));
-  const tv = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series"));
-  const movies = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "video"));
-  return { rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroVideos: safeVideos.slice(0, 5), series, latest, tv, movies };
+  const franchiseFirst = (a, b) => Number(b.type === "franchise") - Number(a.type === "franchise") || b.latestActivityAt - a.latestActivityAt;
+  const tv = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series")).sort(franchiseFirst);
+  const movies = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "video")).sort(franchiseFirst);
+  const featured = safeVideos.filter((video) => video.is_featured);
+  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroVideos: featured.length ? featured.slice(0, 5) : safeVideos.slice(0, 1), videos: safeVideos, series: safeSeries, franchises, latest, tv, movies };
 }

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
 import MediaPreview from "@/components/browse/MediaPreview";
+import HomeHoverPreview from "@/components/browse/HomeHoverPreview";
 
 /** Floating, collision-aware Radix preview; never resizes the base card. */
-export default function MediaHoverOverlay({ children, ...props }) {
+export default function MediaHoverOverlay({ children, cinema = false, ...props }) {
   const [open, setOpen] = useState(false);
   const [desktop, setDesktop] = useState(false);
   const contentRef = useRef(null);
@@ -21,8 +22,8 @@ export default function MediaHoverOverlay({ children, ...props }) {
     <HoverCardPrimitive.Root open={desktop && open} onOpenChange={setOpen} openDelay={300} closeDelay={180}>
       <HoverCardPrimitive.Trigger ref={triggerRef} asChild onFocus={() => setOpen(true)} onBlur={blur} onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}>{children}</HoverCardPrimitive.Trigger>
       <HoverCardPrimitive.Portal>
-        <HoverCardPrimitive.Content ref={contentRef} side="right" align="start" sideOffset={10} collisionPadding={16} onFocus={() => setOpen(true)} onBlur={blur} onKeyDown={(e) => { if (e.key === "Escape") { setOpen(false); triggerRef.current?.focus(); } }} className="z-[100] w-[310px] max-w-[calc(100vw-32px)] rounded-xl border border-border bg-popover p-5 shadow-2xl outline-none">
-          <MediaPreview {...props} />
+        <HoverCardPrimitive.Content ref={contentRef} side="right" align="start" sideOffset={10} collisionPadding={16} onFocus={() => setOpen(true)} onBlur={blur} onKeyDown={(e) => { if (e.key === "Escape") { setOpen(false); triggerRef.current?.focus(); } }} className={`z-[100] w-[310px] max-w-[calc(100vw-32px)] rounded-xl border border-border bg-popover p-5 shadow-2xl outline-none ${cinema ? "home-cinema-preview" : ""}`}>
+          {cinema ? <HomeHoverPreview {...props} /> : <MediaPreview {...props} />}
         </HoverCardPrimitive.Content>
       </HoverCardPrimitive.Portal>
     </HoverCardPrimitive.Root>

@@ -4,21 +4,34 @@ import { Play, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/browse/StatusBadge";
 import WatchlistButton from "@/components/browse/WatchlistButton";
+import HomeWelcome from "@/components/browse/HomeWelcome";
 
-export default function HeroContent({ video, series }) {
+export default function HeroContent({ video, series, collection }) {
   const playable = video.video_url && !video.coming_soon;
+  const title = series ? collection?.title || series.title.replace(/\s+(?:Season|Series)\s+\d+$/i, "") : video.title;
+  const season = series?.title?.match(/(?:Series|Season)\s+(\d+)/i)?.[1];
+  const info = series ? `/series?id=${series.id}` : `/movie?id=${video.id}`;
+  const synopsis = video.description || series?.description || collection?.description;
   return (
-    <div className="max-w-2xl space-y-5">
-      <div className="flex flex-wrap items-center gap-2"><span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Xero Cinema</span><StatusBadge status={series ? "TV Series" : "Movie"} /></div>
-      {series && <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{series.title}</p>}
-      <h1 className="text-4xl font-black leading-tight tracking-tight text-foreground md:text-6xl">{video.title}</h1>
-      <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-muted-foreground">{video.release_year && <span>{video.release_year}</span>}{video.duration && <span>{video.duration}</span>}{series?.category && <span className="capitalize">{series.category}</span>}{video.quality && video.quality !== "Unknown" && <StatusBadge status={video.quality} />}</div>
-      {video.description && <p className="line-clamp-3 max-w-xl text-sm leading-relaxed text-foreground/75 md:text-base">{video.description}</p>}
-      <div className="flex flex-wrap gap-2.5 pt-1">
-        <Button asChild className="h-11 gap-2 rounded-lg px-6 text-xs font-bold uppercase tracking-wider"><Link to={playable ? `/watch?id=${video.id}` : series ? `/series?id=${series.id}` : `/movie?id=${video.id}`}><Play className="h-4 w-4 fill-current" />{playable ? "Watch Now" : "Coming Soon"}</Link></Button>
-        <WatchlistButton videoId={video.id} className="xero-action text-xs uppercase tracking-wider" label="My List" />
-        <Button asChild variant="secondary" className="xero-action text-xs uppercase tracking-wider"><Link to={series ? `/series?id=${series.id}` : `/movie?id=${video.id}`}><Info className="h-4 w-4" />More Info</Link></Button>
+    <div className="home-hero-copy">
+      <div className="home-hero-kicker">Xero Cinema · Now Showing</div>
+      <h1 className={`home-hero-title ${title.length > 28 ? "home-hero-title-long" : ""}`}>{title}</h1>
+      {series && video.title !== title && <p className="home-hero-episode">{video.title}</p>}
+      <div className="home-hero-meta">
+        <span>{series ? "TV SERIES" : "MOVIE"}</span>
+        {season && <span>SEASON {season}</span>}
+        {(video.release_year || series?.release_year) && <span>{video.release_year || series.release_year}</span>}
+        {video.duration && <span>{video.duration}</span>}
+        {series?.category && <span className="uppercase">{series.category}</span>}
+        {video.quality && video.quality !== "Unknown" && <StatusBadge status={video.quality} />}
       </div>
+      {synopsis && <p className="home-hero-synopsis">{synopsis}</p>}
+      <div className="home-hero-actions">
+        <Button asChild className="home-hero-primary"><Link to={playable ? `/watch?id=${video.id}` : info}><Play className="h-4 w-4 fill-current" />{playable ? "Watch Now" : "Coming Soon"}</Link></Button>
+        <WatchlistButton videoId={series ? null : video.id} seriesId={series?.id} className="home-hero-secondary" label="My List" />
+        <Button asChild variant="ghost" className="home-hero-secondary home-hero-info"><Link to={info}><Info className="h-4 w-4" />More Info</Link></Button>
+      </div>
+      <HomeWelcome />
     </div>
   );
 }
