@@ -9,6 +9,8 @@ import HomeBooksRow from "@/components/browse/HomeBooksRow";
 import useHomeCatalog from "@/components/browse/useHomeCatalog";
 import "@/components/browse/HomeCinema.css";
 
+export const XERO_HOME_BUILD = "CINEMA-HOME-01";
+
 export default function Home() {
   const catalog = useHomeCatalog();
   if (catalog.isLoading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -25,6 +27,9 @@ export default function Home() {
         {!catalog.latest.length && <p className="py-16 text-center text-muted-foreground">Content is coming soon. Check back later!</p>}
       </main>
       <Footer />
+      <div className="pointer-events-none fixed bottom-1 right-2 z-[60] text-[9px] tracking-wider text-muted-foreground/40 select-none">
+        XERO BUILD: {XERO_HOME_BUILD}
+      </div>
     </div>
   );
 }
