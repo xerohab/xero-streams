@@ -145,7 +145,7 @@ export default function FranchiseDetail() {
             <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
               <Film className="w-5 h-5 text-primary" /> Collections
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {subFranchises.map((f) => (
                 <FranchiseCard key={f.id} franchise={f} itemCount={
                   allSeries.filter((s) => s.franchise_id === f.id).length +
@@ -163,7 +163,7 @@ export default function FranchiseDetail() {
             <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
               <Tv className="w-5 h-5 text-primary" /> Series
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {franchiseSeries.map((s) => (
                 <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
               ))}
@@ -177,7 +177,7 @@ export default function FranchiseDetail() {
             <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
               <Film className="w-5 h-5 text-primary" /> Movies
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {franchiseMovies.map((v) => (
                 <VideoCard key={v.id} video={v} />
               ))}
