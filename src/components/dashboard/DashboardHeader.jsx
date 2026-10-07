@@ -1,0 +1,43 @@
+import React from "react";
+import { LogOut, User } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import StatusBadge from "@/components/browse/StatusBadge";
+
+export default function DashboardHeader({ user, activeSub, activePlan, stats }) {
+  return (
+    <header className="flex flex-col gap-5 pb-6 sm:flex-row sm:items-center">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-primary/15">
+        <User className="h-7 w-7 text-primary" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <h1 className="text-2xl font-black uppercase tracking-[0.12em] text-foreground md:text-3xl">My Xero</h1>
+        <p className="truncate text-sm text-muted-foreground">Welcome back, {user.full_name || "User"}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {activeSub ? (
+            <>
+              <StatusBadge status="PREMIUM" />
+              <span className="text-xs font-semibold text-muted-foreground">{activePlan?.name || "Pro"} Subscriber</span>
+            </>
+          ) : (
+            <span className="rounded border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Free User</span>
+          )}
+          <span className="rounded border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{user.role}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-6">
+        {stats.map(({ label, value }) => (
+          <div key={label} className="text-center">
+            <p className="text-xl font-black text-primary">{value}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+          </div>
+        ))}
+        <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={() => base44.auth.logout()}>
+          <LogOut className="h-4 w-4" /> Sign Out
+        </Button>
+      </div>
+    </header>
+  );
+}

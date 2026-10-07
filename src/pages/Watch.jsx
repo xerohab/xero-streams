@@ -522,7 +522,7 @@ export default function Watch() {
         </div>
 
         {/* Video info */}
-        <div className="max-w-7xl mx-auto px-6 md:px-16 py-8">
+        <div className="xero-container max-w-7xl py-8">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
