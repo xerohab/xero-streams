@@ -114,7 +114,7 @@ img:not([data-allow-context]) {
 
   /* Poster and episode widths never expand to fill an incomplete row. */
   .xero-media-card { width: 100%; max-width: 160px; }
-  .xero-episode-card { width: 100%; min-width: 0; max-width: 280px; }
+  .xero-episode-card { width: 100%; min-width: 0; max-width: 200px; }
   .xero-media-grid {
     display: grid;
     gap: 1rem 0.75rem;
@@ -125,15 +125,15 @@ img:not([data-allow-context]) {
   .xero-episode-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: minmax(0, 300px);
+    grid-template-columns: minmax(0, 200px);
     justify-content: start;
   }
   @media (min-width: 480px) {
-    .xero-episode-grid { grid-template-columns: repeat(2, minmax(0, 280px)); }
+    .xero-episode-grid { grid-template-columns: repeat(2, minmax(0, 200px)); }
   }
   @media (min-width: 640px) {
     .xero-media-grid { gap: 1.25rem 0.875rem; grid-template-columns: repeat(auto-fill, 150px); }
-    .xero-episode-grid { grid-template-columns: repeat(auto-fill, minmax(0, 280px)); }
+    .xero-episode-grid { grid-template-columns: repeat(auto-fill, minmax(0, 200px)); }
   }
   @media (min-width: 1024px) {
     .xero-media-grid { grid-template-columns: repeat(auto-fill, 150px); }
