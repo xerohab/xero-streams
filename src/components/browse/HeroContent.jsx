@@ -4,7 +4,6 @@ import { Play, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "@/components/browse/StatusBadge";
 import WatchlistButton from "@/components/browse/WatchlistButton";
-import HomeWelcome from "@/components/browse/HomeWelcome";
 
 export default function HeroContent({ video, series, collection }) {
   const playable = video.video_url && !video.coming_soon;
@@ -31,7 +30,6 @@ export default function HeroContent({ video, series, collection }) {
         <WatchlistButton videoId={series ? null : video.id} seriesId={series?.id} className="home-hero-secondary" label="My List" />
         <Button asChild variant="ghost" className="home-hero-secondary home-hero-info"><Link to={info}><Info className="h-4 w-4" />More Info</Link></Button>
       </div>
-      <HomeWelcome />
     </div>
   );
 }
