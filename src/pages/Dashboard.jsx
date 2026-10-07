@@ -540,7 +540,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 justify-center">
           {[
             { label: "Browse All", icon: Home, to: "/" },
             { label: "Movies", icon: Film, to: "/?tab=movies" },
@@ -564,7 +564,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-primary" /> Continue Watching
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 justify-center">
               {cwVideos.map(({ video, percent, currentTime }) => (
                 <Link key={video.id} to={`/watch?id=${video.id}`}>
                   <div className="relative rounded-lg overflow-hidden bg-secondary group cursor-pointer hover:ring-2 hover:ring-primary transition-all">
@@ -661,7 +661,7 @@ export default function Dashboard() {
               {favouriteVideos.length > 0 && (
                 <div>
                   <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Film className="w-4 h-4" /> Movies & Episodes</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 justify-center">
                     {favouriteVideos.map((video) => (
                       <Link key={video.id} to={`/watch?id=${video.id}`}>
                         <div className="relative rounded-lg overflow-hidden bg-secondary group cursor-pointer hover:ring-2 hover:ring-primary transition-all">
@@ -692,7 +692,7 @@ export default function Dashboard() {
               {favouriteSeries.length > 0 && (
                 <div>
                   <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Tv className="w-4 h-4" /> TV Series</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 justify-center">
                     {favouriteSeries.map(s => (
                       <SeriesCard key={s.id} series={s} />
                     ))}
@@ -703,7 +703,7 @@ export default function Dashboard() {
               {favouriteFranchises.length > 0 && (
                 <div>
                   <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Film className="w-4 h-4" /> Franchises / Collections</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 justify-center">
                     {favouriteFranchises.map(f => (
                       <FranchiseCard key={f.id} franchise={f} />
                     ))}
@@ -720,7 +720,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-green-400" /> Watched
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 justify-center">
               {completedVideos.slice(0, 8).map((video) => (
                 <Link key={video.id} to={`/watch?id=${video.id}`}>
                   <div className="relative rounded-lg overflow-hidden bg-secondary group cursor-pointer hover:ring-2 hover:ring-primary transition-all">
