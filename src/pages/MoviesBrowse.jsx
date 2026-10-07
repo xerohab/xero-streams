@@ -25,12 +25,12 @@ export default function MoviesBrowse() {
 
   const { data: videos = [], isLoading: isLoadingVideos } = useQuery({
     queryKey: ["movies_browse_videos"],
-    queryFn: () => base44.entities.Video.filter({ content_type: "movie", is_adult: false }, "-created_date")
+    queryFn: () => base44.entities.Video.filter({ content_type: "movie", is_adult: false }, "-updated_date", 2000)
   });
   
   const { data: franchises = [], isLoading: isLoadingFranchises } = useQuery({
     queryKey: ["movies_browse_franchises"],
-    queryFn: () => base44.entities.Franchise.list() // Load all franchises
+    queryFn: () => base44.entities.Franchise.list("-updated_date", 1000)
   });
 
   const isLoading = isLoadingVideos || isLoadingFranchises;

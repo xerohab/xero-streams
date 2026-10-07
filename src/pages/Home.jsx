@@ -40,17 +40,17 @@ export default function Home() {
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("-created_date"),
+    queryFn: () => base44.entities.Video.list("-updated_date", 2000),
   });
 
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list("-created_date"),
+    queryFn: () => base44.entities.Series.list("-updated_date", 1000),
   });
 
   const { data: franchises = [] } = useQuery({
     queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list("-created_date"),
+    queryFn: () => base44.entities.Franchise.list("-updated_date", 1000),
   });
 
   const isLoading = loadingVideos || loadingSeries;

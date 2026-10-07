@@ -40,7 +40,7 @@ export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdat
               Updated
             </Badge>
           )}
-          <Badge variant="secondary" className="bg-primary/90 text-primary-foreground border-none text-[10px] uppercase font-bold tracking-wider shadow-lg">
+          <Badge variant="secondary" className="bg-black/90 text-primary border border-primary/50 text-[10px] uppercase font-bold tracking-wider shadow-lg">
             Collection
           </Badge>
         </div>
@@ -58,7 +58,7 @@ export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdat
           {franchise.title}
         </h3>
         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground font-medium">
-          {itemCount > 0 ? <span>{itemCount} {itemLabel || "Titles"}</span> : null}
+          {itemCount > 0 ? <span>{itemCount} {itemCount === 1 ? (itemLabel ? itemLabel.replace(/s$/, '') : "Title") : (itemLabel || "Titles")}</span> : null}
         </div>
       </div>
     </Link>

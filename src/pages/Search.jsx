@@ -33,9 +33,9 @@ export default function Search() {
     setCurrentPage(1);
   };
 
-  const { data: videos = [] } = useQuery({ queryKey: ["videos"], queryFn: () => base44.entities.Video.list("-created_date") });
-  const { data: seriesList = [] } = useQuery({ queryKey: ["series"], queryFn: () => base44.entities.Series.list() });
-  const { data: franchises = [] } = useQuery({ queryKey: ["franchises"], queryFn: () => base44.entities.Franchise.list() });
+  const { data: videos = [] } = useQuery({ queryKey: ["videos"], queryFn: () => base44.entities.Video.list("-updated_date", 2000) });
+  const { data: seriesList = [] } = useQuery({ queryKey: ["series"], queryFn: () => base44.entities.Series.list("-updated_date", 1000) });
+  const { data: franchises = [] } = useQuery({ queryKey: ["franchises"], queryFn: () => base44.entities.Franchise.list("-updated_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
 
   const results = useMemo(() => {

@@ -1,3 +1,17 @@
+export function toActivityTimestamp(value) {
+  if (!value) return 0;
+  const parsed = new Date(value).getTime();
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function getEntityActivity(entity) {
+  const timestamps = [
+    toActivityTimestamp(entity.created_date),
+    toActivityTimestamp(entity.content_updated_at)
+  ].filter(Boolean);
+  return timestamps.length > 0 ? Math.max(...timestamps) : 0;
+}
+
 export function getTopLevelMedia(franchises = [], series = [], videos = []) {
   const topLevelMap = new Map();
   
@@ -7,7 +21,7 @@ export function getTopLevelMedia(franchises = [], series = [], videos = []) {
      topLevelMap.set(f.id, { 
        type: 'franchise', 
        data: f, 
-       latestActivityAt: new Date(f.content_updated_at || f.created_date || 0).getTime(), 
+       latestActivityAt: getEntityActivity(f), 
        totalViews: f.views || 0, 
        items: 0 
      });
@@ -27,7 +41,7 @@ export function getTopLevelMedia(franchises = [], series = [], videos = []) {
         }
      }
      
-     const activity = new Date(s.content_updated_at || s.created_date || 0).getTime();
+     const activity = getEntityActivity(s);
      if (rootFId && topLevelMap.has(rootFId)) {
         const group = topLevelMap.get(rootFId);
         group.latestActivityAt = Math.max(group.latestActivityAt, activity);
@@ -78,7 +92,7 @@ export function getTopLevelMedia(franchises = [], series = [], videos = []) {
         }
      }
      
-     const activity = new Date(v.content_updated_at || v.created_date || 0).getTime();
+     const activity = getEntityActivity(v);
      if (targetGroup) {
         targetGroup.latestActivityAt = Math.max(targetGroup.latestActivityAt, activity);
         targetGroup.totalViews += (v.views || 0);
@@ -97,14 +111,14 @@ export function getTopLevelMedia(franchises = [], series = [], videos = []) {
 }
 
 export function getItemActivityAt(item, franchises = [], series = [], videos = []) {
-  let latest = new Date(item.content_updated_at || item.created_date || 0).getTime();
+  let latest = getEntityActivity(item);
   
   if (item.cover_image && !item.cast) {
      // Franchise
      const mySeries = series.filter(s => s.franchise_id === item.id);
      const myVideos = videos.filter(v => v.franchise_id === item.id || (v.series_id && mySeries.some(s => s.id === v.series_id)));
      [...mySeries, ...myVideos].forEach(child => {
-       const childAct = new Date(child.content_updated_at || child.created_date || 0).getTime();
+       const childAct = getEntityActivity(child);
        if (childAct > latest) latest = childAct;
      });
      // Also check child franchises
@@ -117,7 +131,7 @@ export function getItemActivityAt(item, franchises = [], series = [], videos = [
      // Series
      const myVideos = videos.filter(v => v.series_id === item.id);
      myVideos.forEach(child => {
-       const childAct = new Date(child.content_updated_at || child.created_date || 0).getTime();
+       const childAct = getEntityActivity(child);
        if (childAct > latest) latest = childAct;
      });
   }

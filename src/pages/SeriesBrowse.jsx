@@ -24,12 +24,12 @@ export default function SeriesBrowse() {
 
   const { data: seriesList = [], isLoading: isLoadingSeries } = useQuery({
     queryKey: ["series_browse"],
-    queryFn: () => base44.entities.Series.filter({ is_adult: false }, "-created_date")
+    queryFn: () => base44.entities.Series.filter({ is_adult: false }, "-updated_date", 1000)
   });
   
   const { data: franchises = [], isLoading: isLoadingFranchises } = useQuery({
     queryKey: ["series_browse_franchises"],
-    queryFn: () => base44.entities.Franchise.list()
+    queryFn: () => base44.entities.Franchise.list("-updated_date", 1000)
   });
 
   const isLoading = isLoadingSeries || isLoadingFranchises;

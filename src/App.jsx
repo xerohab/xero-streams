@@ -36,17 +36,10 @@ const AuthenticatedApp = () => {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (user?.theme_color) {
-      const color = user.theme_color;
-      if (color === 'blue') { root.style.setProperty('--primary', '221.2 83.2% 53.3%'); root.style.setProperty('--ring', '221.2 83.2% 53.3%'); }
-      else if (color === 'green') { root.style.setProperty('--primary', '142.1 76.2% 36.3%'); root.style.setProperty('--ring', '142.1 76.2% 36.3%'); }
-      else if (color === 'purple') { root.style.setProperty('--primary', '262.1 83.3% 57.8%'); root.style.setProperty('--ring', '262.1 83.3% 57.8%'); }
-      else if (color === 'red') { root.style.setProperty('--primary', '0 72% 51%'); root.style.setProperty('--ring', '0 72% 51%'); }
-      else { root.style.setProperty('--primary', '45 93% 47%'); root.style.setProperty('--ring', '45 93% 47%'); }
-    } else {
-      root.style.setProperty('--primary', '45 93% 47%'); root.style.setProperty('--ring', '45 93% 47%');
-    }
-  }, [user?.theme_color]);
+    // Standardise Xero Streams primary accent to Gold/Amber
+    root.style.setProperty('--primary', '45 93% 47%'); 
+    root.style.setProperty('--ring', '45 93% 47%');
+  }, []);
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {

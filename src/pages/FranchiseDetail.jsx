@@ -10,6 +10,7 @@ import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
+import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function FranchiseDetail() {
   const location = useLocation();
@@ -41,17 +42,17 @@ export default function FranchiseDetail() {
 
   const { data: allSeries = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(),
+    queryFn: () => base44.entities.Series.list(undefined, 1000),
   });
 
   const { data: allVideos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("sort_order"),
+    queryFn: () => base44.entities.Video.list("sort_order", 2000),
   });
 
   const { data: allFranchises = [], isLoading: loadingFranchises } = useQuery({
     queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list("-created_date"),
+    queryFn: () => base44.entities.Franchise.list("-updated_date", 1000),
   });
 
   const { data: premiumSubs = [] } = useQuery({
@@ -151,7 +152,7 @@ export default function FranchiseDetail() {
                   allSeries.filter((s) => s.franchise_id === f.id).length +
                   allVideos.filter((v) => v.franchise_id === f.id).length +
                   allFranchises.filter((sub) => sub.parent_id === f.id).length
-                } itemLabel="Items" />
+                } itemLabel="Items" isUpdated={isRecentlyUpdated(getItemActivityAt(f, allFranchises, allSeries, allVideos))} />
               ))}
             </div>
           </div>
@@ -165,7 +166,7 @@ export default function FranchiseDetail() {
             </h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {franchiseSeries.map((s) => (
-                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
+                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} isUpdated={isRecentlyUpdated(getItemActivityAt(s, allFranchises, allSeries, allVideos))} />
               ))}
             </div>
           </div>
@@ -179,7 +180,7 @@ export default function FranchiseDetail() {
             </h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {franchiseMovies.map((v) => (
-                <VideoCard key={v.id} video={v} />
+                <VideoCard key={v.id} video={v} isUpdated={isRecentlyUpdated(getItemActivityAt(v, allFranchises, allSeries, allVideos))} />
               ))}
             </div>
           </div>
