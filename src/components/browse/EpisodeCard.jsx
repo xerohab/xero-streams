@@ -1,24 +1,42 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Download as DownloadIcon, CheckCircle, Clock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Play, Download as DownloadIcon, Check, Clock, X } from "lucide-react";
 import StatusBadge from "@/components/browse/StatusBadge";
 import { getProgress } from "@/hooks/useContinueWatching";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
+import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 import toast from "react-hot-toast";
 
-export default function EpisodeCard({ video, isPremium }) {
+/**
+ * The single 16:9 episode card used by SeriesDetail, Watch, Continue Watching,
+ * and My Xero (Continue / My List / History).
+ *
+ * Optional props (for entries that are not full Video records, e.g. Continue Watching):
+ *  - playable: force playable state
+ *  - href: override destination
+ *  - onRemove: shows a remove button
+ *  - watched: force the "Watched" state
+ */
+export default function EpisodeCard({ video, isPremium, watched = false, playable, href: hrefProp, onRemove }) {
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   if (!video) return null;
-  const isComingSoon = video.coming_soon || !video.video_url;
-  const href = `/watch?id=${video.id}`;
-  
+  const isComingSoon = playable === undefined ? video.coming_soon || !video.video_url : !playable;
+  const href = hrefProp || `/watch?id=${video.id}`;
+
   const savedProgress = getProgress(video.id);
-  const watchedPct = savedProgress ? Math.min(100, Math.round((savedProgress.currentTime / savedProgress.duration) * 100)) : 0;
-  const isWatched = watchedPct > 90;
+  const watchedPct =
+    savedProgress && savedProgress.duration
+      ? Math.min(100, Math.round((savedProgress.currentTime / savedProgress.duration) * 100))
+      : 0;
+  const isWatched = watched || watchedPct > 90;
+  const inProgress = !!savedProgress && !isWatched;
+
+  const isNew = isRecentlyUpdated(toActivityTimestamp(video.created_date));
+  const isUpdated = !isNew && isRecentlyUpdated(toActivityTimestamp(video.content_updated_at));
+  const canDownload = isPremium && !isComingSoon && !!video.video_url;
 
   const handleDownload = async (e) => {
     e.preventDefault();
@@ -29,10 +47,10 @@ export default function EpisodeCard({ video, isPremium }) {
     const toastId = toast.loading(`Preparing download for ${video.title}...`);
     try {
       await downloadSingleVideo(video.id, (p) => {
-         setProgress(p);
-         if (p < 100) {
-            toast.loading(`Downloading... ${p}%`, { id: toastId });
-         }
+        setProgress(p);
+        if (p < 100) {
+          toast.loading(`Downloading... ${p}%`, { id: toastId });
+        }
       });
       toast.success("Download complete!", { id: toastId });
     } catch (err) {
@@ -48,78 +66,104 @@ export default function EpisodeCard({ video, isPremium }) {
     if (!isComingSoon) navigate(href);
   };
 
+  const handleRemove = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onRemove(video.id);
+  };
+
   return (
-    <Link 
-      to={href} 
-      onClick={handleClick} 
-      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10 bg-card border border-transparent hover:border-border/50 max-w-[300px] w-full mx-auto"
-    >
-      <div className="relative aspect-video w-full bg-secondary/30 overflow-hidden shadow-inner rounded-xl">
+    <div className="group relative w-full max-w-[300px]">
+      <Link
+        to={href}
+        onClick={handleClick}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="relative block aspect-video overflow-hidden rounded-lg bg-card ring-1 ring-border transition-all duration-300 group-hover:shadow-xl group-hover:shadow-black/70 group-hover:ring-primary/70 group-focus-within:ring-primary/70"
+      >
         {video.thumbnail_url ? (
-          <img 
-            src={video.thumbnail_url} 
-            alt={video.title}
-            loading="lazy" 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          <img
+            src={video.thumbnail_url}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground bg-secondary/20">
-            <Play className="w-8 h-8 opacity-20" />
+          <div className="flex h-full w-full items-center justify-center bg-secondary/30 text-muted-foreground">
+            <Play className="h-8 w-8 opacity-20" />
           </div>
         )}
-        
-        {/* Dark overlay that appears on hover */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
-           <div className="w-12 h-12 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
-             <Play className="w-5 h-5 fill-current ml-1" />
-           </div>
-           {isPremium && !isComingSoon && video.video_url && (
-             <button
-                type="button"
-                onClick={handleDownload}
-                disabled={downloading}
-                className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300 backdrop-blur-md"
-             >
-                {downloading ? <span className="text-xs font-bold">{progress}%</span> : <DownloadIcon className="w-5 h-5" />}
-             </button>
-           )}
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
+
+        {!isComingSoon && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-focus-within:opacity-100 group-hover:opacity-100">
+            <span className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wide text-primary-foreground shadow-lg shadow-black/60">
+              <Play className="h-3.5 w-3.5 fill-current" />
+              {inProgress ? "Resume" : "Play"}
+            </span>
+          </div>
+        )}
+
+        <div className="pointer-events-none absolute left-2 top-2 z-10 flex flex-wrap items-center gap-1">
+          {video.episode_number ? <StatusBadge status={`EP ${video.episode_number}`} /> : null}
+          {isNew && <StatusBadge status="NEW" />}
+          {isUpdated && <StatusBadge status="UPDATED" />}
+          {isComingSoon && <StatusBadge status="Coming Soon" />}
         </div>
 
-        {/* Persistent top badges */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10">
-          {video.episode_number && (
-            <StatusBadge status={`EP ${video.episode_number}`} />
-          )}
-          {isComingSoon && (
-            <StatusBadge status="Coming Soon" className="text-amber-400 border-amber-500/50 border bg-black/90" />
-          )}
-        </div>
-
-        {isWatched && (
-          <div className="absolute top-2 right-2">
-            <CheckCircle className="w-5 h-5 text-green-500 drop-shadow-md" />
+        {inProgress && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
+            <div className="h-full bg-primary" style={{ width: `${watchedPct}%` }} />
           </div>
         )}
+      </Link>
 
-        {/* Progress bar */}
-        {savedProgress && !isWatched && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
-            <div className="h-full bg-primary" style={{ width: `${watchedPct}%` }}></div>
-          </div>
-        )}
-      </div>
-      
-      <div className="px-2 pb-2">
-        <h3 className="font-bold text-foreground text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+      {canDownload && (
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={downloading}
+          aria-label={`Download ${video.title}`}
+          className="absolute right-2 top-2 z-20 flex h-8 min-w-8 items-center justify-center rounded-full border border-white/15 bg-black/75 px-1 text-primary opacity-0 shadow-lg backdrop-blur-sm transition-all hover:bg-primary hover:text-primary-foreground focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+        >
+          {downloading ? <span className="px-1 text-[10px] font-bold">{progress}%</span> : <DownloadIcon className="h-4 w-4" />}
+        </button>
+      )}
+
+      {onRemove && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          aria-label={`Remove ${video.title}`}
+          className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-black/75 text-white opacity-0 transition-opacity hover:bg-black focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+
+      <Link to={href} onClick={handleClick} className="mt-2 block rounded outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
           {video.title}
         </h3>
-        {video.duration && (
-          <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{video.duration}</span>
-          </div>
+        {(video.duration || isWatched || inProgress) && (
+          <p className="mt-0.5 flex items-center gap-2.5 text-[11px] font-medium text-muted-foreground">
+            {video.duration && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {video.duration}
+              </span>
+            )}
+            {isWatched && (
+              <span className="flex items-center gap-1 text-primary">
+                <Check className="h-3 w-3" />
+                Watched
+              </span>
+            )}
+            {inProgress && <span className="text-primary">{watchedPct}% watched</span>}
+          </p>
         )}
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }

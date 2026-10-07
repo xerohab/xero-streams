@@ -105,3 +105,62 @@ img:not([data-allow-context]) {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ---------- Xero Cinema layout primitives ---------- */
+@layer components {
+  .xero-container {
+    @apply mx-auto w-full max-w-[2000px] px-4 sm:px-6 md:px-12 lg:px-16;
+  }
+
+  /*
+   * Fixed-width tracks (never 1fr) so cards keep a controlled size and extra
+   * row space stays empty instead of enlarging the cards.
+   * Poster cards: 140px -> 150px -> 160px. Mobile: 3 fixed columns.
+   */
+  .xero-media-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: start;
+  }
+
+  /* 16:9 episode cards: 260px -> 280px. Mobile: 1-2 columns, capped by the card. */
+  .xero-episode-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: start;
+  }
+
+  @media (min-width: 480px) {
+    .xero-episode-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 640px) {
+    .xero-media-grid {
+      gap: 1rem 1.25rem;
+      grid-template-columns: repeat(auto-fill, 140px);
+    }
+    .xero-episode-grid {
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, 260px);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .xero-media-grid {
+      grid-template-columns: repeat(auto-fill, 150px);
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .xero-media-grid {
+      grid-template-columns: repeat(auto-fill, 160px);
+    }
+    .xero-episode-grid {
+      grid-template-columns: repeat(auto-fill, 280px);
+    }
+  }
+}

@@ -1,10 +1,8 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Clock, Film, Eye, Heart, Download } from "lucide-react";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { Film, Play } from "lucide-react";
+import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
-import MediaHoverOverlay from "@/components/browse/MediaHoverOverlay";
 
 export default function VideoCard({ video, isUpdated }) {
   const navigate = useNavigate();
@@ -19,74 +17,26 @@ export default function VideoCard({ video, isUpdated }) {
     else navigate(href);
   };
 
-  return (
-    <MediaHoverOverlay item={video} type="video" isUpdated={isUpdated}>
-    <Link 
-      to={href} 
-      onClick={handleClick} 
-      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50 max-w-[180px] w-full mx-auto"
-    >
-      <div className="relative aspect-[2/3] w-full bg-secondary/30 rounded-xl overflow-hidden shadow-inner">
-        {video.thumbnail_url ? (
-          <img 
-            src={video.thumbnail_url} 
-            alt={video.title}
-            loading="lazy" 
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <Film className="w-10 h-10 opacity-30" />
-          </div>
-        )}
-        
-        {/* Dark overlay that appears on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-             <button className="w-full bg-primary text-primary-foreground font-bold text-sm py-2 rounded-full mb-2 flex items-center justify-center gap-2">
-               <PlayIcon className="w-4 h-4 fill-current" /> Play
-             </button>
-             {video.quality && video.quality !== "Unknown" && (
-                <span className="text-xs font-bold text-primary bg-primary/20 px-2 py-0.5 rounded border border-primary/30 uppercase">{video.quality}</span>
-             )}
-          </div>
-        </div>
+  const year = video.release_year || (video.release_date ? new Date(video.release_date).getFullYear() : null);
 
-        {/* Persistent top badges */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10">
+  return (
+    <MediaCard
+      to={href}
+      onClick={handleClick}
+      image={video.thumbnail_url}
+      alt={video.title}
+      title={video.title}
+      FallbackIcon={Film}
+      HoverIcon={Play}
+      meta={[year, video.duration]}
+      badges={
+        <>
           {isUpdated && <StatusBadge status="UPDATED" />}
-          {video.episode_number && video.content_type === "episode" && (
-            <StatusBadge status={`Ep ${video.episode_number}`} />
-          )}
-          {isComingSoon && (
-            <StatusBadge status="Coming Soon" className="text-amber-400 border-amber-500/50 border bg-black/90" />
-          )}
-        </div>
-      </div>
-      
-      <div className="px-1 py-1">
-        <h3 className="font-bold text-foreground text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-          {video.title}
-        </h3>
-        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground font-medium">
-          {video.release_year ? <span>{video.release_year}</span> : (video.release_date && <span>{new Date(video.release_date).getFullYear()}</span>)}
-          {video.duration && (
-            <>
-              <span className="w-1 h-1 rounded-full bg-border"></span>
-              <span>{video.duration}</span>
-            </>
-          )}
-        </div>
-      </div>
-    </Link>
-    </MediaHoverOverlay>
-  );
-}
-
-function PlayIcon(props) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-      <polygon points="5 3 19 12 5 21 5 3" />
-    </svg>
+          {video.episode_number && video.content_type === "episode" && <StatusBadge status={`Ep ${video.episode_number}`} />}
+          {isComingSoon && <StatusBadge status="Coming Soon" />}
+        </>
+      }
+      popover={{ item: video, type: "video", isUpdated }}
+    />
   );
 }
