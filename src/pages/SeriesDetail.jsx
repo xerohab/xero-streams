@@ -34,6 +34,11 @@ export default function SeriesDetail() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (series) document.title = `${series.title} | Xero Streams`;
+    return () => { document.title = "Xero Streams"; };
+  }, [series]);
+
   const isFavourited = user?.favourite_series?.includes(seriesId) ?? false;
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
@@ -168,8 +173,8 @@ export default function SeriesDetail() {
         </Button>
       </DetailHero>
 
-      <main className="xero-container flex-1 space-y-10 pb-16 pt-8">
-        {seasons.length > 1 && <section className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4"><h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Season Selector</h2><SeasonSelect currentId={seriesId} seasons={seasons} /></section>}
+      <main className="xero-container flex-1 space-y-8 pb-12 pt-6">
+        {seasons.length > 1 && <section className="flex flex-wrap items-center gap-4 rounded-lg border border-border/60 bg-card/40 p-3"><h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Season</h2><SeasonSelect currentId={seriesId} seasons={seasons} /></section>}
         {sortedEpisodes.length > 0 ? (
           <section>
             <SectionHeader
@@ -177,7 +182,7 @@ export default function SeriesDetail() {
               subtitle={`${sortedEpisodes.length} episode${sortedEpisodes.length !== 1 ? "s" : ""}`}
             />
             {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
-              <p className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              <p className="mb-5 flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">
                 <DownloadIcon className="h-5 w-5 shrink-0 text-primary" />
                 <span>
                   Downloading is available for premium members. Hover over an episode to save it for offline viewing.

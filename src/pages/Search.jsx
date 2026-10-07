@@ -129,11 +129,11 @@ export default function Search() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="xero-container min-h-[70vh] pb-16 pt-24">
-        <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <button onClick={() => navigate(-1)} className="mb-5 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
 
-        <header className="mb-8 border-b border-border pb-5"><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Xero Cinema / Discover</p><SectionHeader level={1} title="Search" subtitle="Find movies, series, collections and books in one library." className="mb-0" /></header>
+        <header className="xero-page-header"><p className="xero-kicker">Xero Cinema / Discover</p><SectionHeader level={1} title="Search" subtitle="Find movies, series, collections and books in one library." className="mb-0" /></header>
 
         <SearchFilters
           query={query} onQuery={setQuery}

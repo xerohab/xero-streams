@@ -15,8 +15,8 @@ export default function Home() {
   return (
     <div className="home-cinema pb-16 md:pb-0">
       <Navbar />
-      {catalog.rows.includes("hero") && <HeroSection videos={catalog.heroVideos} seriesList={catalog.series} franchises={catalog.franchises} />}
-      <main className={`home-container pb-6 ${catalog.heroVideos.length && catalog.rows.includes("hero") ? "" : "pt-28"}`}>
+      {catalog.rows.includes("hero") && catalog.heroSlides.length > 0 && <HeroSection slides={catalog.heroSlides} />}
+      <main className={`home-container pb-6 ${catalog.heroSlides.length && catalog.rows.includes("hero") ? "" : "pt-28"}`}>
         {catalog.user && catalog.rows.includes("continue_watching") && <HomeContinueWatching videos={catalog.videos} series={catalog.series} />}
         {catalog.rows.includes("latest") && <HomeMediaSection title="Recently Added & Updated" items={catalog.latest} to="/search" id="home-recent" />}
         {catalog.rows.includes("tv") && <HomeMediaSection title="TV Series" items={catalog.tv} to="/tv-series" id="home-series" />}

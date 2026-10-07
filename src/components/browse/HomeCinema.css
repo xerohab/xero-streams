@@ -1,11 +1,10 @@
-/* Home-only cinematic presentation. No other page, token, card or grid is restyled. */
+/* Home-only presentation: hero, section headers, and Home-specific layout.
+   Card/grid/footer compact sizes are now global in index.css. */
 .home-cinema { min-height: 100vh; overflow-x: clip; background: hsl(var(--background)); color: hsl(var(--foreground)); }
-
-/* ── Content width: ~4vw side padding for wide cinematic canvas ── */
 .home-cinema .home-container { width: 100%; padding-inline: clamp(16px, 4vw, 64px); }
 .home-cinema nav > div { padding-inline: clamp(16px, 4vw, 64px); padding-block: 10px; }
 
-/* ── Hero: full-width cinematic backdrop ── */
+/* ── Hero ── */
 .home-cinema .home-hero { position: relative; isolation: isolate; height: 540px; overflow: hidden; background: hsl(var(--background)); }
 .home-cinema .home-hero-artwork { position: absolute; inset: 0; height: 100%; width: 100%; object-fit: cover; object-position: 65% 28%; }
 .home-cinema .home-hero-shade { position: absolute; inset: 0; background: hsl(var(--background) / .12); }
@@ -13,17 +12,12 @@
 .home-cinema .home-hero-bottom { position: absolute; inset: 0; background: linear-gradient(0deg, hsl(var(--background)) 0%, hsl(var(--background) / .88) 5%, transparent 36%); }
 .home-cinema .home-hero-inner { position: relative; display: flex; align-items: center; height: 100%; padding-top: 36px; }
 .home-cinema .home-hero-copy { width: min(560px, 52%); }
-
-/* ── Hero typography ── */
 .home-cinema .home-hero-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; color: hsl(var(--primary)); font-size: 10px; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; }
 .home-cinema .home-hero-kicker::before { content: ""; width: 24px; height: 2px; background: hsl(var(--primary)); }
 .home-cinema .home-hero-title { max-width: 600px; font-size: clamp(38px, 4vw, 56px); font-weight: 900; line-height: 1.04; letter-spacing: -.045em; text-wrap: balance; }
 .home-cinema .home-hero-title-long { font-size: clamp(34px, 3.4vw, 46px); }
-.home-cinema .home-hero-episode { margin-top: 8px; color: hsl(var(--foreground) / .82); font-size: 17px; font-weight: 500; }
 .home-cinema .home-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; color: hsl(var(--foreground) / .65); font-size: 11px; font-weight: 600; }
 .home-cinema .home-hero-synopsis { display: -webkit-box; max-width: 540px; margin-top: 14px; overflow: hidden; color: hsl(var(--foreground) / .74); font-size: 13.5px; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-
-/* ── Hero buttons ── */
 .home-cinema .home-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .home-cinema .home-hero-actions .home-hero-primary { height: 44px; padding-inline: 24px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .home-cinema .home-hero-actions .home-hero-secondary { height: 44px; padding-inline: 17px; border: 1px solid hsl(var(--foreground) / .2); background: hsl(var(--background) / .55); color: hsl(var(--foreground)); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; backdrop-filter: blur(8px); }
@@ -31,7 +25,7 @@
 .home-cinema .home-hero-actions .home-hero-info { border-color: transparent; background: transparent; }
 .home-cinema .home-hero-pagination { position: absolute; right: clamp(16px, 4vw, 64px); bottom: 24px; display: flex; align-items: center; gap: 9px; }
 
-/* ── Sections: tight, seamless hero→content transition ── */
+/* ── Home sections: tight spacing ── */
 .home-cinema .home-section { padding-block: 14px; }
 .home-cinema .home-section:first-child { padding-top: 6px; }
 .home-cinema .home-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
@@ -40,29 +34,15 @@
 .home-cinema .home-section-heading > a { display: flex; flex-shrink: 0; align-items: center; gap: 6px; color: hsl(var(--primary)); font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
 .home-cinema .home-section-heading > a:hover { color: hsl(var(--primary) / .8); }
 
-/* ── Dense poster grid: 150px desktop, 155px large ── */
+/* ── Home poster grid (uses global .xero-media-grid) ── */
 .home-cinema .home-poster-grid { display: grid; grid-template-columns: repeat(auto-fill, 150px); align-items: stretch; justify-content: start; gap: 16px 14px; max-width: none; }
-.home-cinema .xero-media-card { width: 100%; max-width: 160px; border-radius: 6px; border-color: hsl(var(--foreground) / .08); background: hsl(var(--secondary) / .55); box-shadow: 0 4px 14px hsl(var(--background) / .2); }
-.home-cinema .xero-media-card:hover, .home-cinema .xero-media-card:focus-within { border-color: hsl(var(--primary) / .65); box-shadow: 0 4px 20px hsl(var(--background) / .45); }
-
-/* ── Compact card footer ── */
-.home-cinema .xero-media-card > div:last-child { padding: 8px 9px 9px; border-color: hsl(var(--foreground) / .05); background: hsl(var(--secondary) / .55); }
-.home-cinema .xero-media-card h3 { font-size: 11.5px; line-height: 1.35; font-weight: 600; }
-.home-cinema .xero-media-card > div:last-child > div { margin-top: 5px; font-size: 9.5px; color: hsl(var(--muted-foreground)); text-transform: capitalize; }
-
-/* ── Books row ── */
 .home-cinema .home-book-section { margin-top: 8px; padding-top: 18px; border-top: 1px solid hsl(var(--border) / .55); }
 .home-cinema .home-book-grid { grid-template-columns: repeat(auto-fill, 128px); gap: 16px 14px; }
-.home-cinema .home-book-grid .xero-media-card h3 { font-size: 10.5px; }
-.home-cinema .home-book-grid .xero-media-card > div:last-child > div > span:last-child { flex-shrink: 0; }
-
-/* ── Continue watching ── */
 .home-cinema .home-continue-grid { display: grid; grid-template-columns: repeat(auto-fill, 260px); gap: 14px; }
 .home-cinema .home-continue-grid .xero-episode-card { width: 100%; max-width: 260px; border-radius: 6px; background: hsl(var(--secondary) / .5); }
-
 .home-cinema footer { margin-top: 24px; }
 
-/* ── Hover preview (unchanged behaviour, black/gold language) ── */
+/* ── Hover preview ── */
 .home-cinema-preview { overflow: hidden; border-color: hsl(var(--primary) / .25) !important; background: hsl(var(--card)) !important; padding: 0 !important; box-shadow: 0 16px 64px hsl(var(--background) / .9) !important; }
 .home-hover-artwork { position: relative; height: 144px; overflow: hidden; }
 .home-hover-artwork img { height: 100%; width: 100%; object-fit: cover; object-position: center 25%; }
@@ -75,22 +55,17 @@
 .home-hover-primary { display: flex; flex: 1; align-items: center; justify-content: center; gap: 8px; border-radius: 6px; padding: 11px 9px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-size: 12px; font-weight: 800; }
 .home-hover-info { display: flex; align-items: center; justify-content: center; border: 1px solid hsl(var(--border)); border-radius: 6px; padding: 10px; color: hsl(var(--foreground)); }
 
-/* ── Large desktop: slightly wider cards for 9–10 across ── */
 @media (min-width: 1536px) {
   .home-cinema .home-hero { height: 580px; }
   .home-cinema .home-poster-grid { grid-template-columns: repeat(auto-fill, 155px); }
   .home-cinema .home-book-grid { grid-template-columns: repeat(auto-fill, 132px); }
 }
-
-/* ── Tablet ── */
 @media (max-width: 1023px) {
   .home-cinema .home-hero { height: 500px; }
   .home-cinema .home-hero-copy { width: min(520px, 68%); }
   .home-cinema .home-poster-grid { grid-template-columns: repeat(auto-fill, 140px); }
   .home-cinema .home-book-grid { grid-template-columns: repeat(auto-fill, 120px); }
 }
-
-/* ── Mobile ── */
 @media (max-width: 639px) {
   .home-cinema .home-container, .home-cinema nav > div { padding-inline: 16px; }
   .home-cinema .home-hero { height: 460px; }
@@ -101,7 +76,6 @@
   .home-cinema .home-hero-copy { width: 100%; }
   .home-cinema .home-hero-kicker { margin-bottom: 10px; font-size: 9px; }
   .home-cinema .home-hero-title, .home-cinema .home-hero-title-long { font-size: 36px; }
-  .home-cinema .home-hero-episode { margin-top: 6px; font-size: 15px; }
   .home-cinema .home-hero-meta { margin-top: 10px; gap: 8px; font-size: 10px; }
   .home-cinema .home-hero-synopsis { margin-top: 11px; font-size: 12px; line-height: 1.6; -webkit-line-clamp: 2; }
   .home-cinema .home-hero-actions { margin-top: 16px; gap: 8px; }
@@ -114,9 +88,6 @@
   .home-cinema .home-section-heading h2 { gap: 8px; font-size: 12px; letter-spacing: .075em; }
   .home-cinema .home-section-heading > a { gap: 4px; font-size: 8px; letter-spacing: .07em; }
   .home-cinema .home-poster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
-  .home-cinema .xero-media-card > div:last-child { padding: 7px 7px 8px; }
-  .home-cinema .xero-media-card h3 { font-size: 11px; }
-  .home-cinema .xero-media-card > div:last-child > div { font-size: 9px; }
   .home-cinema .home-continue-grid { grid-template-columns: minmax(0, 260px); }
   .home-cinema .home-book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

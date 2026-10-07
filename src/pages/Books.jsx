@@ -97,7 +97,7 @@ export default function Books() {
       
       <BooksHero books={books} authors={authors} />
 
-      <main className="xero-container flex-1 pb-20">
+      <main className="xero-container flex-1 pb-16 pt-6">
         {isLoading || loadingAuthors ? (
           <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : books.length === 0 ? (

@@ -250,11 +250,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="xero-container flex-1 space-y-8 pb-16 pt-28">
+      <div className="xero-container flex-1 space-y-6 pb-16 pt-24">
         <DashboardHeader user={user} activeSub={activeSub} activePlan={activePlan} stats={stats} />
-        <div className="grid items-start gap-7 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="grid items-start gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
           <DashboardNav tabs={TABS} active={activeTab} onChange={changeTab} />
-          <main className="min-w-0 rounded-xl border border-border bg-card/40 p-4 md:p-6">
+          <main className="min-w-0 rounded-lg border border-border/60 bg-card/40 p-4 md:p-5">
         {activeTab === "continue" && <ContinueSection items={cwVideos} isPremium={hasAccess} />}
         {activeTab === "list" && (
           <MyListSection

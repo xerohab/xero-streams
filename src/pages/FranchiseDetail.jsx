@@ -26,6 +26,11 @@ export default function FranchiseDetail() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (franchise) document.title = `${franchise.title} | Xero Streams`;
+    return () => { document.title = "Xero Streams"; };
+  }, [franchise]);
+
   const isFavourited = user?.favourite_franchises?.includes(franchiseId) ?? false;
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(location.pathname + location.search); return; }
@@ -140,11 +145,11 @@ export default function FranchiseDetail() {
         onToggleFavourite={handleToggleFavourite}
       />
 
-      <main className="xero-container flex-1 space-y-10 pb-16 pt-10">
+      <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
         {groups.length > 0 ? (
           <section>
             <SectionHeader title="Titles in this Collection" />
-            <div className="space-y-8">
+            <div className="space-y-6">
               {groups.map((group) => (
                 <div key={group.key}>
                   {groups.length > 1 && (

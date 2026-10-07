@@ -16,6 +16,17 @@ export default function useHomeCatalog() {
   const franchiseFirst = (a, b) => Number(b.type === "franchise") - Number(a.type === "franchise") || b.latestActivityAt - a.latestActivityAt;
   const tv = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series")).sort(franchiseFirst);
   const movies = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "video")).sort(franchiseFirst);
-  const featured = safeVideos.filter((video) => video.is_featured);
-  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroVideos: featured.length ? featured.slice(0, 5) : safeVideos.slice(0, 1), videos: safeVideos, series: safeSeries, franchises, latest, tv, movies };
+
+  // Rotating hero: top-level items from latest activity with suitable landscape artwork.
+  // Eligible: standalone Movie, standalone Series, Franchise — never individual Episodes or Books.
+  const heroSlides = latest
+    .filter((item) => {
+      if (item.type === "franchise") return item.data.backdrop_url || item.data.cover_image;
+      if (item.type === "series") return item.data.backdrop_url || item.data.cover_image;
+      if (item.type === "video") return !item.data.series_id && (item.data.backdrop_url || item.data.thumbnail_url);
+      return false;
+    })
+    .slice(0, 5);
+
+  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises, latest, tv, movies };
 }

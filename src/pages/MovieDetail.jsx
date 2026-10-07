@@ -101,6 +101,7 @@ export default function MovieDetail() {
 
   useEffect(() => {
     if (video) {
+      document.title = `${video.title} | Xero Streams`;
       base44.analytics.track({
         eventName: "movie_detail_viewed",
         properties: { video_id: video.id, title: video.title }
@@ -208,7 +209,7 @@ export default function MovieDetail() {
         )}
       </DetailHero>
 
-      <main className="xero-container flex-1 space-y-10 pb-16 pt-10">
+      <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
         {castMembers.length > 0 && (
           <section>
             <SectionHeader title="Cast" />

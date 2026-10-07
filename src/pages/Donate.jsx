@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/browse/Navbar";
+import Footer from "@/components/browse/Footer";
 import { Heart, Coffee, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,10 +47,10 @@ export default function Donate() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="max-w-2xl mx-auto px-6 py-24 text-center">
+      <div className="xero-container max-w-2xl mx-auto flex-1 py-24 text-center">
         {/* Hero */}
         <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center mx-auto mb-6">
           <Heart className="w-8 h-8 text-primary fill-primary/30" />
@@ -127,7 +128,7 @@ export default function Donate() {
           <Button
             onClick={handleDonate}
             disabled={loading || !finalAmount}
-            className="bg-[#003087] hover:bg-[#002070] text-white font-bold px-10 py-3 h-auto rounded-full text-base gap-3"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-10 py-3 h-auto rounded-full text-base gap-3"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -143,9 +144,10 @@ export default function Donate() {
         </div>
 
         <p className="text-sm text-muted-foreground mt-8">
-          Thank you for your support — it truly means the world to us. ❤️
+          Thank you for your support — it truly means the world to us.
         </p>
       </div>
+      <Footer />
     </div>
   );
 }

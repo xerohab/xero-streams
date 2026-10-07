@@ -17,8 +17,8 @@ export default function BrowseCatalog({ type, title, subtitle }) {
   return (
     <div className="flex min-h-screen flex-col bg-background pb-16 md:pb-0">
       <Navbar />
-      <main className="xero-container flex-1 pb-10 pt-28">
-        <header className="mb-8 border-b border-border pb-6"><p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-primary">Xero Cinema / The Library</p><SectionHeader level={1} title={title} subtitle={subtitle} className="mb-0" /></header>
+      <main className="xero-container flex-1 pb-10 pt-24">
+        <header className="xero-page-header"><p className="xero-kicker">Xero Cinema / The Library</p><SectionHeader level={1} title={title} subtitle={subtitle} className="mb-0" /></header>
         <BrowseControls catalog={catalog} />
         {catalog.isLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : catalog.items.length ? <>
           <MediaGrid>{catalog.items.map((item) => {

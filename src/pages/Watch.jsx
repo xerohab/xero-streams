@@ -135,6 +135,7 @@ export default function Watch() {
 
   useEffect(() => {
     if (video) {
+      document.title = `${video.title} | Xero Streams`;
       base44.analytics.track({
         eventName: "video_viewed",
         properties: { video_id: video.id, title: video.title, series_id: video.series_id || null, franchise_id: video.franchise_id || null }
@@ -389,8 +390,7 @@ export default function Watch() {
 
       <div className="pt-24">
         <div className="xero-container">
-        <div className="overflow-hidden rounded-xl border border-border bg-background">
-          <div className="max-w-7xl mx-auto">
+        <div className="overflow-hidden rounded-lg border border-border/60 bg-background">
             <div className="relative aspect-video">
               {isComingSoon ? (
                 <div
@@ -520,7 +520,6 @@ export default function Watch() {
                 </dialog>
               )}
             </div>
-          </div>
         </div>
 
         </div>
@@ -531,7 +530,7 @@ export default function Watch() {
       </div>
 
       {/* More episodes / related */}
-      <div className="xero-container space-y-10 pb-6">
+      <div className="xero-container space-y-8 pb-6">
         {seriesEpisodes.length > 0 && <section className="xero-section">
           <SectionHeader title="All Episodes" subtitle={series?.title} />
           <EpisodeGrid>{seriesEpisodes.map((ep) => <EpisodeCard key={ep.id} video={ep} isPremium={isPremium} active={ep.id === videoId} />)}</EpisodeGrid>
