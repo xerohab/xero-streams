@@ -29,7 +29,7 @@ export default function ContinueWatchingRow({ isAdult = false }) {
       <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
         <Clock className="w-5 h-5 text-primary" /> Continue Watching
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(250px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3 md:gap-4 justify-center">
         {items.map((item) => (
           <Link key={item.id} to={`/watch?id=${item.id}&t=${Math.floor(item.currentTime)}`} className="group relative">
             <div className="relative aspect-video rounded-md overflow-hidden bg-secondary">
