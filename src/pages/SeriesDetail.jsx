@@ -6,6 +6,7 @@ import { ArrowLeft, Film, Tv, Loader2, Download as DownloadIcon } from "lucide-r
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
+import EpisodeCard from "@/components/browse/EpisodeCard";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
@@ -181,13 +182,9 @@ export default function SeriesDetail() {
                 {!isPremium && <button type="button" onClick={openPremium} className="text-primary font-bold underline hover:text-primary/80 ml-2">View plans</button>}
               </p>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-start">
               {sortedEpisodes.map(ep => (
-                <VideoCard 
-                  key={ep.id} 
-                  video={ep} 
-                  onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => downloadSingleVideo(v.id) : undefined}
-                />
+                <EpisodeCard key={ep.id} video={ep} isPremium={isPremium} />
               ))}
             </div>
           </div>

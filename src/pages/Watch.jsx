@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, Picture
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { Button } from "@/components/ui/button";
 import VideoRow from "@/components/browse/VideoRow";
+import EpisodeRow from "@/components/browse/EpisodeRow";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
@@ -658,9 +659,10 @@ export default function Watch() {
       {/* More episodes / related */}
       <div className="pb-16">
         {seriesEpisodes.length > 1 && (
-          <VideoRow
+          <EpisodeRow
             title={`All Episodes — ${series?.title}`}
             videos={seriesEpisodes}
+            isPremium={isPremium}
           />
         )}
         {moreVideos.length > 0 && (

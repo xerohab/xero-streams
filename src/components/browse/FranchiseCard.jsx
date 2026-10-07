@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 export default function FranchiseCard({ franchise, itemCount, itemLabel }) {
   return (
     <Link 
-      to={`/franchise?id=${franchise.id}`}
-      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50"
+      to={`/franchise?id=${franchise.id}`} 
+      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50 max-w-[180px] w-full mx-auto"
     >
       <div className="relative aspect-[2/3] w-full bg-secondary/30 rounded-xl overflow-hidden shadow-inner">
         {franchise.cover_image ? (
