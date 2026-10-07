@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 
 export default function DashboardNav({ tabs, active, onChange }) {
   return (
-    <nav className="-mx-4 overflow-x-auto px-4 scrollbar-hide sm:mx-0 sm:px-0" aria-label="My Xero sections">
-      <div className="flex w-max min-w-full gap-1 border-b border-border">
+    <nav className="overflow-x-auto rounded-xl border border-border bg-card p-2 scrollbar-hide lg:sticky lg:top-24" aria-label="My Xero sections">
+      <div className="flex w-max min-w-full gap-1 lg:w-full lg:flex-col">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -12,8 +12,8 @@ export default function DashboardNav({ tabs, active, onChange }) {
             onClick={() => onChange(id)}
             aria-current={active === id ? "page" : undefined}
             className={cn(
-              "-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-sm font-semibold transition-colors",
-              active === id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              "flex items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-3 text-xs font-semibold transition-colors",
+              active === id ? "border-primary/30 bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}
           >
             <Icon className="h-4 w-4" />

@@ -1,0 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { getCatalogMedia } from "@/lib/activityUtils";
+import loadMediaRecords from "@/components/browse/loadMediaRecords";
+
+export default function useHomeCatalog() {
+  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
+  const { data: series = [], isLoading: loadingSeries } = useQuery({ queryKey: ["series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
+  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: user } = useQuery({ queryKey: ["current_user"], queryFn: () => base44.auth.me().catch(() => null), staleTime: 0 });
+  const rows = user?.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
+  const safeVideos = videos.filter((v) => !v.is_adult);
+  const safeSeries = series.filter((s) => !s.is_adult);
+  const populated = (items) => items.filter((item) => item.type !== "franchise" || item.items > 0).sort((a, b) => b.latestActivityAt - a.latestActivityAt);
+  const latest = populated(getCatalogMedia(franchises, safeSeries, safeVideos));
+  const tv = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series"));
+  const movies = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "video"));
+  return { rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroVideos: safeVideos.slice(0, 5), series, latest, tv, movies };
+}

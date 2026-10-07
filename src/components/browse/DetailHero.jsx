@@ -2,52 +2,28 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-/**
- * Cinematic hero shared by MovieDetail and SeriesDetail:
- * backdrop + gradients, compact poster, eyebrow, title, meta, synopsis, and an actions slot.
- */
-export default function DetailHero({ image, title, FallbackIcon, eyebrow, meta, description, backTo, children }) {
+/** Flow-based hero: backdrop, visible poster, synopsis and controls never overlap. */
+export default function DetailHero({ image, backdrop, title, FallbackIcon, eyebrow, meta, description, backTo, children }) {
   return (
-    <div className="relative h-[52vh] max-h-[680px] min-h-[420px] w-full bg-black md:h-[64vh]">
-      {image ? (
-        <img
-          src={image}
-          alt=""
-          className="h-full w-full object-cover opacity-40 md:opacity-50"
-          style={{ maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)" }}
-        />
-      ) : (
-        <div className="h-full w-full bg-secondary/20" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent" />
-
-      <div className="xero-container absolute inset-x-0 bottom-0 flex flex-col items-end gap-8 pb-8 pt-32 md:flex-row">
-        <div className="z-10 hidden w-40 shrink-0 translate-y-14 overflow-hidden rounded-lg shadow-2xl shadow-black/80 ring-1 ring-border md:block lg:w-48">
-          {image ? (
-            <img src={image} alt={title} className="aspect-[2/3] w-full object-cover" />
-          ) : (
-            <div className="flex aspect-[2/3] w-full items-center justify-center bg-card">
-              {FallbackIcon && <FallbackIcon className="h-12 w-12 text-muted-foreground/30" />}
-            </div>
-          )}
-        </div>
-
-        <div className="z-10 w-full flex-1 space-y-3">
-          {backTo && (
-            <Link to={backTo} className="mb-2 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:hidden">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Link>
-          )}
-          {eyebrow}
-          <h1 className="text-3xl font-black tracking-tight text-foreground drop-shadow-lg md:text-5xl">{title}</h1>
-          {meta && <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm font-medium text-muted-foreground">{meta}</div>}
-          {description && (
-            <p className="max-w-3xl text-sm leading-relaxed text-foreground/80 line-clamp-3 md:line-clamp-none md:text-base">{description}</p>
-          )}
-          <div className="flex flex-wrap gap-3 pt-2">{children}</div>
+    <header className="relative isolate overflow-hidden border-b border-border bg-background">
+      {(backdrop || image) && <img src={backdrop || image} alt="" aria-hidden="true" className="absolute inset-0 -z-20 h-full w-full object-cover object-top opacity-45" />}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-background via-background/85 to-background/30" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/20 to-background/50" />
+      <div className="xero-container pb-10 pt-24 md:pb-12 md:pt-28">
+        {backTo && <Link to={backTo} className="mb-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary"><ArrowLeft className="h-3.5 w-3.5" />Back to browse</Link>}
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end md:gap-9">
+          <div className="w-28 shrink-0 overflow-hidden rounded-xl border border-border bg-card shadow-2xl sm:w-36 md:w-44">
+            {image ? <img src={image} alt={title} className="aspect-[2/3] w-full object-cover" /> : <div className="flex aspect-[2/3] items-center justify-center">{FallbackIcon && <FallbackIcon className="h-12 w-12 text-muted-foreground/40" />}</div>}
+          </div>
+          <div className="min-w-0 flex-1 space-y-4">
+            {eyebrow && <div className="flex flex-wrap items-center gap-2">{eyebrow}</div>}
+            <h1 className="max-w-4xl text-3xl font-black leading-tight tracking-tight text-foreground md:text-5xl lg:text-6xl">{title}</h1>
+            {meta && <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-muted-foreground md:text-sm">{meta}</div>}
+            {description && <p className="max-w-3xl text-sm leading-relaxed text-foreground/75 md:text-base">{description}</p>}
+            <div className="flex flex-wrap items-center gap-2.5 pt-2">{children}</div>
+          </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

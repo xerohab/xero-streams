@@ -1,11 +1,11 @@
 import React from "react";
 import SectionHeader from "@/components/browse/SectionHeader";
 
-const DEFAULT_ROWS = ["hero", "latest", "continue_watching", "favourites", "tv", "movies"];
+const DEFAULT_ROWS = ["hero", "continue_watching", "latest", "tv", "movies"];
 const ROW_OPTIONS = [
   { id: "hero", label: "Hero Banner (Featured)" },
   { id: "continue_watching", label: "Continue Watching" },
-  { id: "favourites", label: "My Favourites" },
+  { id: "latest", label: "Recently Added & Updated" },
   { id: "tv", label: "TV Series" },
   { id: "movies", label: "Movies" },
 ];

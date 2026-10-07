@@ -6,7 +6,7 @@ import StatusBadge from "@/components/browse/StatusBadge";
 
 export default function DashboardHeader({ user, activeSub, activePlan, stats }) {
   return (
-    <header className="flex flex-col gap-5 pb-6 sm:flex-row sm:items-center">
+    <header className="flex flex-col gap-5 rounded-xl border border-border bg-gradient-to-r from-card to-primary/5 p-5 md:p-7 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-primary/15">
         <User className="h-7 w-7 text-primary" />
       </div>
@@ -21,9 +21,9 @@ export default function DashboardHeader({ user, activeSub, activePlan, stats }) 
               <span className="text-xs font-semibold text-muted-foreground">{activePlan?.name || "Pro"} Subscriber</span>
             </>
           ) : (
-            <span className="rounded border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Free User</span>
+            <StatusBadge status="Free User" />
           )}
-          <span className="rounded border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{user.role}</span>
+          <StatusBadge status={user.role} />
         </div>
       </div>
 

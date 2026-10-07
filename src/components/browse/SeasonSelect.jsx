@@ -11,7 +11,7 @@ export default function SeasonSelect({ currentId, seasons }) {
     <div className="flex items-center gap-3">
       <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Season</span>
       <Select value={currentId} onValueChange={(id) => navigate(`/series?id=${id}`)}>
-        <SelectTrigger className="h-9 w-[220px] border-border bg-card text-sm font-semibold">
+        <SelectTrigger className="h-10 w-[190px] border-border bg-secondary text-sm font-semibold sm:w-[220px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="max-h-72">

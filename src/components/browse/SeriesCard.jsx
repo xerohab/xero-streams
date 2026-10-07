@@ -2,6 +2,7 @@ import React from "react";
 import { Tv } from "lucide-react";
 import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
+import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
 export default function SeriesCard({ series, isUpdated }) {
   if (!series) return null;
@@ -17,7 +18,7 @@ export default function SeriesCard({ series, isUpdated }) {
       meta={[series.release_year, series.category && <span className="capitalize">{series.category}</span>]}
       badges={
         <>
-          {isUpdated && <StatusBadge status="UPDATED" />}
+          {isUpdated && <StatusBadge status={isRecentlyUpdated(toActivityTimestamp(series.created_date)) ? "NEW" : "UPDATED"} />}
           {series.is_adult && <StatusBadge status="18+" />}
         </>
       }

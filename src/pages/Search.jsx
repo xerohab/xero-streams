@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Navbar from "@/components/browse/Navbar";
 import Footer from "@/components/browse/Footer";
 import VideoCard from "@/components/browse/VideoCard";
@@ -14,6 +14,7 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import SearchFilters from "@/components/browse/SearchFilters";
 import PaginationControls from "@/components/browse/PaginationControls";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
+import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
 export default function Search() {
   const navigate = useNavigate();
@@ -37,15 +38,15 @@ export default function Search() {
     setCurrentPage(1);
   };
 
-  const { data: videos = [] } = useQuery({ queryKey: ["videos"], queryFn: () => base44.entities.Video.list("-updated_date", 2000) });
-  const { data: seriesList = [] } = useQuery({ queryKey: ["series"], queryFn: () => base44.entities.Series.list("-updated_date", 1000) });
-  const { data: franchises = [] } = useQuery({ queryKey: ["franchises"], queryFn: () => base44.entities.Franchise.list("-updated_date", 1000) });
+  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
+  const { data: seriesList = [], isLoading: loadingSeries } = useQuery({ queryKey: ["series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
+  const { data: franchises = [] } = useQuery({ queryKey: ["franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
   const { data: books = [] } = useQuery({ queryKey: ["search_books"], queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
   const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], queryFn: () => base44.entities.BookAuthor.list() });
 
+  useEffect(() => setCurrentPage(1), [query, filterType, filterCategory, filterYear, filterCast]);
   const results = useMemo(() => {
-    setCurrentPage(1);
     
     const q = query.toLowerCase().trim();
     if (!q && filterType === "all" && filterCategory === "all" && !filterYear && !filterCast) {
@@ -132,7 +133,7 @@ export default function Search() {
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
 
-        <SectionHeader level={1} title="Search" className="mb-6" />
+        <header className="mb-8 border-b border-border pb-5"><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-primary">Xero Cinema / Discover</p><SectionHeader level={1} title="Search" subtitle="Find movies, series, collections and books in one library." className="mb-0" /></header>
 
         <SearchFilters
           query={query} onQuery={setQuery}
@@ -152,8 +153,9 @@ export default function Search() {
           <p className="text-muted-foreground">No results found for "<strong>{query}</strong>"</p>
         )}
 
-        {hasResults && (
+        {loadingVideos || loadingSeries ? <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : hasResults && (
           <>
+            <p className="mb-5 text-xs text-muted-foreground">{results.length} matching titles</p>
             <MediaGrid>
               {paginatedItems.map((item) => {
                 if (item.type === 'book') {

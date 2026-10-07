@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, ListPlus, Loader2, Check } from "lucide-react";
+import { ListPlus, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,14 +12,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export default function WatchlistButton({ videoId, seriesId, variant = "outline", className = "" }) {
+export default function WatchlistButton({ videoId, seriesId, variant = "outline", className = "", label = "Add to Watchlist" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
     queryKey: ["user"],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => base44.auth.me().catch(() => null),
   });
 
   const { data: watchlists = [], isLoading: isLoadingWatchlists } = useQuery({
@@ -69,7 +69,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
         onClick={() => base44.auth.redirectToLogin(window.location.pathname + window.location.search)}
       >
         <ListPlus className="w-4 h-4 mr-2" />
-        Add to Watchlist
+        {label}
       </Button>
     );
   }
@@ -92,7 +92,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
       <DialogTrigger asChild>
         <Button variant={variant} className={className}>
           <ListPlus className="w-4 h-4 mr-2" />
-          Add to Watchlist
+          {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-card text-card-foreground border-border">
@@ -125,7 +125,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
                     disabled={toggleItemMutation.isPending}
                   >
                     {watchlist.name}
-                    {isAdded && <Check className="w-4 h-4 text-green-500" />}
+                    {isAdded && <Check className="w-4 h-4 text-primary" />}
                   </Button>
                 );
               })}

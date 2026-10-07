@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getAll, removeProgress } from "@/hooks/useContinueWatching";
 import EpisodeCard from "@/components/browse/EpisodeCard";
 import EpisodeGrid from "@/components/browse/EpisodeGrid";
@@ -6,6 +6,13 @@ import SectionHeader from "@/components/browse/SectionHeader";
 
 export default function ContinueWatchingRow({ isAdult = false }) {
   const [items, setItems] = useState(() => getAll().filter((item) => item.is_adult === isAdult));
+  useEffect(() => {
+    const refresh = () => setItems(getAll().filter((item) => item.is_adult === isAdult));
+    window.addEventListener("xero-progress-updated", refresh);
+    window.addEventListener("storage", refresh);
+    window.addEventListener("focus", refresh);
+    return () => { window.removeEventListener("xero-progress-updated", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("focus", refresh); };
+  }, [isAdult]);
 
   if (items.length === 0) return null;
 
@@ -15,7 +22,7 @@ export default function ContinueWatchingRow({ isAdult = false }) {
   };
 
   return (
-    <div className="mb-12">
+    <section className="xero-section">
       <SectionHeader title="Continue Watching" />
       <EpisodeGrid>
         {items.map((item) => (
@@ -28,6 +35,6 @@ export default function ContinueWatchingRow({ isAdult = false }) {
           />
         ))}
       </EpisodeGrid>
-    </div>
+    </section>
   );
 }

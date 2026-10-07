@@ -13,8 +13,10 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import WatchlistButton from "@/components/browse/WatchlistButton";
 import ReviewSection from "@/components/browse/ReviewSection";
 import Footer from "@/components/browse/Footer";
+import StatusBadge from "@/components/browse/StatusBadge";
+import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
-const OUTLINE_BTN = "gap-2 rounded-full h-12 px-6 border-white/20 bg-white/5 text-foreground hover:bg-white/10";
+const OUTLINE_BTN = "xero-action px-5";
 
 export default function MovieDetail() {
   const navigate = useNavigate();
@@ -134,14 +136,11 @@ export default function MovieDetail() {
 
       <DetailHero
         image={video.thumbnail_url}
+        backdrop={video.backdrop_url}
         title={video.title}
         FallbackIcon={Film}
         backTo={from}
-        eyebrow={franchise && (
-          <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
-            Part of {franchise.title} Collection &rarr;
-          </Link>
-        )}
+        eyebrow={<><StatusBadge status="Movie" />{isRecentlyUpdated(toActivityTimestamp(video.content_updated_at)) && <StatusBadge status="UPDATED" />}{franchise && <Link to={`/franchise?id=${franchise.id}`} className="text-xs font-semibold text-primary hover:underline">{franchise.title} Collection</Link>}</>}
         meta={
           <>
             {video.release_year ? <span>{video.release_year}</span> : (video.release_date && <span>{new Date(video.release_date).getFullYear()}</span>)}
@@ -160,12 +159,12 @@ export default function MovieDetail() {
         ) : (
           <Button
             onClick={() => navigate(`/watch?id=${video.id}`)}
-            className="gap-2 font-bold h-12 px-8 rounded-full shadow-lg shadow-primary/20 text-base"
+            className="h-11 gap-2 rounded-lg px-6 font-bold"
           >
             <Play className="w-5 h-5 fill-current" /> Watch Now
           </Button>
         )}
-        <WatchlistButton videoId={video.id} variant="outline" className={OUTLINE_BTN} />
+        <WatchlistButton videoId={video.id} variant="outline" className={OUTLINE_BTN} label="My List" />
 
         {video.is_for_sale && (
           isPurchased ? (
@@ -209,10 +208,10 @@ export default function MovieDetail() {
         )}
       </DetailHero>
 
-      <div className="xero-container flex-1 space-y-12 pb-16 pt-24">
+      <main className="xero-container flex-1 space-y-10 pb-16 pt-10">
         {castMembers.length > 0 && (
           <section>
-            <SectionHeader title="Cast & Crew" />
+            <SectionHeader title="Cast" />
             <div className="flex flex-wrap gap-2">
               {castMembers.map((name) => (
                 <span key={name} className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground">
@@ -248,7 +247,7 @@ export default function MovieDetail() {
         )}
 
         <ReviewSection contentId={videoId} contentType="video" />
-      </div>
+      </main>
       <Footer />
     </div>
   );

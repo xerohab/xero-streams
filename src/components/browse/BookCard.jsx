@@ -69,7 +69,7 @@ export default function BookCard({ book, author, purchases = [], purchasing, onP
     !to && (actions.length > 0 || book.description) ? (
       <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end gap-1.5 bg-gradient-to-t from-black/95 via-black/75 to-black/30 p-2.5 opacity-0 transition-opacity duration-300 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:from-black/90 [@media(hover:none)]:via-transparent [@media(hover:none)]:to-transparent [@media(hover:none)]:opacity-100">
         {book.description && (
-          <p className="mb-1 line-clamp-4 text-[10px] leading-snug text-gray-300 [@media(hover:none)]:hidden">{book.description}</p>
+          <p className="mb-1 line-clamp-4 text-[10px] leading-snug text-muted-foreground [@media(hover:none)]:hidden">{book.description}</p>
         )}
         {actions}
       </div>

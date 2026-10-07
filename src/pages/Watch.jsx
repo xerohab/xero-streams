@@ -3,15 +3,19 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import useHls from "@/hooks/useHls";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Calendar, CalendarClock, Cast, Clock, Film, Loader2, PictureInPicture2, SkipBack, SkipForward, Heart, Download as DownloadIcon, ShoppingCart } from "lucide-react";
-import { downloadSingleVideo } from "@/lib/downloadUtils";
+import { CalendarClock, Cast, Loader2, PictureInPicture2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import VideoRow from "@/components/browse/VideoRow";
-import EpisodeRow from "@/components/browse/EpisodeRow";
+import VideoCard from "@/components/browse/VideoCard";
+import MediaGrid from "@/components/browse/MediaGrid";
+import EpisodeCard from "@/components/browse/EpisodeCard";
+import EpisodeGrid from "@/components/browse/EpisodeGrid";
+import SectionHeader from "@/components/browse/SectionHeader";
+import WatchPrimaryControls from "@/components/browse/WatchPrimaryControls";
+import WatchInfo from "@/components/browse/WatchInfo";
+import loadMediaRecords from "@/components/browse/loadMediaRecords";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
-import WatchlistButton from "@/components/browse/WatchlistButton";
 import { saveProgress, getProgress, removeProgress, addWatched } from "@/hooks/useContinueWatching";
 
 import { useCast } from "@/lib/CastContext";
@@ -37,8 +41,6 @@ export default function Watch() {
   const [isFavourited, setIsFavourited] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [showSkipRecap, setShowSkipRecap] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(null);
 
   const lastSaveRef = useRef(0);
   const countdownStartedRef = useRef(false);
@@ -101,8 +103,6 @@ export default function Watch() {
     }
   };
 
-  const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
-
   const { data: premiumSubs = [] } = useQuery({
     queryKey: ["active_subscription", user?.id],
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
@@ -112,7 +112,7 @@ export default function Watch() {
 
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("sort_order"),
+    queryFn: () => loadMediaRecords(base44.entities.Video),
     staleTime: Infinity,
   });
 
@@ -130,6 +130,7 @@ export default function Watch() {
   });
 
   const video = videoFromAll || fetchedVideo;
+  const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
   const isLoading = !video && (isFetchingVideo || isLoadingAll);
 
   useEffect(() => {
@@ -149,13 +150,13 @@ export default function Watch() {
 
   const { data: seriesList = [] } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(),
+    queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000),
     staleTime: Infinity,
   });
 
   const { data: franchises = [] } = useQuery({
     queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list(),
+    queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
     staleTime: Infinity,
   });
 
@@ -386,8 +387,9 @@ export default function Watch() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="pt-16">
-        <div className="w-full bg-black">
+      <div className="pt-24">
+        <div className="xero-container">
+        <div className="overflow-hidden rounded-xl border border-border bg-background">
           <div className="max-w-7xl mx-auto">
             <div className="relative aspect-video">
               {isComingSoon ? (
@@ -423,7 +425,7 @@ export default function Watch() {
                   controls
                   autoPlay
                   playsInline
-                  webkit-playsinline="true"
+                  {...{ "webkit-playsinline": "true" }}
                   controlsList="nodownload"
                   onContextMenu={(e) => e.preventDefault()}
                   className="w-full h-full"
@@ -521,156 +523,26 @@ export default function Watch() {
           </div>
         </div>
 
-        {/* Video info */}
-        <div className="xero-container max-w-7xl py-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-
-          <div className="flex flex-col md:flex-row md:items-start gap-6">
-            <div className="flex-1">
-              {series && (
-                <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-1">
-                  {series.title}
-                  {video.episode_number && ` — Episode ${video.episode_number}`}
-                </p>
-              )}
-              <h1 className="text-2xl md:text-4xl font-black text-foreground mb-3">{video.title}</h1>
-
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
-                {video.quality && video.quality !== "Unknown" && (
-                  <span className="flex items-center gap-1.5 font-bold text-primary border border-primary/50 px-1.5 py-0.5 rounded text-xs uppercase">{video.quality}</span>
-                )}
-                {video.quality_notes && (
-                  <span className="flex items-center gap-1.5 font-semibold text-muted-foreground border border-border px-1.5 py-0.5 rounded text-xs capitalize">{video.quality_notes}</span>
-                )}
-                {video.duration && (
-                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{video.duration}</span>
-                )}
-                {series?.category && (
-                  <span className="flex items-center gap-1.5"><Film className="w-4 h-4" />{series.category.charAt(0).toUpperCase() + series.category.slice(1)}</span>
-                )}
-                {video.created_date && (
-                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />{format(new Date(video.created_date), "MMM d, yyyy")}</span>
-                )}
-              </div>
-
-              {video.description && (
-                <p className="text-muted-foreground leading-relaxed max-w-3xl mb-4">{video.description}</p>
-              )}
-
-              {/* Coming Soon badge on info panel */}
-              {isComingSoon && (
-                <div className="flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-sm font-semibold px-4 py-2 rounded-lg w-fit mb-2">
-                  <CalendarClock className="w-4 h-4" />
-                  Coming Soon{video.release_date ? ` — ${format(new Date(video.release_date), "d MMMM yyyy")}` : ""}
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex flex-wrap gap-3">
-                {!isComingSoon && (
-                  <Button
-                    variant={isFavourited ? "default" : "outline"}
-                    className="gap-2"
-                    onClick={handleToggleFavourite}
-                  >
-                    <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
-                    {isFavourited ? "Favourited" : "Favourite"}
-                  </Button>
-                )}
-                <WatchlistButton videoId={video.id} />
-                {prevVideo && (
-                  <Button
-                    variant="secondary"
-                    className="gap-2"
-                    onClick={() => navigate(`/watch?id=${prevVideo.id}`)}
-                  >
-                    <SkipBack className="w-4 h-4" />
-                    {prevSeriesEpisode ? "Previous Episode" : prevFranchiseMovie ? "Previous Movie" : "Previous Episode"}
-                  </Button>
-                )}
-                {nextVideo && (
-                  <Button
-                    variant="secondary"
-                    className="gap-2"
-                    onClick={() => navigate(`/watch?id=${nextVideo.id}`)}
-                  >
-                    <SkipForward className="w-4 h-4" />
-                    {nextEpisode ? "Next Episode" : "Next Movie"}
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => navigate(`/movie?id=${video.id}`)}
-                >
-                  <Film className="w-4 h-4" />
-                  More Info
-                </Button>
-                {video.is_for_sale && (
-                  isPurchased ? (
-                    <Button variant="outline" className="gap-2 border-primary/40 text-primary hover:bg-primary/15" onClick={() => {
-                      const a = document.createElement("a");
-                      a.href = video.download_url;
-                      a.download = "";
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    }}>
-                      <DownloadIcon className="w-4 h-4" /> Download
-                    </Button>
-                  ) : (
-                    <Button variant="default" className="gap-2" onClick={handlePurchase} disabled={purchasing}>
-                      {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
-                    </Button>
-                  )
-                )}
-                {!video.is_for_sale && isPremium && !isComingSoon && (
-                  <Button
-                    variant="outline"
-                    className="gap-2 border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
-                    onClick={async () => {
-                      try {
-                        setIsDownloading(true);
-                        setDownloadProgress(0);
-                        await downloadSingleVideo(video.id, (pct) => setDownloadProgress(pct));
-                      } catch (err) {
-                        console.error(err);
-                      } finally {
-                        setIsDownloading(false);
-                        setDownloadProgress(null);
-                      }
-                    }}
-                  >
-                    {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} {isDownloading ? (downloadProgress !== null ? `Downloading ${downloadProgress}%` : "Starting...") : "Download"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
+        </div>
+        <div className="xero-container">
+          <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
+          <WatchInfo video={video} series={series} />
         </div>
       </div>
 
       {/* More episodes / related */}
-      <div className="xero-container max-w-7xl pb-6">
-        {seriesEpisodes.length > 1 && (
-          <EpisodeRow
-            title={`All Episodes — ${series?.title}`}
-            videos={seriesEpisodes}
-            isPremium={isPremium}
-          />
-        )}
-        {moreVideos.length > 0 && (
-          <VideoRow title="You May Also Like" videos={moreVideos} limit={14} />
-        )}
+      <div className="xero-container space-y-10 pb-6">
+        {seriesEpisodes.length > 0 && <section className="xero-section">
+          <SectionHeader title="All Episodes" subtitle={series?.title} />
+          <EpisodeGrid>{seriesEpisodes.map((ep) => <EpisodeCard key={ep.id} video={ep} isPremium={isPremium} active={ep.id === videoId} />)}</EpisodeGrid>
+        </section>}
+        {moreVideos.length > 0 && <section className="xero-section">
+          <SectionHeader title="You May Also Like" />
+          <MediaGrid>{moreVideos.slice(0, 14).map((item) => <VideoCard key={item.id} video={item} />)}</MediaGrid>
+        </section>}
       </div>
       
-      <div className="xero-container max-w-7xl pb-16">
+      <div className="xero-container pb-20">
         <ReviewSection contentId={videoId} contentType="video" />
       </div>
     </div>

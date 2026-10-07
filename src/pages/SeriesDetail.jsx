@@ -17,8 +17,11 @@ import ReviewSection from "@/components/browse/ReviewSection";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
 import Footer from "@/components/browse/Footer";
 import WatchlistButton from "@/components/browse/WatchlistButton";
+import SeriesDownloadButton from "@/components/browse/SeriesDownloadButton";
+import { getAll } from "@/hooks/useContinueWatching";
+import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 
-const OUTLINE_BTN = "gap-2 rounded-full h-11 px-6 border-white/20 bg-white/5 text-foreground hover:bg-white/10";
+const OUTLINE_BTN = "xero-action px-5";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -51,7 +54,7 @@ export default function SeriesDetail() {
 
   const { data: episodes = [], isLoading: loadingEpisodes } = useQuery({
     queryKey: ["episodes", seriesId],
-    queryFn: () => base44.entities.Video.filter({ series_id: seriesId }),
+    queryFn: () => base44.entities.Video.filter({ series_id: seriesId }, "sort_order", 2000),
     enabled: !!seriesId,
   });
 
@@ -117,6 +120,9 @@ export default function SeriesDetail() {
   }
 
   const firstPlayable = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url);
+  const resumeEntry = getAll().find((entry) => sortedEpisodes.some((ep) => ep.id === entry.id && ep.video_url && !ep.coming_soon));
+  const playEpisode = resumeEntry ? sortedEpisodes.find((ep) => ep.id === resumeEntry.id) : firstPlayable;
+  const isUpdated = isRecentlyUpdated(getItemActivityAt(series, [], [series], episodes));
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -124,14 +130,15 @@ export default function SeriesDetail() {
 
       <DetailHero
         image={series.cover_image}
+        backdrop={series.backdrop_url}
         title={series.title}
         FallbackIcon={Tv}
         backTo={from}
-        eyebrow={franchise && (
-          <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
-            Part of {franchise.title} Collection &rarr;
-          </Link>
-        )}
+        eyebrow={<>
+          <StatusBadge status="TV Series" />
+          {isUpdated && <StatusBadge status="UPDATED" />}
+          {franchise && <Link to={`/franchise?id=${franchise.id}`} className="text-xs font-semibold text-primary hover:underline">{franchise.title} Collection</Link>}
+        </>}
         meta={
           <>
             {series.release_year && <span>{series.release_year}</span>}
@@ -142,15 +149,15 @@ export default function SeriesDetail() {
         }
         description={series.description}
       >
-        {firstPlayable && (
-          <Button asChild className="gap-2 rounded-full h-12 px-8 text-base font-bold shadow-lg shadow-primary/20">
-            <Link to={`/watch?id=${firstPlayable.id}`}>
-              <Play className="w-5 h-5 fill-current" />
-              {firstPlayable.episode_number ? `Play Episode ${firstPlayable.episode_number}` : "Play"}
+        {playEpisode && (
+          <Button asChild className="h-11 gap-2 rounded-lg px-6 font-bold">
+            <Link to={`/watch?id=${playEpisode.id}${resumeEntry ? `&t=${Math.floor(resumeEntry.currentTime)}` : ""}`}>
+              <Play className="h-4 w-4 fill-current" />{resumeEntry ? "Resume" : "Watch Now"}
             </Link>
           </Button>
         )}
-        <WatchlistButton videoId={null} seriesId={series.id} variant="outline" className={OUTLINE_BTN} />
+        <WatchlistButton videoId={null} seriesId={series.id} variant="outline" className={OUTLINE_BTN} label="My List" />
+        {firstPlayable && <SeriesDownloadButton series={series} isPremium={isPremium} onViewPlans={openPremium} />}
         <Button
           variant={isFavourited ? "default" : "outline"}
           className={isFavourited ? "gap-2 rounded-full h-11 px-6" : OUTLINE_BTN}
@@ -161,13 +168,13 @@ export default function SeriesDetail() {
         </Button>
       </DetailHero>
 
-      <div className="xero-container flex-1 space-y-12 pb-16 pt-24">
+      <main className="xero-container flex-1 space-y-10 pb-16 pt-8">
+        {seasons.length > 1 && <section className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4"><h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Season Selector</h2><SeasonSelect currentId={seriesId} seasons={seasons} /></section>}
         {sortedEpisodes.length > 0 ? (
           <section>
             <SectionHeader
               title="Episodes"
               subtitle={`${sortedEpisodes.length} episode${sortedEpisodes.length !== 1 ? "s" : ""}`}
-              action={<SeasonSelect currentId={seriesId} seasons={seasons} />}
             />
             {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
               <p className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
@@ -226,7 +233,7 @@ export default function SeriesDetail() {
         )}
 
         <ReviewSection contentId={seriesId} contentType="series" />
-      </div>
+      </main>
       <Footer />
     </div>
   );

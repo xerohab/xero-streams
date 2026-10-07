@@ -6,13 +6,16 @@ import Footer from "@/components/browse/Footer";
 import BookCard from "@/components/browse/BookCard";
 import MediaGrid from "@/components/browse/MediaGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
-import { Loader2, BookOpen } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import BooksHero from "@/components/browse/BooksHero";
+import AuthorBrowser from "@/components/browse/AuthorBrowser";
 import { isExclusiveAuthor } from "@/lib/bookUtils";
 import toast from "react-hot-toast";
 
 export default function Books() {
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(null);
+  const [selectedAuthor, setSelectedAuthor] = useState("all");
 
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -20,7 +23,7 @@ export default function Books() {
 
   const { data: books = [], isLoading } = useQuery({
     queryKey: ["books"],
-    queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order")
+    queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 1000)
   });
 
   const { data: authors = [], isLoading: loadingAuthors } = useQuery({
@@ -86,65 +89,43 @@ export default function Books() {
   const recentBooks = [...books]
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
     .slice(0, 7);
-  const otherAuthors = authors.filter((a) => !isExclusiveAuthor(a) && books.some((b) => b.author_id === a.id));
-  const booksWithoutAuthor = books.filter((b) => !authorOf(b));
+  const allBooks = selectedAuthor === "all" ? books : books.filter((b) => b.author_id === selectedAuthor);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      {/* Books Hero */}
-      <div className="relative flex h-[32vh] min-h-[280px] w-full items-center justify-center overflow-hidden bg-black md:h-[40vh]">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-25 mix-blend-luminosity"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
-        <div className="relative z-10 mx-auto mt-16 max-w-3xl px-4 text-center">
-          <div className="mb-4 inline-flex items-center justify-center rounded-full bg-primary/15 p-3 ring-1 ring-primary/40">
-            <BookOpen className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="mb-3 text-4xl font-black uppercase tracking-[0.2em] text-foreground drop-shadow-xl md:text-6xl">Books</h1>
-          <p className="text-sm font-medium text-muted-foreground md:text-lg">
-            Discover your next story. Browse books available through Xero Streams, including exclusive titles.
-          </p>
-        </div>
-      </div>
+      <BooksHero books={books} authors={authors} />
 
-      <div className="xero-container relative z-20 -mt-6 flex-1 pb-20">
+      <main className="xero-container flex-1 pb-20">
         {isLoading || loadingAuthors ? (
           <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : books.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">No books available at the moment.</div>
         ) : (
-          <div className="space-y-12">
+          <div>
             {exclusiveBooks.length > 0 && (
-              <section>
+              <section className="xero-section">
                 <SectionHeader title="Xero Streams Exclusives" subtitle={`Only on Xero Streams: ${exclusiveAuthorNames.join(", ")}`} />
                 {renderBooks(exclusiveBooks)}
               </section>
             )}
 
-            {books.length > 8 && (
-              <section>
+            {recentBooks.length > 0 && (
+              <section className="xero-section">
                 <SectionHeader title="Recently Added" />
                 {renderBooks(recentBooks)}
               </section>
             )}
 
-            {otherAuthors.map((author) => (
-              <section key={author.id}>
-                <SectionHeader title={author.name} subtitle={author.description} />
-                {renderBooks(books.filter((b) => b.author_id === author.id))}
-              </section>
-            ))}
-
-            {booksWithoutAuthor.length > 0 && (
-              <section>
-                <SectionHeader title="More Books" />
-                {renderBooks(booksWithoutAuthor)}
-              </section>
-            )}
+            <AuthorBrowser authors={authors} books={books} selected={selectedAuthor} onSelect={setSelectedAuthor} />
+            <section className="xero-section" id="all-books">
+              <SectionHeader title="All Books" subtitle={selectedAuthor === "all" ? `${books.length} available titles` : authors.find((a) => a.id === selectedAuthor)?.name} />
+              {renderBooks(allBooks)}
+            </section>
           </div>
         )}
-      </div>
+      </main>
       <Footer />
     </div>
   );

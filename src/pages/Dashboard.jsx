@@ -16,6 +16,7 @@ import MyReviewsSection from "@/components/dashboard/MyReviewsSection";
 import RequestsSection from "@/components/dashboard/RequestsSection";
 import SubscriptionSection from "@/components/dashboard/SubscriptionSection";
 import SettingsSection from "@/components/dashboard/SettingsSection";
+import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
 const TABS = [
   { id: "continue", label: "Continue Watching", icon: Play },
@@ -110,7 +111,7 @@ export default function Dashboard() {
 
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("sort_order", 2000),
+    queryFn: () => loadMediaRecords(base44.entities.Video),
     enabled: !!user,
   });
 
@@ -144,12 +145,12 @@ export default function Dashboard() {
 
   const { data: allSeries = [] } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(undefined, 1000)
+    queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000)
   });
 
   const { data: allFranchises = [] } = useQuery({
     queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list("-updated_date", 1000)
+    queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000)
   });
 
   const { data: myRequests = [], refetch: refetchRequests } = useQuery({
@@ -206,7 +207,7 @@ export default function Dashboard() {
   };
 
   const handleToggleRow = async (rowId, checked) => {
-    const currentRows = user.homepage_rows || ["hero", "latest", "continue_watching", "favourites", "tv", "movies"];
+    const currentRows = user.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
     const newRows = checked ? [...currentRows, rowId] : currentRows.filter(r => r !== rowId);
     await base44.auth.updateMe({ homepage_rows: newRows });
     fetchUser();
@@ -250,11 +251,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="xero-container flex-1 space-y-8 pb-16 pt-28">
-        <div>
-          <DashboardHeader user={user} activeSub={activeSub} activePlan={activePlan} stats={stats} />
+        <DashboardHeader user={user} activeSub={activeSub} activePlan={activePlan} stats={stats} />
+        <div className="grid items-start gap-7 lg:grid-cols-[220px_minmax(0,1fr)]">
           <DashboardNav tabs={TABS} active={activeTab} onChange={changeTab} />
-        </div>
-
+          <main className="min-w-0 rounded-xl border border-border bg-card/40 p-4 md:p-6">
         {activeTab === "continue" && <ContinueSection items={cwVideos} isPremium={hasAccess} />}
         {activeTab === "list" && (
           <MyListSection
@@ -264,6 +264,7 @@ export default function Dashboard() {
             watchlists={watchlists}
             watchlistItems={watchlistItems}
             videos={videos}
+            allSeries={allSeries}
             isPremium={hasAccess}
             onDeleteWatchlist={deleteWatchlist}
           />
@@ -292,6 +293,8 @@ export default function Dashboard() {
           />
         )}
         {activeTab === "settings" && <SettingsSection user={user} onToggleRow={handleToggleRow} />}
+          </main>
+        </div>
       </div>
       <Footer />
     </div>

@@ -109,58 +109,40 @@ img:not([data-allow-context]) {
 /* ---------- Xero Cinema layout primitives ---------- */
 @layer components {
   .xero-container {
-    @apply mx-auto w-full max-w-[2000px] px-4 sm:px-6 md:px-12 lg:px-16;
+    @apply mx-auto w-full max-w-none px-4 sm:px-6 md:px-12 lg:px-16;
   }
 
-  /*
-   * Fixed-width tracks (never 1fr) so cards keep a controlled size and extra
-   * row space stays empty instead of enlarging the cards.
-   * Poster cards: 140px -> 150px -> 160px. Mobile: 3 fixed columns.
-   */
+  /* Poster and episode widths never expand to fill an incomplete row. */
+  .xero-media-card { width: 100%; max-width: 175px; }
+  .xero-episode-card { width: 100%; max-width: 300px; }
   .xero-media-grid {
     display: grid;
-    gap: 0.75rem;
+    gap: 1rem 0.75rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: start;
+    align-items: stretch;
   }
-
-  /* 16:9 episode cards: 260px -> 280px. Mobile: 1-2 columns, capped by the card. */
   .xero-episode-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 300px);
     justify-content: start;
   }
-
   @media (min-width: 480px) {
-    .xero-episode-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    .xero-episode-grid { grid-template-columns: repeat(2, minmax(0, 280px)); }
   }
-
   @media (min-width: 640px) {
-    .xero-media-grid {
-      gap: 1rem 1.25rem;
-      grid-template-columns: repeat(auto-fill, 140px);
-    }
-    .xero-episode-grid {
-      gap: 1.25rem;
-      grid-template-columns: repeat(auto-fill, 260px);
-    }
+    .xero-media-grid { gap: 1.25rem 1rem; grid-template-columns: repeat(auto-fill, 150px); }
+    .xero-episode-grid { grid-template-columns: repeat(auto-fill, 280px); }
   }
-
   @media (min-width: 1024px) {
-    .xero-media-grid {
-      grid-template-columns: repeat(auto-fill, 150px);
-    }
+    .xero-media-grid { grid-template-columns: repeat(auto-fill, 160px); }
+    .xero-home-grid { max-width: 1216px; }
   }
-
   @media (min-width: 1536px) {
-    .xero-media-grid {
-      grid-template-columns: repeat(auto-fill, 160px);
-    }
-    .xero-episode-grid {
-      grid-template-columns: repeat(auto-fill, 280px);
-    }
+    .xero-media-grid { grid-template-columns: repeat(auto-fill, 170px); }
+    .xero-home-grid { max-width: 1286px; }
   }
+  .xero-section { @apply border-t border-border/60 py-8 md:py-10; }
+  .xero-action { @apply h-11 gap-2 rounded-lg border-border bg-secondary text-foreground hover:bg-secondary/80; }
 }

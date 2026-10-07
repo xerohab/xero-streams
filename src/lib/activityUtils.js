@@ -107,36 +107,49 @@ export function getTopLevelMedia(franchises = [], series = [], videos = []) {
      }
   });
 
+  // Include inherited sub-collection and episode activity without changing title counts.
+  topLevelMap.forEach((group) => {
+    group.latestActivityAt = Math.max(group.latestActivityAt, getItemActivityAt(group.data, franchises, series, videos));
+  });
   return Array.from(topLevelMap.values());
 }
 
-export function getItemActivityAt(item, franchises = [], series = [], videos = []) {
+export function getItemActivityAt(item, franchises = [], series = [], videos = [], seen = new Set()) {
+  if (!item || seen.has(item.id)) return 0;
+  seen.add(item.id);
   let latest = getEntityActivity(item);
-  
-  if (item.cover_image && !item.cast) {
-     // Franchise
-     const mySeries = series.filter(s => s.franchise_id === item.id);
-     const myVideos = videos.filter(v => v.franchise_id === item.id || (v.series_id && mySeries.some(s => s.id === v.series_id)));
-     [...mySeries, ...myVideos].forEach(child => {
-       const childAct = getEntityActivity(child);
-       if (childAct > latest) latest = childAct;
-     });
-     // Also check child franchises
-     const childFranchises = franchises.filter(f => f.parent_id === item.id);
-     childFranchises.forEach(child => {
-        const childAct = getItemActivityAt(child, franchises, series, videos);
-        if (childAct > latest) latest = childAct;
-     });
-  } else if (item.cover_image && item.cast) {
-     // Series
-     const myVideos = videos.filter(v => v.series_id === item.id);
-     myVideos.forEach(child => {
-       const childAct = getEntityActivity(child);
-       if (childAct > latest) latest = childAct;
-     });
+  // Identify membership by the actual hierarchy, never by optional cast/artwork fields.
+  if (franchises.some((f) => f.id === item.id)) {
+    const members = series.filter((s) => s.franchise_id === item.id);
+    const memberIds = new Set(members.map((s) => s.id));
+    const children = [
+      ...members,
+      ...videos.filter((v) => v.franchise_id === item.id || memberIds.has(v.series_id)),
+      ...franchises.filter((f) => f.parent_id === item.id),
+    ];
+    children.forEach((child) => { latest = Math.max(latest, getItemActivityAt(child, franchises, series, videos, seen)); });
+  } else if (series.some((s) => s.id === item.id)) {
+    videos.filter((v) => v.series_id === item.id).forEach((child) => { latest = Math.max(latest, getEntityActivity(child)); });
   }
-  
   return latest;
+}
+
+// Same complete hierarchy is used for Home, Movies and TV discovery.
+export function getCatalogMedia(franchises, series, videos, type) {
+  const groups = getTopLevelMedia(franchises, series, videos);
+  if (!type) return groups.filter((g) => g.type !== "franchise" || g.items > 0);
+  const members = type === "series" ? series : videos.filter((v) => !v.series_id);
+  const collectionIds = new Set();
+  members.forEach((member) => {
+    let node = franchises.find((f) => f.id === member.franchise_id);
+    const seen = new Set();
+    while (node && !seen.has(node.id)) {
+      seen.add(node.id);
+      collectionIds.add(node.id);
+      node = franchises.find((f) => f.id === node.parent_id);
+    }
+  });
+  return groups.filter((g) => g.type === type || (g.type === "franchise" && collectionIds.has(g.data.id)));
 }
 
 export function isRecentlyUpdated(activityTimestamp) {

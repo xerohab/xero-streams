@@ -14,6 +14,7 @@ import MediaGrid from "@/components/browse/MediaGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 import ReviewSection from "@/components/browse/ReviewSection";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
+import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
 export default function FranchiseDetail() {
   const location = useLocation();
@@ -45,17 +46,17 @@ export default function FranchiseDetail() {
 
   const { data: allSeries = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(undefined, 1000),
+    queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000),
   });
 
   const { data: allVideos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("sort_order", 2000),
+    queryFn: () => loadMediaRecords(base44.entities.Video),
   });
 
   const { data: allFranchises = [], isLoading: loadingFranchises } = useQuery({
     queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list("-updated_date", 1000),
+    queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
   });
 
   const subFranchises = allFranchises
@@ -106,7 +107,7 @@ export default function FranchiseDetail() {
             allVideos.filter((v) => v.franchise_id === f.id).length +
             allFranchises.filter((sub) => sub.parent_id === f.id).length
           }
-          itemLabel="Items"
+          itemLabel="Titles"
           isUpdated={isRecentlyUpdated(activityOf(f))}
         />
       )),
@@ -139,7 +140,7 @@ export default function FranchiseDetail() {
         onToggleFavourite={handleToggleFavourite}
       />
 
-      <div className="xero-container flex-1 space-y-12 py-10">
+      <main className="xero-container flex-1 space-y-10 pb-16 pt-10">
         {groups.length > 0 ? (
           <section>
             <SectionHeader title="Titles in this Collection" />
@@ -159,7 +160,7 @@ export default function FranchiseDetail() {
         )}
 
         <ReviewSection contentId={franchiseId} contentType="franchise" />
-      </div>
+      </main>
       <Footer />
     </div>
   );

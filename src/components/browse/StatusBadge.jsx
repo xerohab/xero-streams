@@ -5,8 +5,8 @@ import { Check, Clock, Crown, Layers } from "lucide-react";
 const BASE =
   "inline-flex items-center gap-1 rounded px-1.5 py-[3px] text-[9px] sm:text-[10px] font-black uppercase leading-none tracking-wider shadow-lg shadow-black/40";
 const SOLID = "bg-primary text-primary-foreground";
-const OUTLINE = "border border-primary/50 bg-black/85 text-primary";
-const NEUTRAL = "bg-black/80 text-white backdrop-blur-sm";
+const OUTLINE = "border border-primary/40 bg-background/95 text-primary";
+const NEUTRAL = "border border-border bg-secondary/95 text-foreground";
 
 /**
  * Single source of truth for every semantic label in the Xero Cinema system:
@@ -25,7 +25,7 @@ export default function StatusBadge({ status, className }) {
     tone = OUTLINE;
     icon = <Layers className="h-2.5 w-2.5" />;
   } else if (s === "OWNED") {
-    tone = OUTLINE;
+    tone = NEUTRAL;
     icon = <Check className="h-2.5 w-2.5" />;
   } else if (s === "PREMIUM") {
     tone = OUTLINE;
@@ -36,7 +36,7 @@ export default function StatusBadge({ status, className }) {
   } else if (s.startsWith("EP ")) {
     tone = OUTLINE;
   } else if (s === "18+") {
-    tone = "bg-red-600 text-white";
+    tone = "bg-destructive text-destructive-foreground";
   }
 
   return (

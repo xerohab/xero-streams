@@ -10,7 +10,7 @@ const GENRES = [
 ];
 
 const SELECT =
-  "h-12 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  "h-12 flex-1 rounded-lg border border-input bg-card px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 /** Xero Cinema search bar + filters. State lives in the Search page. */
 export default function SearchFilters({
@@ -18,7 +18,7 @@ export default function SearchFilters({
   filterYear, onYear, filterCast, onCast, showAdvanced, onToggleAdvanced, categories,
 }) {
   return (
-    <div className="mb-10 flex max-w-4xl flex-col gap-4">
+    <div className="mb-8 flex max-w-5xl flex-col gap-4 rounded-xl border border-border bg-card/60 p-4 md:p-5">
       <div className="flex flex-col gap-4 md:flex-row">
         <div className="relative flex-[2]">
           <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
@@ -27,7 +27,7 @@ export default function SearchFilters({
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             placeholder="Search movies, TV shows, collections, books..."
-            className="h-12 w-full rounded-full border-border bg-card pl-12 text-base focus-visible:ring-primary"
+            className="h-12 w-full rounded-lg border-border bg-card pl-12 text-base focus-visible:ring-primary"
           />
         </div>
         <div className="flex flex-1 gap-2">
@@ -49,7 +49,7 @@ export default function SearchFilters({
           <button
             onClick={onToggleAdvanced}
             aria-label="Advanced filters"
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-colors ${
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-colors ${
               showAdvanced ? "border-primary bg-primary text-primary-foreground" : "border-input bg-card text-foreground hover:border-primary/60"
             }`}
           >
@@ -60,8 +60,8 @@ export default function SearchFilters({
 
       {showAdvanced && (
         <div className="flex flex-col gap-4 pt-2 animate-in fade-in slide-in-from-top-2 md:flex-row">
-          <Input value={filterYear} onChange={(e) => onYear(e.target.value)} placeholder="Release Year" type="number" className="h-12 flex-1 rounded-full border-border bg-card px-5 text-base" />
-          <Input value={filterCast} onChange={(e) => onCast(e.target.value)} placeholder="Search by Cast Member" className="h-12 flex-[2] rounded-full border-border bg-card px-5 text-base" />
+          <Input value={filterYear} onChange={(e) => onYear(e.target.value)} placeholder="Release Year" type="number" className="h-12 flex-1 rounded-lg border-border bg-card px-5 text-base" />
+          <Input value={filterCast} onChange={(e) => onCast(e.target.value)} placeholder="Search by Cast Member" className="h-12 flex-[2] rounded-lg border-border bg-card px-5 text-base" />
         </div>
       )}
     </div>

@@ -20,7 +20,7 @@ export default function HomeBooksRow() {
   if (books.length === 0) return null;
 
   return (
-    <div className="mb-12">
+    <section className="xero-section">
       <SectionHeader
         title="Books"
         action={
@@ -29,11 +29,11 @@ export default function HomeBooksRow() {
           </Link>
         }
       />
-      <MediaGrid>
+      <MediaGrid className="xero-home-grid">
         {books.map((book) => (
           <BookCard key={book.id} book={book} author={authors.find((a) => a.id === book.author_id)} to="/books" />
         ))}
       </MediaGrid>
-    </div>
+    </section>
   );
 }

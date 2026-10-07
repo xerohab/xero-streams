@@ -1,14 +1,10 @@
 import React from "react";
-import { Eye, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
 
-export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdated }) {
-  const countLabel =
-    itemCount > 0
-      ? `${itemCount} ${itemCount === 1 ? (itemLabel ? itemLabel.replace(/s$/, "") : "Title") : itemLabel || "Titles"}`
-      : null;
-  const views = franchise.views || 0;
+export default function FranchiseCard({ franchise, itemCount, isUpdated }) {
+  const countLabel = itemCount != null ? `${itemCount} ${itemCount === 1 ? "Title" : "Titles"}` : "Collection";
 
   return (
     <MediaCard
@@ -18,15 +14,7 @@ export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdat
       title={franchise.title}
       FallbackIcon={Layers}
       HoverIcon={Layers}
-      meta={[
-        countLabel,
-        views > 0 && (
-          <>
-            <Eye className="h-3 w-3" />
-            {views}
-          </>
-        ),
-      ]}
+      meta={[countLabel, franchise.category && <span className="capitalize">{franchise.category}</span>]}
       badges={
         <>
           {isUpdated && <StatusBadge status="UPDATED" />}
