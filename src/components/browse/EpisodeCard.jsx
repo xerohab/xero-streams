@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Download as DownloadIcon, CheckCircle, Clock } from "lucide-react";
+import { Play, Download as DownloadIcon, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getProgress } from "@/hooks/useContinueWatching";
+import { downloadSingleVideo } from "@/lib/downloadUtils";
+import toast from "react-hot-toast";
 
 export default function EpisodeCard({ video, isPremium }) {
   const navigate = useNavigate();
+  const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   if (!video) return null;
   const isComingSoon = video.coming_soon || !video.video_url;
@@ -14,6 +18,29 @@ export default function EpisodeCard({ video, isPremium }) {
   const savedProgress = getProgress(video.id);
   const watchedPct = savedProgress ? Math.min(100, Math.round((savedProgress.currentTime / savedProgress.duration) * 100)) : 0;
   const isWatched = watchedPct > 90;
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (downloading) return;
+    setDownloading(true);
+    setProgress(0);
+    const toastId = toast.loading(`Preparing download for ${video.title}...`);
+    try {
+      await downloadSingleVideo(video.id, (p) => {
+         setProgress(p);
+         if (p < 100) {
+            toast.loading(`Downloading... ${p}%`, { id: toastId });
+         }
+      });
+      toast.success("Download complete!", { id: toastId });
+    } catch (err) {
+      toast.error(err.message, { id: toastId });
+    } finally {
+      setDownloading(false);
+      setProgress(0);
+    }
+  };
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -41,10 +68,20 @@ export default function EpisodeCard({ video, isPremium }) {
         )}
         
         {/* Dark overlay that appears on hover */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
            <div className="w-12 h-12 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
              <Play className="w-5 h-5 fill-current ml-1" />
            </div>
+           {isPremium && !isComingSoon && video.video_url && (
+             <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300 backdrop-blur-md"
+             >
+                {downloading ? <span className="text-xs font-bold">{progress}%</span> : <DownloadIcon className="w-5 h-5" />}
+             </button>
+           )}
         </div>
 
         {/* Persistent top badges */}

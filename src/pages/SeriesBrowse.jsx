@@ -7,6 +7,7 @@ import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
 import PaginationControls from "@/components/browse/PaginationControls";
 import { Loader2 } from "lucide-react";
+import { getTopLevelMedia, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function SeriesBrowse() {
   const [itemsPerPage, setItemsPerPage] = useState(() => {
@@ -37,38 +38,14 @@ export default function SeriesBrowse() {
   const topLevelItems = useMemo(() => {
     if (!seriesList.length) return [];
     
-    const items = [];
-    const franchiseMap = new Map();
-    const processedFranchises = new Set();
+    const allGroups = getTopLevelMedia(franchises, seriesList, []);
     
-    // Group series by franchise
-    seriesList.forEach(series => {
-      if (series.franchise_id) {
-        if (!franchiseMap.has(series.franchise_id)) {
-          franchiseMap.set(series.franchise_id, { count: 0, mostRecent: series.created_date || '' });
-        }
-        franchiseMap.get(series.franchise_id).count++;
-        // update mostRecent
-        if (series.created_date && series.created_date > franchiseMap.get(series.franchise_id).mostRecent) {
-          franchiseMap.get(series.franchise_id).mostRecent = series.created_date;
-        }
-      } else {
-        items.push({ type: 'series', data: series, sortKey: series.created_date || '' });
-      }
-    });
+    // We only want franchises that have items and standalone series.
+    const filtered = allGroups.filter(g => g.type === 'series' || (g.type === 'franchise' && g.items > 0));
 
-    // Add valid franchises to the top level
-    franchiseMap.forEach((info, franchiseId) => {
-      const franchise = franchises.find(f => f.id === franchiseId);
-      if (franchise && !processedFranchises.has(franchiseId)) {
-        processedFranchises.add(franchiseId);
-        items.push({ type: 'franchise', data: franchise, itemCount: info.count, sortKey: info.mostRecent });
-      }
-    });
-
-    // Sort combined list by most recent (descending)
-    items.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
-    return items;
+    // Sort by latestActivityAt descending
+    filtered.sort((a, b) => b.latestActivityAt - a.latestActivityAt);
+    return filtered;
   }, [seriesList, franchises]);
 
   // Pagination logic
@@ -93,10 +70,11 @@ export default function SeriesBrowse() {
           <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {paginatedItems.map(item => {
+                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
                 if (item.type === 'franchise') {
-                  return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.itemCount} itemLabel="Series" />;
+                  return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.items} itemLabel="Series" isUpdated={isUpdated} />;
                 }
-                return <SeriesCard key={`series-${item.data.id}`} series={item.data} />;
+                return <SeriesCard key={`series-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
               })}
             </div>
             

@@ -2,11 +2,13 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Tv, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import MediaHoverOverlay from "@/components/browse/MediaHoverOverlay";
 
 export default function SeriesCard({ series, isUpdated }) {
   if (!series) return null;
 
   return (
+    <MediaHoverOverlay item={series} type="series" isUpdated={isUpdated}>
     <Link 
       to={`/series?id=${series.id}`} 
       className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50 max-w-[180px] w-full mx-auto"
@@ -67,5 +69,6 @@ export default function SeriesCard({ series, isUpdated }) {
         </div>
       </div>
     </Link>
+    </MediaHoverOverlay>
   );
 }

@@ -9,6 +9,7 @@ import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
 import PaginationControls from "@/components/browse/PaginationControls";
+import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function Search() {
   const navigate = useNavigate();
@@ -172,9 +173,11 @@ export default function Search() {
           <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {paginatedItems.map((item, idx) => {
-                if (item.type === 'franchise') return <FranchiseCard key={`f-${item.data.id}`} franchise={item.data} itemCount={getFranchiseCount(item.data.id)} />;
-                if (item.type === 'series') return <SeriesCard key={`s-${item.data.id}`} series={item.data} />;
-                return <VideoCard key={`v-${item.data.id}`} video={item.data} />;
+                const activity = getItemActivityAt(item.data, franchises, seriesList, videos);
+                const isUpdated = isRecentlyUpdated(activity);
+                if (item.type === 'franchise') return <FranchiseCard key={`f-${item.data.id}`} franchise={item.data} itemCount={getFranchiseCount(item.data.id)} isUpdated={isUpdated} />;
+                if (item.type === 'series') return <SeriesCard key={`s-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
+                return <VideoCard key={`v-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
             </div>
             

@@ -2,9 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Layers, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import MediaHoverOverlay from "@/components/browse/MediaHoverOverlay";
 
 export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdated }) {
   return (
+    <MediaHoverOverlay item={franchise} type="franchise" isUpdated={isUpdated}>
     <Link 
       to={`/franchise?id=${franchise.id}`} 
       className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50 max-w-[180px] w-full mx-auto"
@@ -60,5 +62,6 @@ export default function FranchiseCard({ franchise, itemCount, itemLabel, isUpdat
         </div>
       </div>
     </Link>
+    </MediaHoverOverlay>
   );
 }

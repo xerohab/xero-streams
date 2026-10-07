@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 import VideoRow from "@/components/browse/VideoRow";
 import Footer from "@/components/browse/Footer";
+import { getTopLevelMedia, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -79,87 +80,48 @@ export default function Home() {
     return Array.from(ids);
   };
 
-  const getTopLevelGroup = () => {
-    const topLevelMap = new Map();
-    
-    // Add all top-level franchises
-    const rootFranchises = franchises.filter(f => !f.parent_id && !f.is_adult);
-    rootFranchises.forEach(f => {
-       topLevelMap.set(f.id, { type: 'franchise', data: f, latestActivityAt: new Date(f.content_updated_at || f.created_date).getTime(), totalViews: f.views || 0 });
-    });
-
-    safeSeries.forEach(s => {
-       let rootFId = null;
-       if (s.franchise_id) {
-          const possibleF = franchises.find(f => f.id === s.franchise_id);
-          rootFId = possibleF ? (possibleF.parent_id || possibleF.id) : null;
-          while (rootFId) {
-             const parent = franchises.find(f => f.id === rootFId);
-             if (parent && parent.parent_id) rootFId = parent.parent_id;
-             else break;
-          }
-       }
-       const activity = new Date(s.content_updated_at || s.created_date).getTime();
-       if (rootFId && topLevelMap.has(rootFId)) {
-          const group = topLevelMap.get(rootFId);
-          group.latestActivityAt = Math.max(group.latestActivityAt, activity);
-          group.totalViews += (s.views || 0);
-       } else if (!rootFId) {
-          topLevelMap.set(s.id, { type: 'series', data: s, latestActivityAt: activity, totalViews: s.views || 0 });
-       }
-    });
-
-    safeVideos.forEach(v => {
-       let targetGroup = null;
-       
-       if (v.franchise_id) {
-          let rootFId = v.franchise_id;
-          while (rootFId) {
-             const parent = franchises.find(f => f.id === rootFId);
-             if (parent && parent.parent_id) rootFId = parent.parent_id;
-             else break;
-          }
-          if (rootFId && topLevelMap.has(rootFId)) {
-             targetGroup = topLevelMap.get(rootFId);
-          }
-       } else if (v.series_id) {
-          const s = safeSeries.find(s => s.id === v.series_id);
-          if (s && s.franchise_id) {
-             let rootFId = s.franchise_id;
-             while (rootFId) {
-                const parent = franchises.find(f => f.id === rootFId);
-                if (parent && parent.parent_id) rootFId = parent.parent_id;
-                else break;
-             }
-             if (rootFId && topLevelMap.has(rootFId)) targetGroup = topLevelMap.get(rootFId);
-          } else if (s && topLevelMap.has(s.id)) {
-             targetGroup = topLevelMap.get(s.id);
-          }
-       }
-       
-       const activity = new Date(v.content_updated_at || v.created_date).getTime();
-       if (targetGroup) {
-          targetGroup.latestActivityAt = Math.max(targetGroup.latestActivityAt, activity);
-          targetGroup.totalViews += (v.views || 0);
-       } else if (!v.series_id && !v.franchise_id) {
-          topLevelMap.set(v.id, { type: 'video', data: v, latestActivityAt: activity, totalViews: v.views || 0 });
-       }
-    });
-
-    return Array.from(topLevelMap.values());
-  };
-
-  const topLevelItems = getTopLevelGroup();
+  const topLevelItems = getTopLevelMedia(franchises, safeSeries, safeVideos);
 
   const finalLatestItems = topLevelItems
     .filter(item => item.latestActivityAt >= sevenDaysAgo.getTime())
     .sort((a, b) => b.latestActivityAt - a.latestActivityAt)
-    .slice(0, 10);
+    .slice(0, 14);
 
-  const finalMostWatchedItems = topLevelItems
+  // Group top-level items into movies/series for most watched
+  const topLevelMovies = [];
+  const topLevelSeries = [];
+  
+  topLevelItems.forEach(item => {
+     if (item.type === 'video' || (item.type === 'franchise' && item.data.category !== 'animation' && !item.data.title.toLowerCase().includes("wrestling"))) {
+        // Just a heuristic for "Movies" if franchise, ideally we'd look at children, but getTopLevelMedia doesn't give us child types easily.
+        // Actually, we can check if it has items > 0.
+        // Let's rely on franchise name/category for now, or just let it fall where it falls.
+        // Or we can just check if any series exist for it.
+        const fId = item.data.id;
+        const hasSeries = safeSeries.some(s => s.franchise_id === fId);
+        if (hasSeries || item.type === 'series') {
+           topLevelSeries.push(item);
+        } else {
+           topLevelMovies.push(item);
+        }
+     } else if (item.type === 'series') {
+        topLevelSeries.push(item);
+     } else if (item.type === 'franchise') {
+        const hasSeries = safeSeries.some(s => s.franchise_id === item.data.id);
+        if (hasSeries) topLevelSeries.push(item);
+        else topLevelMovies.push(item);
+     }
+  });
+
+  const finalMostWatchedMovies = topLevelMovies
     .filter(item => item.totalViews > 0)
     .sort((a, b) => b.totalViews - a.totalViews)
-    .slice(0, 10);
+    .slice(0, 14);
+
+  const finalMostWatchedSeries = topLevelSeries
+    .filter(item => item.totalViews > 0)
+    .sort((a, b) => b.totalViews - a.totalViews)
+    .slice(0, 14);
 
   // Movies: standalone movies only
   // Exclude anything with a series_id
@@ -315,26 +277,44 @@ export default function Home() {
             </div>
             <div className="px-6 md:px-16 grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
               {finalLatestItems.map((item) => {
-                const isUpdated = item.latestActivityAt >= sevenDaysAgo.getTime();
-                if (item.type === 'franchise') return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} isUpdated={isUpdated} />;
-                if (item.type === 'series') return <SeriesCard key={`series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} isUpdated={isUpdated} />;
+                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
+                if (item.type === 'franchise') return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
+                if (item.type === 'series') return <SeriesCard key={`series-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
                 return <VideoCard key={`video-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
             </div>
           </div>
         )}
 
-        {/* Most Watched Row */}
-        {finalMostWatchedItems.length > 0 && activeTab === "all" && (
+        {/* Most Watched Movies */}
+        {finalMostWatchedMovies.length > 0 && activeTab === "all" && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground">Most Watched</h2>
+              <h2 className="text-lg md:text-xl font-bold text-foreground">Most Watched Movies</h2>
             </div>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
-              {finalMostWatchedItems.map((item) => {
-                if (item.type === 'franchise') return <FranchiseCard key={`mw-franchise-${item.data.id}`} franchise={item.data} />;
-                if (item.type === 'series') return <SeriesCard key={`mw-series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} />;
-                return <VideoCard key={`mw-video-${item.data.id}`} video={item.data} />;
+              {finalMostWatchedMovies.map((item) => {
+                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
+                if (item.type === 'franchise') return <FranchiseCard key={`mw-f-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
+                if (item.type === 'series') return <SeriesCard key={`mw-s-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
+                return <VideoCard key={`mw-v-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Most Watched Series */}
+        {finalMostWatchedSeries.length > 0 && activeTab === "all" && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground">Most Watched TV Series</h2>
+            </div>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
+              {finalMostWatchedSeries.map((item) => {
+                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
+                if (item.type === 'franchise') return <FranchiseCard key={`mwtv-f-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
+                if (item.type === 'series') return <SeriesCard key={`mwtv-s-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
+                return <VideoCard key={`mwtv-v-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
             </div>
           </div>
@@ -379,7 +359,7 @@ export default function Home() {
                 const combined = [...franchiseItems, ...seriesItems]
                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                   .map((item) => item.el);
-                return activeTab === "all" ? combined.slice(0, 10) : combined;
+                return activeTab === "all" ? combined.slice(0, 14) : combined;
               })()}
             </div>
           </div>
@@ -412,7 +392,7 @@ export default function Home() {
                 const combined = [...franchiseItems, ...movieItems]
                   .sort((a, b) => new Date(b.date) - new Date(a.date))
                   .map((item) => item.el);
-                return activeTab === "all" ? combined.slice(0, 10) : combined;
+                return activeTab === "all" ? combined.slice(0, 14) : combined;
               })()}
             </div>
           </div>

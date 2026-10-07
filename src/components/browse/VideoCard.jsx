@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Clock, Film, Eye, Heart, Download } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import MediaHoverOverlay from "@/components/browse/MediaHoverOverlay";
 
 export default function VideoCard({ video, isUpdated }) {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function VideoCard({ video, isUpdated }) {
   };
 
   return (
+    <MediaHoverOverlay item={video} type="video" isUpdated={isUpdated}>
     <Link 
       to={href} 
       onClick={handleClick} 
@@ -84,6 +86,7 @@ export default function VideoCard({ video, isUpdated }) {
         </div>
       </div>
     </Link>
+    </MediaHoverOverlay>
   );
 }
 

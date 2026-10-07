@@ -7,6 +7,7 @@ import VideoCard from "@/components/browse/VideoCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
 import PaginationControls from "@/components/browse/PaginationControls";
 import { Loader2 } from "lucide-react";
+import { getTopLevelMedia, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function MoviesBrowse() {
   // Use localStorage for preferences
@@ -38,39 +39,15 @@ export default function MoviesBrowse() {
   const topLevelItems = useMemo(() => {
     if (!videos.length) return [];
     
-    const items = [];
-    const franchiseMap = new Map();
-    const processedFranchises = new Set();
+    const allGroups = getTopLevelMedia(franchises, [], videos);
     
-    // Group videos by franchise
-    videos.forEach(video => {
-      if (video.franchise_id) {
-        if (!franchiseMap.has(video.franchise_id)) {
-          franchiseMap.set(video.franchise_id, { count: 0, mostRecent: video.created_date || '' });
-        }
-        franchiseMap.get(video.franchise_id).count++;
-        // update mostRecent if needed
-        const currentMostRecent = franchiseMap.get(video.franchise_id).mostRecent;
-        if (video.created_date && video.created_date > currentMostRecent) {
-          franchiseMap.get(video.franchise_id).mostRecent = video.created_date;
-        }
-      } else {
-        items.push({ type: 'video', data: video, sortKey: video.created_date || '' });
-      }
-    });
+    // We only want franchises that have items (since we didn't pass series) 
+    // and standalone videos.
+    const filtered = allGroups.filter(g => g.type === 'video' || (g.type === 'franchise' && g.items > 0));
 
-    // Add valid franchises to the top level
-    franchiseMap.forEach((info, franchiseId) => {
-      const franchise = franchises.find(f => f.id === franchiseId);
-      if (franchise && !processedFranchises.has(franchiseId)) {
-        processedFranchises.add(franchiseId);
-        items.push({ type: 'franchise', data: franchise, itemCount: info.count, sortKey: info.mostRecent });
-      }
-    });
-
-    // Sort combined list by most recent (descending)
-    items.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
-    return items;
+    // Sort by latestActivityAt descending
+    filtered.sort((a, b) => b.latestActivityAt - a.latestActivityAt);
+    return filtered;
   }, [videos, franchises]);
 
   // Pagination logic
@@ -95,10 +72,11 @@ export default function MoviesBrowse() {
           <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
               {paginatedItems.map(item => {
+                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
                 if (item.type === 'franchise') {
-                  return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.itemCount} itemLabel="Movies" />;
+                  return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.items} itemLabel="Movies" isUpdated={isUpdated} />;
                 }
-                return <VideoCard key={`video-${item.data.id}`} video={item.data} />;
+                return <VideoCard key={`video-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
             </div>
             
