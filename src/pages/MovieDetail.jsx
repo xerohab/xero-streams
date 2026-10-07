@@ -37,6 +37,7 @@ export default function MovieDetail() {
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
     enabled: !!user
   });
+  const { data: franchise } = useQuery({ queryKey: ["franchise", movie?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: movie.franchise_id}); return res[0]; }, enabled: !!movie?.franchise_id });
   
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
@@ -138,6 +139,11 @@ export default function MovieDetail() {
           </div>
           
           <div className="flex-1 z-10 space-y-4">
+            {franchise && (
+              <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-primary font-bold hover:underline mb-1">
+                Part of {franchise.title} Collection &rarr;
+              </Link>
+            )}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-lg">{video.title}</h1>
             
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium">
