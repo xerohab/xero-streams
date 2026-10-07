@@ -37,6 +37,16 @@ export default function MovieDetail() {
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
     enabled: !!user
   });
+
+  const { data: video, isLoading } = useQuery({
+    queryKey: ["video", videoId],
+    queryFn: async () => {
+      const videos = await base44.entities.Video.filter({ id: videoId });
+      return videos[0];
+    },
+    enabled: !!videoId,
+  });
+
   const { data: franchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !!video?.franchise_id });
   
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
@@ -64,15 +74,6 @@ export default function MovieDetail() {
   };
 
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
-
-  const { data: video, isLoading } = useQuery({
-    queryKey: ["video", videoId],
-    queryFn: async () => {
-      const videos = await base44.entities.Video.filter({ id: videoId });
-      return videos[0];
-    },
-    enabled: !!videoId,
-  });
 
   useEffect(() => {
     if (video) {
