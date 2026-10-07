@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, Loader2, User } from "lucide-react";
 import toast from "react-hot-toast";
+import SectionHeader from "@/components/browse/SectionHeader";
 
 export default function ReviewSection({ contentId, contentType }) {
   const [rating, setRating] = useState(5);
@@ -77,7 +78,7 @@ export default function ReviewSection({ contentId, contentType }) {
 
   return (
     <div className="mt-12">
-      <h3 className="text-2xl font-bold text-foreground mb-6">User Reviews</h3>
+      <SectionHeader title="User Reviews" className="mb-6" />
       
       {user ? (
         <div className="bg-card border border-border rounded-xl p-6 mb-8">

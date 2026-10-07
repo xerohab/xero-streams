@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Play, Search, User, LogIn, Crown, Film, Tv, Book, Settings, LogOut, Heart, Download, HomeIcon } from "lucide-react";
+import { Play, Search, User, LogIn, Crown, Film, Tv, Settings, LogOut, Heart, Download, HomeIcon } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

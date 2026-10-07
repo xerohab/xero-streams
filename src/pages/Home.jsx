@@ -250,6 +250,8 @@ export default function Home() {
                 return <VideoCard key={`video-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
             </MediaGrid>
+          </div>
+        )}
 
         {/* Favourites Row */}
         {rows.includes("favourites") && user?.favourites?.length > 0 && activeTab === "all" && (
