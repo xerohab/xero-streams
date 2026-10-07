@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import ContinueWatchingRow from "@/components/browse/ContinueWatchingRow";
 import VideoRow from "@/components/browse/VideoRow";
 import Footer from "@/components/browse/Footer";
+import MediaGrid from "@/components/browse/MediaGrid";
+import SectionHeader from "@/components/browse/SectionHeader";
+import HomeBooksRow from "@/components/browse/HomeBooksRow";
 import { getTopLevelMedia, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function Home() {
@@ -208,7 +211,7 @@ export default function Home() {
       {rows.includes("hero") && <HeroSection videos={heroVideos} seriesList={seriesList} />}
 
       {/* Tabs */}
-      <div className="relative z-10 -mt-6 px-6 md:px-16 mb-8">
+      <div className="xero-container relative z-10 -mt-6 mb-8">
         <div className="flex items-center gap-1 bg-background/60 backdrop-blur-md border border-border rounded-full p-1 w-fit flex-wrap">
           {[
             { id: "all", label: "All", icon: null },
@@ -232,25 +235,21 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="relative z-10 pb-16 px-6 md:px-16">
+      <div className="xero-container relative z-10 pb-16">
+        {rows.includes("continue_watching") && <ContinueWatchingRow />}
+
         {/* Latest Row */}
         {rows.includes("latest") && finalLatestItems.length > 0 && activeTab === "all" && (
           <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground">RECENTLY ADDED & UPDATED</h2>
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
+            <SectionHeader title="Recently Added & Updated" />
+            <MediaGrid>
               {finalLatestItems.map((item) => {
                 const isUpdated = isRecentlyUpdated(item.latestActivityAt);
                 if (item.type === 'franchise') return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
                 if (item.type === 'series') return <SeriesCard key={`series-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
                 return <VideoCard key={`video-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
-            </div>
-          </div>
-        )}
-
-        {rows.includes("continue_watching") && <ContinueWatchingRow />}
+            </MediaGrid>
 
         {/* Favourites Row */}
         {rows.includes("favourites") && user?.favourites?.length > 0 && activeTab === "all" && (
@@ -265,15 +264,15 @@ export default function Home() {
         {/* TV Series tab */}
         {rows.includes("tv") && (activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (
           <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground uppercase">TV Series</h2>
-              {activeTab === "all" && (seriesByFranchise.length + ungroupedSeries.length) > 8 && (
-                <button onClick={() => setActiveTab("tv")} className="text-sm text-primary hover:underline font-semibold">
+            <SectionHeader
+              title="TV Series"
+              action={activeTab === "all" && (seriesByFranchise.length + ungroupedSeries.length) > 8 && (
+                <button onClick={() => setActiveTab("tv")} className="text-xs font-bold uppercase tracking-wider text-primary hover:underline">
                   View All →
                 </button>
               )}
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
+            />
+            <div className="xero-media-grid">
               {(() => {
                 // Merge franchises and standalone series, sorted by newest created_date
                 const franchiseItems = seriesByFranchise.map(({ franchise, totalItems }) => ({
@@ -296,15 +295,15 @@ export default function Home() {
         {/* Movies tab */}
         {rows.includes("movies") && (activeTab === "all" || activeTab === "movies") && (ungroupedMovies.length > 0 || moviesByFranchise.length > 0) && (
           <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground uppercase">Movies</h2>
-              {activeTab === "all" && (moviesByFranchise.length + ungroupedMovies.length) > 8 && (
-                <button onClick={() => setActiveTab("movies")} className="text-sm text-primary hover:underline font-semibold">
+            <SectionHeader
+              title="Movies"
+              action={activeTab === "all" && (moviesByFranchise.length + ungroupedMovies.length) > 8 && (
+                <button onClick={() => setActiveTab("movies")} className="text-xs font-bold uppercase tracking-wider text-primary hover:underline">
                   View All →
                 </button>
               )}
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
+            />
+            <div className="xero-media-grid">
               {(() => {
                 // Merge franchises and standalone movies, sorted by newest created_date
                 const franchiseItems = moviesByFranchise.map(({ franchise, totalItems }) => ({
@@ -323,6 +322,8 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {activeTab === "all" && <HomeBooksRow />}
 
         {/* Empty states */}
         {activeTab === "tv" && ungroupedSeries.length === 0 && seriesByFranchise.length === 0 && (

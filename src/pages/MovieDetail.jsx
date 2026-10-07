@@ -6,9 +6,15 @@ import { CalendarClock, Clock, Film, Play, Loader2, Download as DownloadIcon, Sh
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
+import DetailHero from "@/components/browse/DetailHero";
+import VideoCard from "@/components/browse/VideoCard";
+import MediaGrid from "@/components/browse/MediaGrid";
+import SectionHeader from "@/components/browse/SectionHeader";
 import WatchlistButton from "@/components/browse/WatchlistButton";
 import ReviewSection from "@/components/browse/ReviewSection";
 import Footer from "@/components/browse/Footer";
+
+const OUTLINE_BTN = "gap-2 rounded-full h-12 px-6 border-white/20 bg-white/5 text-foreground hover:bg-white/10";
 
 export default function MovieDetail() {
   const navigate = useNavigate();
@@ -48,8 +54,24 @@ export default function MovieDetail() {
   });
 
   const { data: franchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !!video?.franchise_id });
+
+  const { data: movieCatalog = [] } = useQuery({
+    queryKey: ["movies_more_like_this"],
+    queryFn: () => base44.entities.Video.filter({ content_type: "movie", is_adult: false }, "-updated_date", 120),
+  });
   
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
+
+  // More Like This: same collection first, then same category, then newest
+  const moreLikeThis = movieCatalog
+    .filter((v) => v.id !== videoId && !v.series_id)
+    .map((v) => ({
+      v,
+      score: (video?.franchise_id && v.franchise_id === video.franchise_id ? 2 : 0) + (video?.category_id && v.category_id === video.category_id ? 1 : 0),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map(({ v }) => v)
+    .slice(0, 14);
 
   const handlePurchase = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
@@ -84,12 +106,6 @@ export default function MovieDetail() {
     }
   }, [video?.id]);
 
-  
-  
-  
-  
-
-  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -110,149 +126,125 @@ export default function MovieDetail() {
     );
   }
 
+  const castMembers = video.cast ? video.cast.split(",").map((c) => c.trim()).filter(Boolean) : [];
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      
-      {/* Cinematic Hero Backdrop */}
-      <div className="relative w-full h-[55vh] md:h-[70vh] max-h-[800px] bg-black">
-        {video.thumbnail_url ? (
-          <img
-            src={video.thumbnail_url}
-            alt=""
-            className="w-full h-full object-cover opacity-40 md:opacity-50"
-            style={{ maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)" }}
-          />
-        ) : (
-          <div className="w-full h-full bg-secondary/20"></div>
+
+      <DetailHero
+        image={video.thumbnail_url}
+        title={video.title}
+        FallbackIcon={Film}
+        backTo={from}
+        eyebrow={franchise && (
+          <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
+            Part of {franchise.title} Collection &rarr;
+          </Link>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent"></div>
+        meta={
+          <>
+            {video.release_year ? <span>{video.release_year}</span> : (video.release_date && <span>{new Date(video.release_date).getFullYear()}</span>)}
+            {video.duration && <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {video.duration}</span>}
+            {video.quality && video.quality !== "Unknown" && (
+              <span className="rounded border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-bold uppercase text-primary">{video.quality}</span>
+            )}
+          </>
+        }
+        description={video.description}
+      >
+        {(video.coming_soon || !video.video_url) ? (
+          <Button disabled className="gap-2 font-bold h-12 px-6 rounded-full bg-secondary text-secondary-foreground">
+            <CalendarClock className="w-5 h-5" /> Coming Soon
+          </Button>
+        ) : (
+          <Button
+            onClick={() => navigate(`/watch?id=${video.id}`)}
+            className="gap-2 font-bold h-12 px-8 rounded-full shadow-lg shadow-primary/20 text-base"
+          >
+            <Play className="w-5 h-5 fill-current" /> Watch Now
+          </Button>
+        )}
+        <WatchlistButton videoId={video.id} variant="outline" className={OUTLINE_BTN} />
 
-        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-12 lg:px-16 pb-8 pt-32 max-w-[2000px] mx-auto flex flex-col md:flex-row gap-8 items-end">
-          {/* Poster */}
-          <div className="hidden md:block w-48 lg:w-64 shrink-0 shadow-2xl rounded-xl overflow-hidden border border-border/50 translate-y-16 z-10">
-            {video.thumbnail_url ? (
-              <img src={video.thumbnail_url} alt={video.title} className="w-full aspect-[2/3] object-cover" />
-            ) : (
-              <div className="w-full aspect-[2/3] bg-secondary flex items-center justify-center"><Film className="w-12 h-12 text-muted-foreground/30" /></div>
-            )}
-          </div>
-          
-          <div className="flex-1 z-10 space-y-4">
-            {franchise && (
-              <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-primary font-bold hover:underline mb-1">
-                Part of {franchise.title} Collection &rarr;
-              </Link>
-            )}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-lg">{video.title}</h1>
-            
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium">
-              {video.release_year ? <span>{video.release_year}</span> : (video.release_date && <span>{new Date(video.release_date).getFullYear()}</span>)}
-              {video.duration && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {video.duration}</span>
-                </>
-              )}
-              {video.quality && video.quality !== "Unknown" && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                  <span className="px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm border border-white/20 text-xs uppercase font-bold text-white">
-                    {video.quality}
-                  </span>
-                </>
-              )}
+        {video.is_for_sale && (
+          isPurchased ? (
+            <Button variant="outline" className={`${OUTLINE_BTN} border-primary/40 text-primary`} onClick={() => {
+              const a = document.createElement("a");
+              a.href = video.download_url;
+              a.download = "";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }}>
+              <DownloadIcon className="w-4 h-4" /> Download
+            </Button>
+          ) : (
+            <Button variant="default" className="gap-2 rounded-full h-12 px-6" onClick={handlePurchase} disabled={purchasing}>
+              {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
+            </Button>
+          )
+        )}
+
+        {!video.is_for_sale && isPremium && !(video.coming_soon || !video.video_url) && (
+          <Button
+            variant="outline"
+            className={`${OUTLINE_BTN} border-primary/40 text-primary hover:bg-primary/15`}
+            onClick={async () => {
+              try {
+                setIsDownloading(true);
+                setDownloadProgress(0);
+                await downloadSingleVideo(video.id, (pct) => setDownloadProgress(pct));
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setIsDownloading(false);
+                setDownloadProgress(null);
+              }
+            }}
+          >
+            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} 
+            {isDownloading ? (downloadProgress !== null ? `Downloading ${downloadProgress}%` : "Starting...") : "Download"}
+          </Button>
+        )}
+      </DetailHero>
+
+      <div className="xero-container flex-1 space-y-12 pb-16 pt-24">
+        {castMembers.length > 0 && (
+          <section>
+            <SectionHeader title="Cast & Crew" />
+            <div className="flex flex-wrap gap-2">
+              {castMembers.map((name) => (
+                <span key={name} className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground">
+                  {name}
+                </span>
+              ))}
             </div>
-            
-            {video.description && (
-              <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-3xl line-clamp-3 md:line-clamp-none drop-shadow-md">
-                {video.description}
-              </p>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-3 pt-2">
-              {(video.coming_soon || !video.video_url) ? (
-                <Button disabled className="gap-2 font-bold h-11 px-6 rounded-full bg-secondary text-secondary-foreground">
-                  <CalendarClock className="w-5 h-5" /> Coming Soon
-                </Button>
-              ) : (
-                <Button 
-                  onClick={() => navigate(`/watch?id=${video.id}`)}
-                  className="gap-2 font-bold h-12 px-8 rounded-full shadow-lg shadow-primary/20 text-base"
-                >
-                  <Play className="w-5 h-5 fill-current" /> Watch Now
-                </Button>
-              )}
-              <WatchlistButton videoId={video.id} />
-              
-              {video.is_for_sale && (
-                isPurchased ? (
-                  <Button variant="default" className="gap-2 rounded-full h-12 px-6 bg-green-600 hover:bg-green-700" onClick={() => {
-                    const a = document.createElement("a");
-                    a.href = video.download_url;
-                    a.download = "";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  }}>
-                    <DownloadIcon className="w-4 h-4" /> Download
-                  </Button>
-                ) : (
-                  <Button variant="default" className="gap-2 rounded-full h-12 px-6" onClick={handlePurchase} disabled={purchasing}>
-                    {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
-                  </Button>
-                )
-              )}
-              
-              {!video.is_for_sale && isPremium && !(video.coming_soon || !video.video_url) && (
-                <Button
-                  variant="secondary"
-                  className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border rounded-full h-12 px-6"
-                  onClick={async () => {
-                    try {
-                      setIsDownloading(true);
-                      setDownloadProgress(0);
-                      await downloadSingleVideo(video.id, (pct) => setDownloadProgress(pct));
-                    } catch (err) {
-                      console.error(err);
-                    } finally {
-                      setIsDownloading(false);
-                      setDownloadProgress(null);
-                    }
-                  }}
-                >
-                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} 
-                  {isDownloading ? (downloadProgress !== null ? `Downloading ${downloadProgress}%` : "Starting...") : "Download"}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full max-w-[2000px] mx-auto px-4 md:px-12 lg:px-16 pt-24 pb-16 space-y-12">
-        {video.cast && (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Cast & Crew</h2>
-            <p className="text-muted-foreground leading-relaxed max-w-3xl">
-              {video.cast}
-            </p>
-          </div>
+          </section>
         )}
         {castInfo?.cast && castInfo.cast.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Cast</h2>
+          <section>
+            <SectionHeader title="Cast" />
             <div className="flex flex-wrap gap-3">
               {castInfo.cast.map((actor, idx) => (
-                <div key={idx} className="bg-secondary/30 border border-border/50 rounded-lg px-4 py-2 flex flex-col items-center justify-center text-center w-[140px]">
-                  <p className="text-sm font-bold text-foreground w-full truncate" title={actor.actor}>{actor.actor}</p>
-                  <p className="text-xs text-muted-foreground w-full truncate" title={actor.character}>{actor.character}</p>
+                <div key={idx} className="flex w-[140px] flex-col items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-center">
+                  <p className="w-full truncate text-sm font-bold text-foreground" title={actor.actor}>{actor.actor}</p>
+                  <p className="w-full truncate text-xs text-muted-foreground" title={actor.character}>{actor.character}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
+        )}
+
+        {moreLikeThis.length > 0 && (
+          <section>
+            <SectionHeader title="More Like This" />
+            <MediaGrid>
+              {moreLikeThis.map((v) => (
+                <VideoCard key={v.id} video={v} />
+              ))}
+            </MediaGrid>
+          </section>
         )}
 
         <ReviewSection contentId={videoId} contentType="video" />

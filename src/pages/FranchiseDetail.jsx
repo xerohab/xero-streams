@@ -2,14 +2,17 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "react-router-dom";
-import { ArrowLeft, Film, Loader2, Tv } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
+import Footer from "@/components/browse/Footer";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
+import CollectionHero from "@/components/browse/CollectionHero";
+import MediaGrid from "@/components/browse/MediaGrid";
+import SectionHeader from "@/components/browse/SectionHeader";
 import ReviewSection from "@/components/browse/ReviewSection";
-import { Heart } from "lucide-react";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function FranchiseDetail() {
@@ -55,14 +58,6 @@ export default function FranchiseDetail() {
     queryFn: () => base44.entities.Franchise.list("-updated_date", 1000),
   });
 
-  const { data: premiumSubs = [] } = useQuery({
-    queryKey: ["active_subscription", user?.id],
-    queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
-    enabled: !!user
-  });
-  
-  const isPremium = user?.role === "admin" || premiumSubs.length > 0;
-
   const subFranchises = allFranchises
     .filter((f) => f.parent_id === franchiseId)
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title));
@@ -74,9 +69,6 @@ export default function FranchiseDetail() {
   const franchiseMovies = allVideos
     .filter((v) => v.franchise_id === franchiseId && !v.series_id)
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-
-  const episodeCountBySeries = (seriesId) =>
-    allVideos.filter((v) => v.series_id === seriesId).length;
 
   if (loadingFranchise || loadingSeries || loadingVideos || loadingFranchises) {
     return (
@@ -98,100 +90,77 @@ export default function FranchiseDetail() {
     );
   }
 
+  const titleCount = subFranchises.length + franchiseSeries.length + franchiseMovies.length;
+  const activityOf = (item) => getItemActivityAt(item, allFranchises, allSeries, allVideos);
+
+  const groups = [
+    {
+      key: "collections",
+      label: "Collections",
+      items: subFranchises.map((f) => (
+        <FranchiseCard
+          key={f.id}
+          franchise={f}
+          itemCount={
+            allSeries.filter((s) => s.franchise_id === f.id).length +
+            allVideos.filter((v) => v.franchise_id === f.id).length +
+            allFranchises.filter((sub) => sub.parent_id === f.id).length
+          }
+          itemLabel="Items"
+          isUpdated={isRecentlyUpdated(activityOf(f))}
+        />
+      )),
+    },
+    {
+      key: "series",
+      label: "TV Series",
+      items: franchiseSeries.map((s) => (
+        <SeriesCard key={s.id} series={s} isUpdated={isRecentlyUpdated(activityOf(s))} />
+      )),
+    },
+    {
+      key: "movies",
+      label: "Movies",
+      items: franchiseMovies.map((v) => (
+        <VideoCard key={v.id} video={v} isUpdated={isRecentlyUpdated(activityOf(v))} />
+      )),
+    },
+  ].filter((g) => g.items.length > 0);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Hero Banner */}
-      <div
-        className="relative w-full h-72 md:h-96 bg-card flex items-end"
-        style={
-          franchise.cover_image
-            ? { backgroundImage: `url(${franchise.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" }
-            : {}
-        }
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="relative z-10 px-6 md:px-16 pb-8 w-full">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2 mb-4 -ml-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Browse
-            </Button>
-          </Link>
-          <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-1">Franchise</p>
-          <h1 className="text-3xl md:text-5xl font-black text-foreground mb-2">{franchise.title}</h1>
-          {franchise.description && (
-            <p className="text-muted-foreground max-w-2xl text-sm md:text-base leading-relaxed">
-              {franchise.description}
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button
-              variant={isFavourited ? "default" : "outline"}
-              className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
-              onClick={handleToggleFavourite}
-            >
-              <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
-              {isFavourited ? "Favourited" : "Favourite Franchise"}
-            </Button>
-          </div>
-        </div>
-      </div>
+      <CollectionHero
+        franchise={franchise}
+        titleCount={titleCount}
+        isUpdated={isRecentlyUpdated(activityOf(franchise))}
+        isFavourited={isFavourited}
+        onToggleFavourite={handleToggleFavourite}
+      />
 
-      <div className="px-6 md:px-16 py-10 space-y-12">
-        {/* Sub-franchises within franchise */}
-        {subFranchises.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
-              <Film className="w-5 h-5 text-primary" /> Collections
-            </h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
-              {subFranchises.map((f) => (
-                <FranchiseCard key={f.id} franchise={f} itemCount={
-                  allSeries.filter((s) => s.franchise_id === f.id).length +
-                  allVideos.filter((v) => v.franchise_id === f.id).length +
-                  allFranchises.filter((sub) => sub.parent_id === f.id).length
-                } itemLabel="Items" isUpdated={isRecentlyUpdated(getItemActivityAt(f, allFranchises, allSeries, allVideos))} />
+      <div className="xero-container flex-1 space-y-12 py-10">
+        {groups.length > 0 ? (
+          <section>
+            <SectionHeader title="Titles in this Collection" />
+            <div className="space-y-8">
+              {groups.map((group) => (
+                <div key={group.key}>
+                  {groups.length > 1 && (
+                    <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</h3>
+                  )}
+                  <MediaGrid>{group.items}</MediaGrid>
+                </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Series within franchise */}
-        {franchiseSeries.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
-              <Tv className="w-5 h-5 text-primary" /> Series
-            </h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
-              {franchiseSeries.map((s) => (
-                <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} isUpdated={isRecentlyUpdated(getItemActivityAt(s, allFranchises, allSeries, allVideos))} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Standalone movies within franchise */}
-        {franchiseMovies.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
-              <Film className="w-5 h-5 text-primary" /> Movies
-            </h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
-              {franchiseMovies.map((v) => (
-                <VideoCard key={v.id} video={v} isUpdated={isRecentlyUpdated(getItemActivityAt(v, allFranchises, allSeries, allVideos))} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {subFranchises.length === 0 && franchiseSeries.length === 0 && franchiseMovies.length === 0 && (
+          </section>
+        ) : (
           <div className="text-center py-16 text-muted-foreground">No content in this franchise yet.</div>
         )}
 
         <ReviewSection contentId={franchiseId} contentType="franchise" />
       </div>
+      <Footer />
     </div>
   );
 }

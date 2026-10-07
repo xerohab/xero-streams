@@ -114,8 +114,8 @@ export default function Navbar() {
                     </div>
                     
                     <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><User className="w-4 h-4 text-muted-foreground" /> My Xero</Link>
-                    <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Heart className="w-4 h-4 text-muted-foreground" /> My List</Link>
-                    <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Download className="w-4 h-4 text-muted-foreground" /> Downloads</Link>
+                    <Link to="/dashboard#list" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Heart className="w-4 h-4 text-muted-foreground" /> My List</Link>
+                    <Link to="/dashboard#downloads" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Download className="w-4 h-4 text-muted-foreground" /> Downloads</Link>
                     {user.role === "admin" && (
                       <Link to="/admin" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Settings className="w-4 h-4 text-muted-foreground" /> Admin Settings</Link>
                     )}

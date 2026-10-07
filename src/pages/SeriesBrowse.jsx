@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import SeriesCard from "@/components/browse/SeriesCard";
 import FranchiseCard from "@/components/browse/FranchiseCard";
+import MediaGrid from "@/components/browse/MediaGrid";
+import SectionHeader from "@/components/browse/SectionHeader";
 import PaginationControls from "@/components/browse/PaginationControls";
 import { Loader2 } from "lucide-react";
 import { getTopLevelMedia, isRecentlyUpdated } from "@/lib/activityUtils";
@@ -56,11 +58,8 @@ export default function SeriesBrowse() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <Navbar />
-      <div className="pt-28 px-4 md:px-12 max-w-[1800px] mx-auto min-h-[70vh]">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">TV Series</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Discover your next binge-worthy show.</p>
-        </div>
+      <div className="xero-container min-h-[70vh] pt-28">
+        <SectionHeader level={1} title="TV Series" subtitle="Discover your next binge-worthy show." className="mb-8" />
 
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
@@ -68,7 +67,7 @@ export default function SeriesBrowse() {
           </div>
         ) : topLevelItems.length > 0 ? (
           <>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
+            <MediaGrid>
               {paginatedItems.map(item => {
                 const isUpdated = isRecentlyUpdated(item.latestActivityAt);
                 if (item.type === 'franchise') {
@@ -76,7 +75,7 @@ export default function SeriesBrowse() {
                 }
                 return <SeriesCard key={`series-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
               })}
-            </div>
+            </MediaGrid>
             
             <PaginationControls 
               currentPage={currentPage} 

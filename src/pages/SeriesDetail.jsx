@@ -2,17 +2,23 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Film, Tv, Loader2, Download as DownloadIcon } from "lucide-react";
+import { Film, Tv, Loader2, Play, Heart, Download as DownloadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
-import VideoCard from "@/components/browse/VideoCard";
+import DetailHero from "@/components/browse/DetailHero";
+import SeasonSelect from "@/components/browse/SeasonSelect";
 import EpisodeCard from "@/components/browse/EpisodeCard";
+import EpisodeGrid from "@/components/browse/EpisodeGrid";
+import SeriesCard from "@/components/browse/SeriesCard";
+import MediaGrid from "@/components/browse/MediaGrid";
+import SectionHeader from "@/components/browse/SectionHeader";
+import StatusBadge from "@/components/browse/StatusBadge";
 import ReviewSection from "@/components/browse/ReviewSection";
-import { Heart } from "lucide-react";
-import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
 import Footer from "@/components/browse/Footer";
 import WatchlistButton from "@/components/browse/WatchlistButton";
+
+const OUTLINE_BTN = "gap-2 rounded-full h-11 px-6 border-white/20 bg-white/5 text-foreground hover:bg-white/10";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -61,13 +67,34 @@ export default function SeriesDetail() {
     enabled: !!user
   });
   const { data: franchise } = useQuery({ queryKey: ["franchise", series?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: series.franchise_id}); return res[0]; }, enabled: !!series?.franchise_id });
-  
+
+  // Seasons = the sibling series inside the same collection
+  const { data: siblings = [] } = useQuery({
+    queryKey: ["series_siblings", series?.franchise_id],
+    queryFn: () => base44.entities.Series.filter({ franchise_id: series.franchise_id }, "sort_order", 500),
+    enabled: !!series?.franchise_id,
+  });
+
+  const { data: recentSeries = [] } = useQuery({
+    queryKey: ["series_recommendations"],
+    queryFn: () => base44.entities.Series.filter({ is_adult: false }, "-updated_date", 60),
+  });
+
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   const sortedEpisodes = [...episodes].sort((a, b) => {
     if (a.episode_number && b.episode_number) return a.episode_number - b.episode_number;
     return a.title.localeCompare(b.title);
   });
+
+  const seasons = [...siblings].sort(
+    (a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title, undefined, { numeric: true })
+  );
+
+  const recommendations = recentSeries
+    .filter((s) => s.id !== seriesId && (!series?.franchise_id || s.franchise_id !== series.franchise_id))
+    .sort((a, b) => Number(b.category === series?.category) - Number(a.category === series?.category))
+    .slice(0, 14);
 
   if (loadingSeries || loadingEpisodes || loadingImages) {
     return (
@@ -89,129 +116,113 @@ export default function SeriesDetail() {
     );
   }
 
+  const firstPlayable = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Cinematic Hero Backdrop */}
-      <div className="relative w-full h-[55vh] md:h-[70vh] max-h-[800px] bg-black">
-        {series.cover_image ? (
-          <img
-            src={series.cover_image}
-            alt=""
-            className="w-full h-full object-cover opacity-40 md:opacity-50"
-            style={{ maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)" }}
-          />
-        ) : (
-          <div className="w-full h-full bg-secondary/20"></div>
+      <DetailHero
+        image={series.cover_image}
+        title={series.title}
+        FallbackIcon={Tv}
+        backTo={from}
+        eyebrow={franchise && (
+          <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
+            Part of {franchise.title} Collection &rarr;
+          </Link>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent"></div>
-
-        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-12 lg:px-16 pb-8 pt-32 max-w-[2000px] mx-auto flex flex-col md:flex-row gap-8 items-end">
-          {/* Poster */}
-          <div className="hidden md:block w-48 lg:w-64 shrink-0 shadow-2xl rounded-xl overflow-hidden border border-border/50 translate-y-16 z-10">
-            {series.cover_image ? (
-              <img src={series.cover_image} alt={series.title} className="w-full aspect-[2/3] object-cover" />
-            ) : (
-              <div className="w-full aspect-[2/3] bg-secondary flex items-center justify-center"><Tv className="w-12 h-12 text-muted-foreground/30" /></div>
-            )}
-          </div>
-          
-          <div className="flex-1 z-10 space-y-4">
-            <Link to={from} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors mb-2 md:hidden">
-              <ArrowLeft className="w-4 h-4" /> Back
+        meta={
+          <>
+            {series.release_year && <span>{series.release_year}</span>}
+            {series.category && <span className="capitalize">{series.category}</span>}
+            {series.is_adult && <StatusBadge status="18+" />}
+            <span>{sortedEpisodes.length} Episode{sortedEpisodes.length !== 1 && "s"}</span>
+          </>
+        }
+        description={series.description}
+      >
+        {firstPlayable && (
+          <Button asChild className="gap-2 rounded-full h-12 px-8 text-base font-bold shadow-lg shadow-primary/20">
+            <Link to={`/watch?id=${firstPlayable.id}`}>
+              <Play className="w-5 h-5 fill-current" />
+              {firstPlayable.episode_number ? `Play Episode ${firstPlayable.episode_number}` : "Play"}
             </Link>
-            {franchise && (
-              <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-primary font-bold hover:underline mb-1">
-                Part of {franchise.title} Collection &rarr;
-              </Link>
-            )}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-lg">{series.title}</h1>
-            
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium">
-              {series.release_year && <span>{series.release_year}</span>}
-              {series.category && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                  <span className="capitalize">{series.category}</span>
-                </>
-              )}
-              {series.is_adult && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                  <span className="px-2 py-0.5 rounded bg-red-600 text-white text-xs font-bold tracking-widest shadow-lg">18+</span>
-                </>
-              )}
-              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-              <span>{sortedEpisodes.length} Episode{sortedEpisodes.length !== 1 && 's'}</span>
-            </div>
-            
-            {series.description && (
-              <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-3xl line-clamp-3 md:line-clamp-none drop-shadow-md">
-                {series.description}
-              </p>
-            )}
+          </Button>
+        )}
+        <WatchlistButton videoId={null} seriesId={series.id} variant="outline" className={OUTLINE_BTN} />
+        <Button
+          variant={isFavourited ? "default" : "outline"}
+          className={isFavourited ? "gap-2 rounded-full h-11 px-6" : OUTLINE_BTN}
+          onClick={handleToggleFavourite}
+        >
+          <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+          {isFavourited ? "Favourited" : "Favourite Series"}
+        </Button>
+      </DetailHero>
 
-            {/* Actions */}
-            <div className="flex flex-wrap gap-3 pt-2">
-              <WatchlistButton videoId={null} seriesId={series.id} />
-              
-              <Button
-                variant={isFavourited ? "default" : "outline"}
-                className={`gap-2 rounded-full h-11 px-6 transition-colors ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
-                onClick={handleToggleFavourite}
-              >
-                <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
-                {isFavourited ? "Favourited" : "Favourite Series"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full max-w-[2000px] mx-auto px-4 md:px-12 lg:px-16 pt-24 pb-16 space-y-12">
-        
+      <div className="xero-container flex-1 space-y-12 pb-16 pt-24">
         {sortedEpisodes.length > 0 ? (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Episodes</h2>
+          <section>
+            <SectionHeader
+              title="Episodes"
+              subtitle={`${sortedEpisodes.length} episode${sortedEpisodes.length !== 1 ? "s" : ""}`}
+              action={<SeasonSelect currentId={seriesId} seasons={seasons} />}
+            />
             {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
-              <p className="text-sm text-muted-foreground mb-6 flex items-center gap-2 bg-secondary/30 p-4 rounded-xl border border-border/50">
-                <DownloadIcon className="w-5 h-5 text-primary" />
-                <span>Downloading is available for premium members. Hover over an episode to save it for offline viewing.</span>
-                {!isPremium && <button type="button" onClick={openPremium} className="text-primary font-bold underline hover:text-primary/80 ml-2">View plans</button>}
+              <p className="mb-6 flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+                <DownloadIcon className="h-5 w-5 shrink-0 text-primary" />
+                <span>
+                  Downloading is available for premium members. Hover over an episode to save it for offline viewing.
+                  {!isPremium && (
+                    <button type="button" onClick={openPremium} className="ml-2 font-bold text-primary underline hover:text-primary/80">
+                      View plans
+                    </button>
+                  )}
+                </span>
               </p>
             )}
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(250px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-start">
-              {sortedEpisodes.map(ep => (
+            <EpisodeGrid>
+              {sortedEpisodes.map((ep) => (
                 <EpisodeCard key={ep.id} video={ep} isPremium={isPremium} />
               ))}
-            </div>
-          </div>
+            </EpisodeGrid>
+          </section>
         ) : (
-          <div className="text-center py-12 bg-secondary/20 rounded-xl border border-border/50">
-            <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+          <div className="rounded-xl border border-border bg-card py-12 text-center">
+            <Film className="mx-auto mb-4 h-12 w-12 text-muted-foreground opacity-50" />
             <h3 className="text-lg font-bold">No Episodes Yet</h3>
             <p className="text-muted-foreground">Check back later for new episodes.</p>
           </div>
         )}
 
         {images.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Gallery</h2>
+          <section>
+            <SectionHeader title="Gallery" />
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-              {images.map(img => (
-                <div key={img.id} className="min-w-[280px] md:min-w-[400px] aspect-video flex-none snap-start rounded-xl overflow-hidden shadow-lg border border-border/50 relative group">
-                  <img src={img.image_url} alt={img.title || "Gallery Image"} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onContextMenu={e => e.preventDefault()} />
+              {images.map((img) => (
+                <div key={img.id} className="group relative aspect-video min-w-[260px] flex-none snap-start overflow-hidden rounded-lg ring-1 ring-border md:min-w-[360px]">
+                  <img src={img.image_url} alt={img.title || "Gallery Image"} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" onContextMenu={(e) => e.preventDefault()} />
                   {img.title && (
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                      <p className="text-white font-bold text-center px-4">{img.title}</p>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                      <p className="px-4 text-center font-bold text-white">{img.title}</p>
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </div>
+          </section>
+        )}
+
+        {recommendations.length > 0 && (
+          <section>
+            <SectionHeader title="More Like This" />
+            <MediaGrid>
+              {recommendations.map((s) => (
+                <SeriesCard key={s.id} series={s} />
+              ))}
+            </MediaGrid>
+          </section>
         )}
 
         <ReviewSection contentId={seriesId} contentType="series" />

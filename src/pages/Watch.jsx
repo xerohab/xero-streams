@@ -576,7 +576,7 @@ export default function Watch() {
                 {!isComingSoon && (
                   <Button
                     variant={isFavourited ? "default" : "outline"}
-                    className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600" : ""}`}
+                    className="gap-2"
                     onClick={handleToggleFavourite}
                   >
                     <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
@@ -614,7 +614,7 @@ export default function Watch() {
                 </Button>
                 {video.is_for_sale && (
                   isPurchased ? (
-                    <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => {
+                    <Button variant="outline" className="gap-2 border-primary/40 text-primary hover:bg-primary/15" onClick={() => {
                       const a = document.createElement("a");
                       a.href = video.download_url;
                       a.download = "";
@@ -632,8 +632,8 @@ export default function Watch() {
                 )}
                 {!video.is_for_sale && isPremium && !isComingSoon && (
                   <Button
-                    variant="secondary"
-                    className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
+                    variant="outline"
+                    className="gap-2 border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
                     onClick={async () => {
                       try {
                         setIsDownloading(true);
@@ -657,7 +657,7 @@ export default function Watch() {
       </div>
 
       {/* More episodes / related */}
-      <div className="pb-16">
+      <div className="xero-container max-w-7xl pb-6">
         {seriesEpisodes.length > 1 && (
           <EpisodeRow
             title={`All Episodes — ${series?.title}`}
@@ -666,11 +666,11 @@ export default function Watch() {
           />
         )}
         {moreVideos.length > 0 && (
-          <VideoRow title="You May Also Like" videos={moreVideos} />
+          <VideoRow title="You May Also Like" videos={moreVideos} limit={14} />
         )}
       </div>
       
-      <div className="max-w-7xl mx-auto px-6 md:px-16 pb-16">
+      <div className="xero-container max-w-7xl pb-16">
         <ReviewSection contentId={videoId} contentType="video" />
       </div>
     </div>
