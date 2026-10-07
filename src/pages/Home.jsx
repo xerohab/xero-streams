@@ -87,42 +87,6 @@ export default function Home() {
     .sort((a, b) => b.latestActivityAt - a.latestActivityAt)
     .slice(0, 14);
 
-  // Group top-level items into movies/series for most watched
-  const topLevelMovies = [];
-  const topLevelSeries = [];
-  
-  topLevelItems.forEach(item => {
-     if (item.type === 'video' || (item.type === 'franchise' && item.data.category !== 'animation' && !item.data.title.toLowerCase().includes("wrestling"))) {
-        // Just a heuristic for "Movies" if franchise, ideally we'd look at children, but getTopLevelMedia doesn't give us child types easily.
-        // Actually, we can check if it has items > 0.
-        // Let's rely on franchise name/category for now, or just let it fall where it falls.
-        // Or we can just check if any series exist for it.
-        const fId = item.data.id;
-        const hasSeries = safeSeries.some(s => s.franchise_id === fId);
-        if (hasSeries || item.type === 'series') {
-           topLevelSeries.push(item);
-        } else {
-           topLevelMovies.push(item);
-        }
-     } else if (item.type === 'series') {
-        topLevelSeries.push(item);
-     } else if (item.type === 'franchise') {
-        const hasSeries = safeSeries.some(s => s.franchise_id === item.data.id);
-        if (hasSeries) topLevelSeries.push(item);
-        else topLevelMovies.push(item);
-     }
-  });
-
-  const finalMostWatchedMovies = topLevelMovies
-    .filter(item => item.totalViews > 0)
-    .sort((a, b) => b.totalViews - a.totalViews)
-    .slice(0, 14);
-
-  const finalMostWatchedSeries = topLevelSeries
-    .filter(item => item.totalViews > 0)
-    .sort((a, b) => b.totalViews - a.totalViews)
-    .slice(0, 14);
-
   // Movies: standalone movies only
   // Exclude anything with a series_id
   const movies = safeVideos.filter(
@@ -302,12 +266,10 @@ export default function Home() {
         {rows.includes("tv") && (activeTab === "all" || activeTab === "tv") && (ungroupedSeries.length > 0 || seriesByFranchise.length > 0) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                TV SERIES
-              </h2>
+              <h2 className="text-lg md:text-xl font-bold text-foreground uppercase">TV Series</h2>
               {activeTab === "all" && (seriesByFranchise.length + ungroupedSeries.length) > 8 && (
                 <button onClick={() => setActiveTab("tv")} className="text-sm text-primary hover:underline font-semibold">
-                  See all →
+                  View All →
                 </button>
               )}
             </div>
@@ -335,12 +297,10 @@ export default function Home() {
         {rows.includes("movies") && (activeTab === "all" || activeTab === "movies") && (ungroupedMovies.length > 0 || moviesByFranchise.length > 0) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                MOVIES
-              </h2>
+              <h2 className="text-lg md:text-xl font-bold text-foreground uppercase">Movies</h2>
               {activeTab === "all" && (moviesByFranchise.length + ungroupedMovies.length) > 8 && (
                 <button onClick={() => setActiveTab("movies")} className="text-sm text-primary hover:underline font-semibold">
-                  See all →
+                  View All →
                 </button>
               )}
             </div>
