@@ -5,6 +5,7 @@ import Navbar from "@/components/browse/Navbar";
 import Footer from "@/components/browse/Footer";
 import { Loader2, BookOpen, Download, ShoppingCart, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/browse/StatusBadge";
 import toast from "react-hot-toast";
 
 export default function Books() {
@@ -126,16 +127,8 @@ export default function Books() {
 
           {/* Top Badges */}
           <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10 pointer-events-none">
-            {isExclusive && (
-              <Badge className="bg-primary/90 text-primary-foreground border-none text-[9px] uppercase font-black tracking-widest shadow-lg px-1.5">
-                Exclusive
-              </Badge>
-            )}
-            {isOwned && (
-              <Badge className="bg-green-600/90 text-white border-none text-[9px] uppercase font-black tracking-widest shadow-lg px-1.5 flex items-center gap-1">
-                <Check className="w-2.5 h-2.5" /> Owned
-              </Badge>
-            )}
+            {isExclusive && <StatusBadge status="EXCLUSIVE" />}
+            {isOwned && <StatusBadge status="OWNED" />}
           </div>
         </div>
         

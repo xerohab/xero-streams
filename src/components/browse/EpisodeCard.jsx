@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, Download as DownloadIcon, CheckCircle, Clock, Loader2 } from "lucide-react";
+import { Play, Download as DownloadIcon, CheckCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/browse/StatusBadge";
 import { getProgress } from "@/hooks/useContinueWatching";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import toast from "react-hot-toast";
@@ -51,7 +52,7 @@ export default function EpisodeCard({ video, isPremium }) {
     <Link 
       to={href} 
       onClick={handleClick} 
-      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10 bg-card border border-transparent hover:border-border/50 max-w-[280px] w-full mx-auto"
+      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/10 bg-card border border-transparent hover:border-border/50 max-w-[300px] w-full mx-auto"
     >
       <div className="relative aspect-video w-full bg-secondary/30 overflow-hidden shadow-inner rounded-xl">
         {video.thumbnail_url ? (
@@ -85,22 +86,18 @@ export default function EpisodeCard({ video, isPremium }) {
         </div>
 
         {/* Persistent top badges */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10">
           {video.episode_number && (
-            <Badge variant="secondary" className="bg-black/80 backdrop-blur-md text-white border-none text-[10px] sm:text-xs uppercase font-bold tracking-wider px-2 py-0.5">
-              EP {video.episode_number}
-            </Badge>
+            <StatusBadge status={`EP ${video.episode_number}`} />
           )}
           {isComingSoon && (
-            <Badge variant="destructive" className="bg-amber-500/90 text-amber-950 border-none font-bold text-[10px] uppercase shadow-lg">
-              Coming Soon
-            </Badge>
+            <StatusBadge status="Coming Soon" className="text-amber-400 border-amber-500/50 border bg-black/90" />
           )}
         </div>
 
         {isWatched && (
           <div className="absolute top-2 right-2">
-            <CheckCircle className="w-5 h-5 text-primary drop-shadow-md" />
+            <CheckCircle className="w-5 h-5 text-green-500 drop-shadow-md" />
           </div>
         )}
 

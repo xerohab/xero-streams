@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Tv, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/browse/StatusBadge";
 import MediaHoverOverlay from "@/components/browse/MediaHoverOverlay";
 
 export default function SeriesCard({ series, isUpdated }) {
@@ -41,15 +42,9 @@ export default function SeriesCard({ series, isUpdated }) {
 
         {/* Persistent top badges */}
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1 z-10">
-          {isUpdated && (
-            <Badge className="bg-green-600/90 hover:bg-green-600/90 text-white border-none text-[10px] uppercase font-bold tracking-wider shadow-lg">
-              Updated
-            </Badge>
-          )}
+          {isUpdated && <StatusBadge status="UPDATED" />}
           {series.is_adult && (
-            <Badge variant="destructive" className="bg-red-600/90 text-white border-none font-bold text-[10px] tracking-widest shadow-lg">
-              18+
-            </Badge>
+            <StatusBadge status="18+" className="bg-red-600/90 text-white" />
           )}
         </div>
       </div>

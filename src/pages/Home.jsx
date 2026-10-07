@@ -271,50 +271,16 @@ export default function Home() {
       <div className="relative z-10 pb-16 px-6 md:px-16">
         {/* Latest Row */}
         {rows.includes("latest") && finalLatestItems.length > 0 && activeTab === "all" && (
-          <div className="mb-12 -mx-6 md:-mx-16">
-            <div className="px-6 md:px-16 mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground">Latest</h2>
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-foreground">RECENTLY ADDED & UPDATED</h2>
             </div>
-            <div className="px-6 md:px-16 grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
               {finalLatestItems.map((item) => {
                 const isUpdated = isRecentlyUpdated(item.latestActivityAt);
                 if (item.type === 'franchise') return <FranchiseCard key={`franchise-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
                 if (item.type === 'series') return <SeriesCard key={`series-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
                 return <VideoCard key={`video-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Most Watched Movies */}
-        {finalMostWatchedMovies.length > 0 && activeTab === "all" && (
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground">Most Watched Movies</h2>
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
-              {finalMostWatchedMovies.map((item) => {
-                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
-                if (item.type === 'franchise') return <FranchiseCard key={`mw-f-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
-                if (item.type === 'series') return <SeriesCard key={`mw-s-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
-                return <VideoCard key={`mw-v-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Most Watched Series */}
-        {finalMostWatchedSeries.length > 0 && activeTab === "all" && (
-          <div className="mb-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-foreground">Most Watched TV Series</h2>
-            </div>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
-              {finalMostWatchedSeries.map((item) => {
-                const isUpdated = isRecentlyUpdated(item.latestActivityAt);
-                if (item.type === 'franchise') return <FranchiseCard key={`mwtv-f-${item.data.id}`} franchise={item.data} itemCount={item.items} isUpdated={isUpdated} />;
-                if (item.type === 'series') return <SeriesCard key={`mwtv-s-${item.data.id}`} series={item.data} isUpdated={isUpdated} />;
-                return <VideoCard key={`mwtv-v-${item.data.id}`} video={item.data} isUpdated={isUpdated} />;
               })}
             </div>
           </div>
@@ -337,7 +303,7 @@ export default function Home() {
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Tv className="w-5 h-5 text-primary" /> TV Series
+                TV SERIES
               </h2>
               {activeTab === "all" && (seriesByFranchise.length + ungroupedSeries.length) > 8 && (
                 <button onClick={() => setActiveTab("tv")} className="text-sm text-primary hover:underline font-semibold">
@@ -370,7 +336,7 @@ export default function Home() {
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Film className="w-5 h-5 text-primary" /> Movies
+                MOVIES
               </h2>
               {activeTab === "all" && (moviesByFranchise.length + ungroupedMovies.length) > 8 && (
                 <button onClick={() => setActiveTab("movies")} className="text-sm text-primary hover:underline font-semibold">

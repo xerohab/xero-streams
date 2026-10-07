@@ -3,6 +3,7 @@ import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
 import { Link } from "react-router-dom";
 import { Play, Info, Download as DownloadIcon, Plus, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/browse/StatusBadge";
 
 /**
  * A shared compact hover overlay for Movies, TV Series, and Franchises.
@@ -17,11 +18,7 @@ export default function MediaHoverOverlay({ children, item, type, isUpdated, isP
         <h3 className="font-bold text-foreground text-sm sm:text-base leading-tight line-clamp-2">
           {item.title}
         </h3>
-        {isUpdated && (
-          <Badge className="bg-green-600/90 text-white border-none text-[9px] uppercase font-black tracking-widest px-1.5 shrink-0">
-            Updated
-          </Badge>
-        )}
+        {isUpdated && <StatusBadge status="UPDATED" className="shrink-0" />}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs text-muted-foreground font-medium">
