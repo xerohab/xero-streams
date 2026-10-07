@@ -17,7 +17,7 @@ export default function MovieDetail() {
   const videoId = searchParams.get("id");
   const from = searchParams.get("from") || "/";
   const [castInfo, setCastInfo] = useState(null);
-  const [loadingCast, setLoadingCast] = useState(false);
+  
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -93,43 +93,10 @@ export default function MovieDetail() {
     queryFn: () => base44.entities.Franchise.list(),
   });
 
-  const series = video?.series_id ? seriesList.find((s) => s.id === video.series_id) : null;
-  const franchise = video?.franchise_id ? franchises.find((f) => f.id === video.franchise_id) : null;
+  
+  
 
-  const fetchCastInfo = async () => {
-    if (!video) return;
-    base44.analytics.track({ eventName: "cast_info_fetched", properties: { video_id: video.id } });
-    setLoadingCast(true);
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Give me detailed cast and crew information for the film or TV show called "${video.title}". Include the main cast (up to 8 actors), the director, and the release year. Keep descriptions short (one line each).`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            release_year: { type: "string" },
-            director: { type: "string" },
-            runtime: { type: "string" },
-            genre: { type: "string" },
-            rating: { type: "string" },
-            cast: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  actor: { type: "string" },
-                  character: { type: "string" },
-                },
-              },
-            },
-          },
-        },
-      });
-      setCastInfo(result);
-    } finally {
-      setLoadingCast(false);
-    }
-  };
-
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
