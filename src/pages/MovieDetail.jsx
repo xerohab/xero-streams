@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarClock, Clock, Film, Play, Loader2, Download as DownloadIcon, ShoppingCart } from "lucide-react";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export default function MovieDetail() {
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
     enabled: !!user
   });
-  const { data: franchise } = useQuery({ queryKey: ["franchise", movie?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: movie.franchise_id}); return res[0]; }, enabled: !!movie?.franchise_id });
+  const { data: franchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !!video?.franchise_id });
   
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
