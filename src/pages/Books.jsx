@@ -85,7 +85,7 @@ export default function Books() {
   const exclusiveAuthorNames = [...new Set(exclusiveBooks.map((b) => authorOf(b).name))];
   const recentBooks = [...books]
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-    .slice(0, 14);
+    .slice(0, 7);
   const otherAuthors = authors.filter((a) => !isExclusiveAuthor(a) && books.some((b) => b.author_id === a.id));
   const booksWithoutAuthor = books.filter((b) => !authorOf(b));
 
