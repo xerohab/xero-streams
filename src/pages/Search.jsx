@@ -2,95 +2,110 @@ import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { Search as SearchIcon, ArrowLeft, Film, Tv, SlidersHorizontal } from "lucide-react";
+import { Search as SearchIcon, ArrowLeft, SlidersHorizontal, Layers, Tv, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
+import FranchiseCard from "@/components/browse/FranchiseCard";
+import PaginationControls from "@/components/browse/PaginationControls";
 
 export default function Search() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const [query, setQuery] = useState(urlParams.get("q") || "");
-  const [filterType, setFilterType] = useState("all"); // 'all', 'movies', 'series'
+  const [filterType, setFilterType] = useState("all"); 
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterYear, setFilterYear] = useState("");
   const [filterCast, setFilterCast] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const { data: videos = [] } = useQuery({
-    queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("-created_date"),
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const saved = localStorage.getItem("xero_page_size");
+    return saved ? parseInt(saved, 10) : 20;
   });
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: seriesList = [] } = useQuery({
-    queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(),
-  });
+  const handleItemsPerPageChange = (val) => {
+    setItemsPerPage(val);
+    localStorage.setItem("xero_page_size", val.toString());
+    setCurrentPage(1);
+  };
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ["video_categories"],
-    queryFn: () => base44.entities.VideoCategory.list(),
-  });
-
-  const episodeCount = (seriesId) => videos.filter((v) => v.series_id === seriesId).length;
+  const { data: videos = [] } = useQuery({ queryKey: ["videos"], queryFn: () => base44.entities.Video.list("-created_date") });
+  const { data: seriesList = [] } = useQuery({ queryKey: ["series"], queryFn: () => base44.entities.Series.list() });
+  const { data: franchises = [] } = useQuery({ queryKey: ["franchises"], queryFn: () => base44.entities.Franchise.list() });
+  const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
 
   const results = useMemo(() => {
+    setCurrentPage(1);
+    
     const q = query.toLowerCase().trim();
+    if (!q && filterType === "all" && filterCategory === "all" && !filterYear && !filterCast) {
+      return [];
+    }
+
     let filteredVideos = videos;
     let filteredSeries = seriesList;
+    let filteredFranchises = franchises;
 
     if (q) {
-      filteredVideos = filteredVideos.filter(
-        (v) => v.title?.toLowerCase().includes(q) || v.description?.toLowerCase().includes(q)
-      );
-      filteredSeries = filteredSeries.filter(
-        (s) => s.title?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)
-      );
+      filteredVideos = filteredVideos.filter(v => v.title?.toLowerCase().includes(q) || v.description?.toLowerCase().includes(q));
+      filteredSeries = filteredSeries.filter(s => s.title?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q));
+      filteredFranchises = filteredFranchises.filter(f => f.title?.toLowerCase().includes(q) || f.description?.toLowerCase().includes(q));
     }
 
     if (filterCategory !== "all") {
       filteredVideos = filteredVideos.filter(v => v.category_id === filterCategory);
-      filteredSeries = filteredSeries.filter(s => s.category === filterCategory); // Series has enum category
+      filteredSeries = filteredSeries.filter(s => s.category === filterCategory);
+      filteredFranchises = filteredFranchises.filter(f => f.category === filterCategory);
     }
 
     if (filterYear) {
-      filteredVideos = filteredVideos.filter(v => 
-        (v.release_year && v.release_year.toString() === filterYear) || 
-        (v.release_date && v.release_date.startsWith(filterYear))
-      );
+      filteredVideos = filteredVideos.filter(v => (v.release_year && v.release_year.toString() === filterYear) || (v.release_date && v.release_date.startsWith(filterYear)));
       filteredSeries = filteredSeries.filter(s => s.release_year && s.release_year.toString() === filterYear);
+      filteredFranchises = []; 
     }
 
     if (filterCast) {
       const c = filterCast.toLowerCase().trim();
       filteredVideos = filteredVideos.filter(v => v.cast?.toLowerCase().includes(c));
       filteredSeries = filteredSeries.filter(s => s.cast?.toLowerCase().includes(c));
+      filteredFranchises = []; 
     }
 
-    if (filterType === "movies") filteredSeries = [];
-    if (filterType === "series") filteredVideos = [];
-
-    // Only return empty if no query AND no filters are applied
-    if (!q && filterType === "all" && filterCategory === "all" && !filterYear && !filterCast) {
-      return { videos: [], series: [] };
+    if (filterType === "movies") {
+      filteredSeries = [];
+      filteredFranchises = []; 
+      filteredVideos = filteredVideos.filter(v => v.content_type === 'movie');
+    }
+    if (filterType === "series") {
+      filteredVideos = [];
     }
 
-    return { videos: filteredVideos, series: filteredSeries };
-  }, [query, videos, seriesList, filterType, filterCategory, filterYear, filterCast]);
+    const items = [
+      ...filteredFranchises.map(f => ({ type: 'franchise', data: f })),
+      ...filteredSeries.map(s => ({ type: 'series', data: s })),
+      ...filteredVideos.map(v => ({ type: 'video', data: v }))
+    ];
 
-  const hasResults = results.videos.length > 0 || results.series.length > 0;
+    return items;
+  }, [query, videos, seriesList, franchises, filterType, filterCategory, filterYear, filterCast]);
+
+  const hasResults = results.length > 0;
+  const totalPages = Math.ceil(results.length / itemsPerPage) || 1;
+  const paginatedItems = results.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const getFranchiseCount = (fId) => {
+    return seriesList.filter(s => s.franchise_id === fId).length + videos.filter(v => v.franchise_id === fId).length;
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="pt-24 px-6 md:px-16 pb-16">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+      <div className="pt-24 px-4 md:px-12 max-w-[1800px] mx-auto pb-16">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
         <div className="flex flex-col gap-4 max-w-4xl mb-10">
@@ -101,25 +116,17 @@ export default function Search() {
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search movies, TV shows..."
+                placeholder="Search movies, TV shows, collections..."
                 className="pl-10 h-12 text-base bg-card border-border w-full"
               />
             </div>
             <div className="flex flex-1 gap-2">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="h-12 flex-1 px-4 rounded-md border border-input bg-card text-foreground"
-              >
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="h-12 flex-1 px-4 rounded-md border border-input bg-card text-foreground">
                 <option value="all">All Types</option>
                 <option value="movies">Movies</option>
                 <option value="series">TV Series</option>
               </select>
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="h-12 flex-1 px-4 rounded-md border border-input bg-card text-foreground"
-              >
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="h-12 flex-1 px-4 rounded-md border border-input bg-card text-foreground">
                 <option value="all">All Genres</option>
                 <option value="action">Action</option>
                 <option value="comedy">Comedy</option>
@@ -137,17 +144,9 @@ export default function Search() {
                 <option value="animation">Animation</option>
                 <option value="adventure">Adventure</option>
                 <option value="other">Other</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
-                ))}
+                {categories.map(c => (<option key={c.id} value={c.id}>{c.title}</option>))}
               </select>
-              <button 
-                onClick={() => {
-                  setShowAdvanced(!showAdvanced);
-                  base44.analytics.track({ eventName: "advanced_search_toggled", properties: { open: !showAdvanced } });
-                }}
-                className={`h-12 w-12 flex items-center justify-center rounded-md border transition-colors ${showAdvanced ? 'bg-primary text-primary-foreground border-primary' : 'border-input bg-card text-foreground hover:bg-accent hover:text-accent-foreground'}`}
-              >
+              <button onClick={() => setShowAdvanced(!showAdvanced)} className={`h-12 w-12 flex items-center justify-center rounded-md border transition-colors ${showAdvanced ? 'bg-primary text-primary-foreground border-primary' : 'border-input bg-card text-foreground hover:bg-accent hover:text-accent-foreground'}`}>
                 <SlidersHorizontal className="w-5 h-5" />
               </button>
             </div>
@@ -155,24 +154,13 @@ export default function Search() {
 
           {showAdvanced && (
             <div className="flex flex-col md:flex-row gap-4 pt-2 animate-in fade-in slide-in-from-top-2">
-              <Input
-                value={filterYear}
-                onChange={(e) => setFilterYear(e.target.value)}
-                placeholder="Release Year (e.g. 2023)"
-                className="flex-1 h-12 text-base bg-card border-border"
-                type="number"
-              />
-              <Input
-                value={filterCast}
-                onChange={(e) => setFilterCast(e.target.value)}
-                placeholder="Search by Cast Member"
-                className="flex-[2] h-12 text-base bg-card border-border"
-              />
+              <Input value={filterYear} onChange={(e) => setFilterYear(e.target.value)} placeholder="Release Year" className="flex-1 h-12 text-base bg-card border-border" type="number" />
+              <Input value={filterCast} onChange={(e) => setFilterCast(e.target.value)} placeholder="Search by Cast Member" className="flex-[2] h-12 text-base bg-card border-border" />
             </div>
           )}
         </div>
 
-        {!hasResults && !query && filterType === "all" && filterCategory === "all" && !filterYear && !filterCast && (
+        {!hasResults && query.trim() === "" && filterType === "all" && filterCategory === "all" && !filterYear && !filterCast && (
           <p className="text-muted-foreground">Start typing or use filters to search...</p>
         )}
 
@@ -180,30 +168,25 @@ export default function Search() {
           <p className="text-muted-foreground">No results found for "<strong>{query}</strong>"</p>
         )}
 
-        {results.series.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Tv className="w-5 h-5 text-primary" /> TV Series
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {results.series.map((s) => (
-                <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} />
-              ))}
+        {hasResults && (
+          <>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5 justify-center">
+              {paginatedItems.map((item, idx) => {
+                if (item.type === 'franchise') return <FranchiseCard key={`f-${item.data.id}`} franchise={item.data} itemCount={getFranchiseCount(item.data.id)} />;
+                if (item.type === 'series') return <SeriesCard key={`s-${item.data.id}`} series={item.data} />;
+                return <VideoCard key={`v-${item.data.id}`} video={item.data} />;
+              })}
             </div>
-          </div>
-        )}
-
-        {results.videos.length > 0 && (
-          <div>
-            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Film className="w-5 h-5 text-primary" /> Movies & Episodes
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {results.videos.map((v) => (
-                <VideoCard key={v.id} video={v} />
-              ))}
-            </div>
-          </div>
+            
+            <PaginationControls 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={setCurrentPage} 
+              itemsPerPage={itemsPerPage} 
+              onItemsPerPageChange={handleItemsPerPageChange}
+              totalItems={results.length}
+            />
+          </>
         )}
       </div>
     </div>
