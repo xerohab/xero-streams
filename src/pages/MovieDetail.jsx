@@ -2,9 +2,8 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, CalendarClock, Clock, Film, Play, Loader2, User, Download as DownloadIcon, ShoppingCart } from "lucide-react";
+import { CalendarClock, Clock, Film, Play, Loader2, Download as DownloadIcon, ShoppingCart } from "lucide-react";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import WatchlistButton from "@/components/browse/WatchlistButton";
@@ -83,16 +82,8 @@ export default function MovieDetail() {
     }
   }, [video?.id]);
 
-  const { data: seriesList = [] } = useQuery({
-    queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(),
-  });
-
-  const { data: franchises = [] } = useQuery({
-    queryKey: ["franchises"],
-    queryFn: () => base44.entities.Franchise.list(),
-  });
-
+  
+  
   
   
 
