@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
-import { Search as SearchIcon, ArrowLeft, SlidersHorizontal, Layers, Tv, Film } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search as SearchIcon, ArrowLeft, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";

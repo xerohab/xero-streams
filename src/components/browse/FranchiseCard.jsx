@@ -1,6 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Layers, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
