@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, CalendarClock, Clock, Film, Play, Loader2, Users, Star, Download as DownloadIcon, ShoppingCart } from "lucide-react";
+import { ArrowLeft, CalendarClock, Clock, Film, Play, Loader2, User, Download as DownloadIcon, ShoppingCart } from "lucide-react";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import WatchlistButton from "@/components/browse/WatchlistButton";
+import ReviewSection from "@/components/browse/ReviewSection";
+import Footer from "@/components/browse/Footer";
 
 export default function MovieDetail() {
   const navigate = useNavigate();
@@ -266,23 +268,22 @@ export default function MovieDetail() {
       </div>
 
       <div className="flex-1 w-full max-w-[2000px] mx-auto px-4 md:px-12 lg:px-16 pt-24 pb-16 space-y-12">
-        {cast && cast.length > 0 && (
+        {video.cast && (
           <div>
-            <h2 className="text-xl font-bold mb-4">Cast</h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-              {cast.map((actor, idx) => (
-                <div key={idx} className="min-w-[100px] max-w-[120px] flex flex-col gap-2 snap-start">
-                  <div className="w-full aspect-[2/3] bg-secondary rounded-lg overflow-hidden border border-border/50">
-                    {actor.profile_path ? (
-                      <img src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`} alt={actor.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground"><User className="w-8 h-8 opacity-30" /></div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-foreground line-clamp-1">{actor.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{actor.character}</p>
-                  </div>
+            <h2 className="text-2xl font-bold mb-4">Cast & Crew</h2>
+            <p className="text-muted-foreground leading-relaxed max-w-3xl">
+              {video.cast}
+            </p>
+          </div>
+        )}
+        {castInfo?.cast && castInfo.cast.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Cast</h2>
+            <div className="flex flex-wrap gap-3">
+              {castInfo.cast.map((actor, idx) => (
+                <div key={idx} className="bg-secondary/30 border border-border/50 rounded-lg px-4 py-2 flex flex-col items-center justify-center text-center w-[140px]">
+                  <p className="text-sm font-bold text-foreground w-full truncate" title={actor.actor}>{actor.actor}</p>
+                  <p className="text-xs text-muted-foreground w-full truncate" title={actor.character}>{actor.character}</p>
                 </div>
               ))}
             </div>

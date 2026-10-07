@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Film, Loader2, Download } from "lucide-react";
+import { ArrowLeft, Film, Tv, Loader2, Download, Download as DownloadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import VideoCard from "@/components/browse/VideoCard";
@@ -10,6 +10,8 @@ import ReviewSection from "@/components/browse/ReviewSection";
 import { Heart } from "lucide-react";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
+import Footer from "@/components/browse/Footer";
+import WatchlistButton from "@/components/browse/WatchlistButton";
 
 export default function SeriesDetail() {
   const [searchParams] = useSearchParams();
@@ -86,102 +88,132 @@ export default function SeriesDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Hero Banner */}
-      <div
-        className="relative w-full h-72 md:h-96 bg-card flex items-end"
-        style={
-          series.cover_image
-            ? { backgroundImage: `url(${series.cover_image})`, backgroundSize: "cover", backgroundPosition: "center" }
-            : {}
-        }
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="relative z-10 px-6 md:px-16 pb-8 w-full">
-          <Link to={from}>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-2 mb-4 -ml-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Browse
-            </Button>
-          </Link>
-          {series.category && (
-            <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-1">
-              {series.category.charAt(0).toUpperCase() + series.category.slice(1)}
-            </p>
-          )}
-          <h1 className="text-3xl md:text-5xl font-black text-foreground mb-2">{series.title}</h1>
-          {series.description && (
-            <p className="text-muted-foreground max-w-2xl text-sm md:text-base leading-relaxed">
-              {series.description}
-            </p>
-          )}
-          {sortedEpisodes.length > 0 && (
-            <p className="text-muted-foreground text-sm mt-2">
-              <Film className="inline w-4 h-4 mr-1" />
-              {sortedEpisodes.length} episode{sortedEpisodes.length !== 1 ? "s" : ""}
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button
-              variant={isFavourited ? "default" : "outline"}
-              className={`gap-2 ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
-              onClick={handleToggleFavourite}
-            >
-              <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
-              {isFavourited ? "Favourited" : "Favourite Series"}
-            </Button>
+      {/* Cinematic Hero Backdrop */}
+      <div className="relative w-full h-[55vh] md:h-[70vh] max-h-[800px] bg-black">
+        {series.cover_image ? (
+          <img
+            src={series.cover_image}
+            alt=""
+            className="w-full h-full object-cover opacity-40 md:opacity-50"
+            style={{ maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)" }}
+          />
+        ) : (
+          <div className="w-full h-full bg-secondary/20"></div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent"></div>
 
+        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-12 lg:px-16 pb-8 pt-32 max-w-[2000px] mx-auto flex flex-col md:flex-row gap-8 items-end">
+          {/* Poster */}
+          <div className="hidden md:block w-48 lg:w-64 shrink-0 shadow-2xl rounded-xl overflow-hidden border border-border/50 translate-y-16 z-10">
+            {series.cover_image ? (
+              <img src={series.cover_image} alt={series.title} className="w-full aspect-[2/3] object-cover" />
+            ) : (
+              <div className="w-full aspect-[2/3] bg-secondary flex items-center justify-center"><Tv className="w-12 h-12 text-muted-foreground/30" /></div>
+            )}
+          </div>
+          
+          <div className="flex-1 z-10 space-y-4">
+            <Link to={from} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors mb-2 md:hidden">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </Link>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-lg">{series.title}</h1>
+            
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium">
+              {series.release_year && <span>{series.release_year}</span>}
+              {series.category && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                  <span className="capitalize">{series.category}</span>
+                </>
+              )}
+              {series.is_adult && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                  <span className="px-2 py-0.5 rounded bg-red-600 text-white text-xs font-bold tracking-widest shadow-lg">18+</span>
+                </>
+              )}
+              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+              <span>{sortedEpisodes.length} Episode{sortedEpisodes.length !== 1 && 's'}</span>
+            </div>
+            
+            {series.description && (
+              <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-3xl line-clamp-3 md:line-clamp-none drop-shadow-md">
+                {series.description}
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              <WatchlistButton videoId={null} seriesId={series.id} />
+              
+              <Button
+                variant={isFavourited ? "default" : "outline"}
+                className={`gap-2 rounded-full h-11 px-6 transition-colors ${isFavourited ? "bg-red-600 hover:bg-red-700 border-red-600 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
+                onClick={handleToggleFavourite}
+              >
+                <Heart className={`w-4 h-4 ${isFavourited ? "fill-current" : ""}`} />
+                {isFavourited ? "Favourited" : "Favourite Series"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Episodes Grid */}
-      {sortedEpisodes.length > 0 && (
-        <div className="px-6 md:px-16 py-10">
-          <h2 className="text-xl font-bold text-foreground mb-2">All Episodes</h2>
-          {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
-            <p className="text-xs text-muted-foreground mb-6 flex items-center gap-1.5 flex-wrap">
-              <Download className="w-3.5 h-3.5" />
-              <span>Downloading is only available for premium members. Hover over an episode and click the download button to save it — progress appears in the download popup.</span>
-              <button type="button" onClick={openPremium} className="text-primary underline hover:text-primary/80">View subscription plans</button>
-            </p>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {sortedEpisodes.map((ep) => (
-              <VideoCard
-                key={ep.id}
-                video={ep}
-                onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => downloadSingleVideo(v.id) : undefined}
-              />
-            ))}
+      <div className="flex-1 w-full max-w-[2000px] mx-auto px-4 md:px-12 lg:px-16 pt-24 pb-16 space-y-12">
+        
+        {sortedEpisodes.length > 0 ? (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Episodes</h2>
+            {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+              <p className="text-sm text-muted-foreground mb-6 flex items-center gap-2 bg-secondary/30 p-4 rounded-xl border border-border/50">
+                <DownloadIcon className="w-5 h-5 text-primary" />
+                <span>Downloading is available for premium members. Hover over an episode to save it for offline viewing.</span>
+                {!isPremium && <button type="button" onClick={openPremium} className="text-primary font-bold underline hover:text-primary/80 ml-2">View plans</button>}
+              </p>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+              {sortedEpisodes.map(ep => (
+                <VideoCard 
+                  key={ep.id} 
+                  video={ep} 
+                  onDownload={isPremium && !ep.coming_soon && ep.video_url ? (v) => downloadSingleVideo(v.id) : undefined}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Images Grid */}
-      {images.length > 0 && (
-        <div className="px-6 md:px-16 py-10">
-          <h2 className="text-xl font-bold text-foreground mb-6">Images</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {images.map((img) => (
-              <a key={img.id} href={img.image_url} target="_blank" rel="noopener noreferrer" className="group relative rounded-md overflow-hidden bg-secondary aspect-video cursor-pointer hover:opacity-90 transition-opacity" onContextMenu={e => e.preventDefault()}>
-                <img src={img.image_url} alt={img.title} className="w-full h-full object-cover" onContextMenu={e => e.preventDefault()} />
-                {img.title && (
-                  <div className="absolute inset-0 bg-black/60 group-hover:bg-black/70 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <p className="text-white font-semibold text-center px-2">{img.title}</p>
-                  </div>
-                )}
-              </a>
-            ))}
+        ) : (
+          <div className="text-center py-12 bg-secondary/20 rounded-xl border border-border/50">
+            <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-bold">No Episodes Yet</h3>
+            <p className="text-muted-foreground">Check back later for new episodes.</p>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="px-6 md:px-16 pb-16">
+        {images.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Gallery</h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+              {images.map(img => (
+                <div key={img.id} className="min-w-[280px] md:min-w-[400px] aspect-video flex-none snap-start rounded-xl overflow-hidden shadow-lg border border-border/50 relative group">
+                  <img src={img.image_url} alt={img.title || "Gallery Image"} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" onContextMenu={e => e.preventDefault()} />
+                  {img.title && (
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                      <p className="text-white font-bold text-center px-4">{img.title}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <ReviewSection contentId={seriesId} contentType="series" />
       </div>
+      <Footer />
     </div>
   );
 }
