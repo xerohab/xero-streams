@@ -2,7 +2,6 @@ import React from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-const SELECT = "h-10 min-w-0 rounded-lg border border-border bg-card px-3 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary";
 export default function BrowseControls({ catalog }) {
   return (
     <div className="xero-filter-bar mb-6">

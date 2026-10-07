@@ -21,7 +21,7 @@ export default function HeroContent({ slide, active, reducedMotion }) {
   const year = data.release_year || (data.release_date ? new Date(data.release_date).getFullYear() : null);
   const category = data.category || data.category_id;
   const updated = isRecentlyUpdated(toActivityTimestamp(data.content_updated_at)) || isRecentlyUpdated(slide.latestActivityAt);
-  const fresh = isRecentlyUpdated(toActivityTimestamp(data.created_date));
+  const fresh = !collection && isRecentlyUpdated(toActivityTimestamp(data.created_date));
 
   const metaParts = [];
   if (collection) metaParts.push("COLLECTION");
@@ -38,6 +38,8 @@ export default function HeroContent({ slide, active, reducedMotion }) {
       <div className="home-hero-kicker">Xero Cinema · Now Showing</div>
       <h1 className={`home-hero-title ${title.length > 28 ? "home-hero-title-long" : ""}`}>{title}</h1>
       <div className="home-hero-meta">
+        {collection && <StatusBadge status="COLLECTION" />}
+        {updated && <StatusBadge status={fresh ? "NEW" : "UPDATED"} />}
         {metaParts.map((part, i) => (
           <React.Fragment key={i}>
             {i > 0 && <span aria-hidden="true" className="text-foreground/30">·</span>}

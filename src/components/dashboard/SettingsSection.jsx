@@ -16,7 +16,7 @@ export default function SettingsSection({ user, onToggleRow }) {
   return (
     <section>
       <SectionHeader title="Homepage Settings" subtitle="Choose what appears on your Home page." />
-      <div className="max-w-xl space-y-3 rounded-xl border border-border bg-card p-6">
+      <div className="max-w-xl space-y-3 rounded-lg border border-border/60 bg-card/40 p-5">
         {ROW_OPTIONS.map((row) => (
           <div key={row.id} className="flex items-center gap-3">
             <input

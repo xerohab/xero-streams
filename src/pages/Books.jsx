@@ -21,6 +21,11 @@ export default function Books() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  React.useEffect(() => {
+    document.title = "Books | Xero Streams";
+    return () => { document.title = "Xero Streams"; };
+  }, []);
+
   const { data: books = [], isLoading } = useQuery({
     queryKey: ["books"],
     queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 1000)

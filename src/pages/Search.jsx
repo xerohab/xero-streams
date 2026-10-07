@@ -45,6 +45,7 @@ export default function Search() {
   const { data: books = [] } = useQuery({ queryKey: ["search_books"], queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
   const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], queryFn: () => base44.entities.BookAuthor.list() });
 
+  useEffect(() => { document.title = "Search | Xero Streams"; return () => { document.title = "Xero Streams"; }; }, []);
   useEffect(() => setCurrentPage(1), [query, filterType, filterCategory, filterYear, filterCast]);
   const results = useMemo(() => {
     

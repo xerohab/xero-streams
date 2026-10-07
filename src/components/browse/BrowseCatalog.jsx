@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/browse/Navbar";
 import Footer from "@/components/browse/Footer";
@@ -14,6 +14,10 @@ import { isRecentlyUpdated } from "@/lib/activityUtils";
 
 export default function BrowseCatalog({ type, title, subtitle }) {
   const catalog = useBrowseCatalog(type);
+  useEffect(() => {
+    document.title = `${title} | Xero Streams`;
+    return () => { document.title = "Xero Streams"; };
+  }, [title]);
   return (
     <div className="flex min-h-screen flex-col bg-background pb-16 md:pb-0">
       <Navbar />
