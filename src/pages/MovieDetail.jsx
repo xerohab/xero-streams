@@ -15,7 +15,7 @@ export default function MovieDetail() {
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get("id");
   const from = searchParams.get("from") || "/";
-  const [castInfo, setCastInfo] = useState(null);
+  const [castInfo] = useState(null);
   
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
