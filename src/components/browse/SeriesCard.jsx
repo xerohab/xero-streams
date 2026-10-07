@@ -1,53 +1,66 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Tv, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-export default function SeriesCard({ series, episodeCount, from }) {
-  const linkPath = from ? `/series?id=${series.id}&from=${encodeURIComponent(from)}` : `/series?id=${series.id}`;
+export default function SeriesCard({ series }) {
+  if (!series) return null;
+
   return (
-    <Link to={linkPath}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="group relative cursor-pointer rounded-lg overflow-hidden bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-black/30 hover:-translate-y-1"
-      >
-        {/* Thumbnail */}
-        <div className="aspect-video relative overflow-hidden bg-secondary w-full">
-          {series.cover_image ? (
-            <img
-              src={series.cover_image}
-              alt={series.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Tv className="w-10 h-10 text-muted-foreground" />
-            </div>
-          )}
-          {/* Hover overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300" />
-          
-          {/* Views badge */}
-          {(series.views || 0) > 0 && (
-            <div className="absolute top-2 right-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1 z-10">
-              <Eye className="w-3 h-3" />
-              {series.views}
-            </div>
-          )}
+    <Link 
+      to={`/series?id=${series.id}`} 
+      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50"
+    >
+      <div className="relative aspect-[2/3] w-full bg-secondary/30 rounded-xl overflow-hidden shadow-inner">
+        {series.cover_image ? (
+          <img 
+            src={series.cover_image} 
+            alt={series.title} 
+            loading="lazy" 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <Tv className="w-10 h-10 opacity-30" />
+          </div>
+        )}
+        
+        {/* Dark overlay that appears on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+             <button className="w-full bg-primary text-primary-foreground font-bold text-sm py-2 rounded-full mb-2 flex items-center justify-center gap-2">
+               <Tv className="w-4 h-4" /> View Series
+             </button>
+             {series.category && (
+                <span className="text-xs font-bold text-muted-foreground capitalize bg-black/50 px-2 py-0.5 rounded backdrop-blur-sm">{series.category}</span>
+             )}
+          </div>
         </div>
 
-        {/* Info */}
-        <div className="p-2">
-          <p className="text-sm font-semibold text-foreground truncate">{series.title}</p>
-          {episodeCount > 0 && (
-            <p className="text-xs text-muted-foreground mt-0.5">{episodeCount} episode{episodeCount !== 1 ? "s" : ""}</p>
-          )}
-          {series.category && (
-            <p className="text-xs text-primary mt-0.5 capitalize">{series.category}</p>
+        {/* Persistent top badges */}
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          {series.is_adult && (
+            <Badge variant="destructive" className="bg-red-600/90 text-white border-none font-bold text-[10px] tracking-widest shadow-lg">
+              18+
+            </Badge>
           )}
         </div>
-      </motion.div>
+      </div>
+      
+      <div className="px-1 py-1">
+        <h3 className="font-bold text-foreground text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+          {series.title}
+        </h3>
+        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground font-medium">
+          {series.release_year && <span>{series.release_year}</span>}
+          {series.category && (
+            <>
+              {series.release_year && <span className="w-1 h-1 rounded-full bg-border"></span>}
+              <span className="capitalize">{series.category}</span>
+            </>
+          )}
+        </div>
+      </div>
     </Link>
   );
 }

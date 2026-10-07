@@ -42,6 +42,7 @@ function useContinueWatching() {
 }
 
 export default function Dashboard() {
+  // Use "My Xero" for all UI headings, but keep route as /dashboard
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -316,8 +317,8 @@ export default function Dashboard() {
             <User className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-foreground">{user.full_name || "My Account"}</h1>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">My Xero</h1>
+            <p className="text-sm text-muted-foreground">Welcome back, {user.full_name || "User"}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="text-xs capitalize">{user.role}</Badge>
               {activeSub ? (

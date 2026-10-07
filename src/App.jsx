@@ -11,6 +11,8 @@ import Home from '@/pages/Home';
 import Watch from '@/pages/Watch';
 import Admin from '@/pages/Admin';
 import SeriesDetail from '@/pages/SeriesDetail';
+import MoviesBrowse from '@/pages/MoviesBrowse';
+import SeriesBrowse from '@/pages/SeriesBrowse';
 import Search from '@/pages/Search';
 import FranchiseDetail from '@/pages/FranchiseDetail';
 import MovieDetail from '@/pages/MovieDetail';
@@ -33,14 +35,16 @@ const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   useEffect(() => {
+    const root = document.documentElement;
     if (user?.theme_color) {
-      const root = document.documentElement;
       const color = user.theme_color;
       if (color === 'blue') { root.style.setProperty('--primary', '221.2 83.2% 53.3%'); root.style.setProperty('--ring', '221.2 83.2% 53.3%'); }
       else if (color === 'green') { root.style.setProperty('--primary', '142.1 76.2% 36.3%'); root.style.setProperty('--ring', '142.1 76.2% 36.3%'); }
       else if (color === 'purple') { root.style.setProperty('--primary', '262.1 83.3% 57.8%'); root.style.setProperty('--ring', '262.1 83.3% 57.8%'); }
-      else if (color === 'orange') { root.style.setProperty('--primary', '24.6 95% 53.1%'); root.style.setProperty('--ring', '24.6 95% 53.1%'); }
-      else { root.style.setProperty('--primary', '0 72% 51%'); root.style.setProperty('--ring', '0 72% 51%'); }
+      else if (color === 'red') { root.style.setProperty('--primary', '0 72% 51%'); root.style.setProperty('--ring', '0 72% 51%'); }
+      else { root.style.setProperty('--primary', '45 93% 47%'); root.style.setProperty('--ring', '45 93% 47%'); }
+    } else {
+      root.style.setProperty('--primary', '45 93% 47%'); root.style.setProperty('--ring', '45 93% 47%');
     }
   }, [user?.theme_color]);
 
@@ -83,6 +87,8 @@ const AuthenticatedApp = () => {
       <Route path="/watch" element={<Watch />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/series" element={<SeriesDetail />} />
+      <Route path="/movies" element={<MoviesBrowse />} />
+      <Route path="/tv-series" element={<SeriesBrowse />} />
       <Route path="/search" element={<Search />} />
       <Route path="/franchise" element={<FranchiseDetail />} />
       <Route path="/movie" element={<MovieDetail />} />

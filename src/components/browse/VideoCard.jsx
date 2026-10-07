@@ -1,122 +1,91 @@
-import React, { useState } from "react";
-import { Play, Clock, CalendarClock, Eye, Download } from "lucide-react";
-import { Link } from "react-router-dom";
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Clock, Film, Eye, Heart, Download } from "lucide-react";
 import { format } from "date-fns";
-import { useDownloadManager } from "@/lib/DownloadManagerContext";
+import { Badge } from "@/components/ui/badge";
 
-export default function VideoCard({ video, index, from, isAdult, onDownload }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const { startDownload } = useDownloadManager();
+export default function VideoCard({ video }) {
+  const navigate = useNavigate();
 
-  // A video is "coming soon" if flagged OR if it has no playable URL
+  if (!video) return null;
   const isComingSoon = video.coming_soon || !video.video_url;
+  const href = video.series_id ? `/watch?id=${video.id}` : `/movie?id=${video.id}`;
 
-  const linkPath = isComingSoon
-    ? `/movie?id=${video.id}`
-    : from ? `/watch?id=${video.id}&from=${encodeURIComponent(from)}` : `/watch?id=${video.id}`;
+  const handleClick = (e) => {
+    e.preventDefault();
+    if (isComingSoon && video.content_type === "movie") navigate(`/movie?id=${video.id}`);
+    else navigate(href);
+  };
 
   return (
-    <div
-      className="w-full"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <Link 
+      to={href} 
+      onClick={handleClick} 
+      className="group relative flex flex-col gap-2 rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/20 bg-card border border-transparent hover:border-border/50"
     >
-      <Link to={linkPath}>
-        <div className="relative aspect-video rounded-md overflow-hidden bg-secondary transition-shadow duration-300 hover:shadow-lg hover:shadow-black/40 w-full">
-          {video.thumbnail_url ? (
-            <img
-              src={video.thumbnail_url}
-              alt={video.title}
-              className={`w-full h-full object-cover ${isComingSoon ? "brightness-50" : ""}`}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary flex items-center justify-center">
-              <CalendarClock className="w-8 h-8 text-muted-foreground" />
-            </div>
-          )}
+      <div className="relative aspect-[2/3] w-full bg-secondary/30 rounded-xl overflow-hidden shadow-inner">
+        {video.thumbnail_url ? (
+          <img 
+            src={video.thumbnail_url} 
+            alt={video.title}
+            loading="lazy" 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <Film className="w-10 h-10 opacity-30" />
+          </div>
+        )}
+        
+        {/* Dark overlay that appears on hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+             <button className="w-full bg-primary text-primary-foreground font-bold text-sm py-2 rounded-full mb-2 flex items-center justify-center gap-2">
+               <PlayIcon className="w-4 h-4 fill-current" /> Play
+             </button>
+             {video.quality && video.quality !== "Unknown" && (
+                <span className="text-xs font-bold text-primary bg-primary/20 px-2 py-0.5 rounded border border-primary/30 uppercase">{video.quality}</span>
+             )}
+          </div>
+        </div>
 
-          {/* Coming Soon overlay */}
-          {isComingSoon ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-              <CalendarClock className="w-7 h-7 text-white" />
-              <span className="text-white text-xs font-bold tracking-wider uppercase">Coming Soon</span>
-              {video.release_date && (
-                <span className="text-white/70 text-xs mt-0.5">
-                  {format(new Date(video.release_date), "d MMM yyyy")}
-                </span>
-              )}
-            </div>
-          ) : (
-            /* Hover overlay — only when not coming soon */
-            <div className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="flex items-center gap-2">
-                <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center backdrop-blur-sm">
-                  <Play className="w-5 h-5 text-primary-foreground fill-current ml-0.5" />
-                </div>
-                {onDownload && (
-                  <button
-                    type="button"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      startDownload(video);
-                    }}
-                    className="w-10 h-10 rounded-full bg-green-600/90 hover:bg-green-500 flex items-center justify-center backdrop-blur-sm transition-colors"
-                    title="Download this episode"
-                  >
-                    <Download className="w-4 h-4 text-white" />
-                  </button>
-                )}
-              </div>
-            </div>
+        {/* Persistent top badges */}
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          {video.episode_number && (
+            <Badge variant="secondary" className="bg-black/70 backdrop-blur-sm text-white border-none text-[10px] uppercase font-bold tracking-wider">
+              Ep {video.episode_number}
+            </Badge>
           )}
-
-          {/* Duration badge */}
-          {!isComingSoon && video.duration && (
-            <div className="absolute bottom-2 right-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {video.duration}
-            </div>
-          )}
-
-          {/* Views badge */}
-          {!isComingSoon && (video.views || 0) > 0 && (
-            <div className="absolute bottom-2 left-2 bg-black/80 text-xs text-white px-2 py-0.5 rounded flex items-center gap-1 z-10">
-              <Eye className="w-3 h-3" />
-              {video.views}
-            </div>
-          )}
-
-          {/* Episode number - only for non-adult content */}
-          {!isAdult && video.episode_number && (
-            <div className="absolute top-2 left-2 bg-primary/90 text-xs text-primary-foreground font-bold px-2 py-0.5 rounded">
-              EP {video.episode_number}
-            </div>
-          )}
-
-          {/* Quality badge */}
-          {!isComingSoon && ((video.quality && video.quality !== "Unknown") || video.quality_notes) && (
-            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm border border-white/20 text-[10px] uppercase text-white font-bold px-1.5 py-0.5 rounded tracking-wide flex flex-col items-end gap-0.5">
-              {video.quality && video.quality !== "Unknown" && <span>{video.quality}</span>}
-              {video.quality_notes && <span className="text-[9px] text-muted-foreground capitalize">{video.quality_notes}</span>}
-            </div>
-          )}
-
-          {/* Coming Soon badge top-right */}
           {isComingSoon && (
-            <div className="absolute top-2 right-2 bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded">
-              Soon
-            </div>
+            <Badge variant="destructive" className="bg-amber-500/90 text-amber-950 border-none font-bold text-[10px] uppercase shadow-lg">
+              Coming Soon
+            </Badge>
           )}
         </div>
-
-        {/* Title only — no description, no overlap */}
-        <div className="mt-2 px-1 pb-1 min-h-[2.5rem]">
-          <h3 className="text-xs md:text-sm font-semibold text-foreground leading-snug hover:text-primary transition-colors break-words line-clamp-3">
-            {video.title}
-          </h3>
+      </div>
+      
+      <div className="px-1 py-1">
+        <h3 className="font-bold text-foreground text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+          {video.title}
+        </h3>
+        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground font-medium">
+          {video.release_year ? <span>{video.release_year}</span> : (video.release_date && <span>{new Date(video.release_date).getFullYear()}</span>)}
+          {video.duration && (
+            <>
+              <span className="w-1 h-1 rounded-full bg-border"></span>
+              <span>{video.duration}</span>
+            </>
+          )}
         </div>
-      </Link>
-    </div>
+      </div>
+    </Link>
+  );
+}
+
+function PlayIcon(props) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
   );
 }

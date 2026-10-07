@@ -149,172 +149,149 @@ export default function MovieDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
+      
+      {/* Cinematic Hero Backdrop */}
+      <div className="relative w-full h-[55vh] md:h-[70vh] max-h-[800px] bg-black">
+        {video.thumbnail_url ? (
+          <img
+            src={video.thumbnail_url}
+            alt=""
+            className="w-full h-full object-cover opacity-40 md:opacity-50"
+            style={{ maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)" }}
+          />
+        ) : (
+          <div className="w-full h-full bg-secondary/20"></div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/40 to-transparent"></div>
 
-      {/* Hero */}
-      <div
-        className="relative w-full h-80 md:h-[28rem] flex items-end"
-        style={
-          video.thumbnail_url
-            ? { backgroundImage: `url(${video.thumbnail_url})`, backgroundSize: "cover", backgroundPosition: "center top" }
-            : {}
-        }
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-        <div className="relative z-10 px-6 md:px-16 pb-10 w-full">
-          <button
-            onClick={() => navigate(from)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
-
-          {(franchise || series) && (
-            <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-1">
-              {franchise?.title || series?.title}
-            </p>
-          )}
-          <h1 className="text-3xl md:text-5xl font-black text-foreground mb-4">{video.title}</h1>
-
-          <div className="flex flex-wrap gap-3 mb-5">
-            {castInfo?.release_year && (
-              <span className="text-sm text-muted-foreground">{castInfo.release_year}</span>
-            )}
-            {(video.duration || castInfo?.runtime) && (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" /> {video.duration || castInfo.runtime}
-              </span>
-            )}
-            {video.quality && video.quality !== "Unknown" && (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground uppercase font-semibold">
-                {video.quality}
-              </span>
-            )}
-            {video.quality_notes && (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                ({video.quality_notes})
-              </span>
-            )}
-            {castInfo?.genre && (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Film className="w-4 h-4" /> {castInfo.genre}
-              </span>
-            )}
-            {castInfo?.rating && (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Star className="w-4 h-4 text-yellow-400" /> {castInfo.rating}
-              </span>
+        <div className="absolute bottom-0 left-0 right-0 px-4 md:px-12 lg:px-16 pb-8 pt-32 max-w-[2000px] mx-auto flex flex-col md:flex-row gap-8 items-end">
+          {/* Poster */}
+          <div className="hidden md:block w-48 lg:w-64 shrink-0 shadow-2xl rounded-xl overflow-hidden border border-border/50 translate-y-16 z-10">
+            {video.thumbnail_url ? (
+              <img src={video.thumbnail_url} alt={video.title} className="w-full aspect-[2/3] object-cover" />
+            ) : (
+              <div className="w-full aspect-[2/3] bg-secondary flex items-center justify-center"><Film className="w-12 h-12 text-muted-foreground/30" /></div>
             )}
           </div>
-
-          <div className="flex gap-3">
-            {(video.coming_soon || !video.video_url) && (
-              <div className="flex items-center gap-2 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-sm font-semibold px-4 py-2 rounded-lg">
-                <CalendarClock className="w-4 h-4" />
-                Coming Soon{video.release_date ? ` — ${format(new Date(video.release_date), "d MMM yyyy")}` : ""}
-              </div>
-            )}
-            {!video.coming_soon && video.video_url && (
-              <Button
-                onClick={() => navigate(`/watch?id=${video.id}`)}
-                className="gap-2"
-              >
-                <Play className="w-4 h-4 fill-current" /> Play Now
-              </Button>
-            )}
-            {!castInfo && (
-              <Button
-                variant="secondary"
-                onClick={fetchCastInfo}
-                disabled={loadingCast}
-                className="gap-2"
-              >
-                {loadingCast ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-                {loadingCast ? "Loading..." : "Cast & Crew"}
-              </Button>
-            )}
-            <WatchlistButton videoId={video.id} variant="secondary" />
+          
+          <div className="flex-1 z-10 space-y-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-lg">{video.title}</h1>
             
-            {!video.is_for_sale && isPremium && !video.coming_soon && video.video_url && (
-              <Button
-                variant="secondary"
-                className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border"
-                onClick={async () => {
-                  try {
-                    setIsDownloading(true);
-                    setDownloadProgress(0);
-                    await downloadSingleVideo(video.id, (pct) => setDownloadProgress(pct));
-                  } catch (err) {
-                    console.error(err);
-                  } finally {
-                    setIsDownloading(false);
-                    setDownloadProgress(null);
-                  }
-                }}
-              >
-                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} {isDownloading ? (downloadProgress !== null ? `Downloading ${downloadProgress}%` : "Starting...") : "Download"}
-              </Button>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium">
+              {video.release_year ? <span>{video.release_year}</span> : (video.release_date && <span>{new Date(video.release_date).getFullYear()}</span>)}
+              {video.duration && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {video.duration}</span>
+                </>
+              )}
+              {video.quality && video.quality !== "Unknown" && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                  <span className="px-2 py-0.5 rounded bg-white/10 backdrop-blur-sm border border-white/20 text-xs uppercase font-bold text-white">
+                    {video.quality}
+                  </span>
+                </>
+              )}
+            </div>
+            
+            {video.description && (
+              <p className="text-gray-300 text-sm md:text-base leading-relaxed max-w-3xl line-clamp-3 md:line-clamp-none drop-shadow-md">
+                {video.description}
+              </p>
             )}
 
-            {video.is_for_sale && (
-              isPurchased ? (
-                <Button variant="default" className="gap-2 bg-green-600 hover:bg-green-700" onClick={() => {
-                  const a = document.createElement("a");
-                  a.href = video.download_url;
-                  a.download = "";
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-                }}>
-                  <DownloadIcon className="w-4 h-4" /> Download
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3 pt-2">
+              {(video.coming_soon || !video.video_url) ? (
+                <Button disabled className="gap-2 font-bold h-11 px-6 rounded-full bg-secondary text-secondary-foreground">
+                  <CalendarClock className="w-5 h-5" /> Coming Soon
                 </Button>
               ) : (
-                <Button variant="default" className="gap-2" onClick={handlePurchase} disabled={purchasing}>
-                  {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
+                <Button 
+                  onClick={() => navigate(`/watch?id=${video.id}`)}
+                  className="gap-2 font-bold h-12 px-8 rounded-full shadow-lg shadow-primary/20 text-base"
+                >
+                  <Play className="w-5 h-5 fill-current" /> Watch Now
                 </Button>
-              )
-            )}
+              )}
+              <WatchlistButton videoId={video.id} />
+              
+              {video.is_for_sale && (
+                isPurchased ? (
+                  <Button variant="default" className="gap-2 rounded-full h-12 px-6 bg-green-600 hover:bg-green-700" onClick={() => {
+                    const a = document.createElement("a");
+                    a.href = video.download_url;
+                    a.download = "";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  }}>
+                    <DownloadIcon className="w-4 h-4" /> Download
+                  </Button>
+                ) : (
+                  <Button variant="default" className="gap-2 rounded-full h-12 px-6" onClick={handlePurchase} disabled={purchasing}>
+                    {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />} Buy to Download (${video.price})
+                  </Button>
+                )
+              )}
+              
+              {!video.is_for_sale && isPremium && !(video.coming_soon || !video.video_url) && (
+                <Button
+                  variant="secondary"
+                  className="gap-2 bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/30 border rounded-full h-12 px-6"
+                  onClick={async () => {
+                    try {
+                      setIsDownloading(true);
+                      setDownloadProgress(0);
+                      await downloadSingleVideo(video.id, (pct) => setDownloadProgress(pct));
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setIsDownloading(false);
+                      setDownloadProgress(null);
+                    }
+                  }}
+                >
+                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} 
+                  {isDownloading ? (downloadProgress !== null ? `Downloading ${downloadProgress}%` : "Starting...") : "Download"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-6 md:px-16 py-10 max-w-5xl space-y-10">
-        {/* Description */}
-        {video.description && (
+      <div className="flex-1 w-full max-w-[2000px] mx-auto px-4 md:px-12 lg:px-16 pt-24 pb-16 space-y-12">
+        {cast && cast.length > 0 && (
           <div>
-            <h2 className="text-lg font-bold text-foreground mb-3">Synopsis</h2>
-            <p className="text-muted-foreground leading-relaxed">{video.description}</p>
-          </div>
-        )}
-
-        {/* Cast info from AI */}
-        {castInfo && (
-          <div>
-            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" /> Cast & Crew
-            </h2>
-
-            {castInfo.director && (
-              <p className="text-sm text-muted-foreground mb-4">
-                <span className="text-foreground font-semibold">Director:</span> {castInfo.director}
-              </p>
-            )}
-
-            {castInfo.cast && castInfo.cast.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {castInfo.cast.map((member, i) => (
-                  <div key={i} className="bg-card border border-border rounded-lg p-3">
-                    <p className="text-sm font-semibold text-foreground truncate">{member.actor}</p>
-                    <p className="text-xs text-muted-foreground truncate">as {member.character}</p>
+            <h2 className="text-xl font-bold mb-4">Cast</h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+              {cast.map((actor, idx) => (
+                <div key={idx} className="min-w-[100px] max-w-[120px] flex flex-col gap-2 snap-start">
+                  <div className="w-full aspect-[2/3] bg-secondary rounded-lg overflow-hidden border border-border/50">
+                    {actor.profile_path ? (
+                      <img src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`} alt={actor.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground"><User className="w-8 h-8 opacity-30" /></div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
+                  <div>
+                    <p className="text-sm font-bold text-foreground line-clamp-1">{actor.name}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{actor.character}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        <ReviewSection contentId={videoId} contentType="video" />
       </div>
+      <Footer />
     </div>
   );
 }
