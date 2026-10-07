@@ -59,6 +59,7 @@ export default function SeriesDetail() {
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
     enabled: !!user
   });
+  const { data: franchise } = useQuery({ queryKey: ["franchise", series?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: series.franchise_id}); return res[0]; }, enabled: !!series?.franchise_id });
   
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
@@ -120,6 +121,11 @@ export default function SeriesDetail() {
             <Link to={from} className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors mb-2 md:hidden">
               <ArrowLeft className="w-4 h-4" /> Back
             </Link>
+            {franchise && (
+              <Link to={`/franchise?id=${franchise.id}`} className="inline-flex items-center gap-2 text-primary font-bold hover:underline mb-1">
+                Part of {franchise.title} Collection &rarr;
+              </Link>
+            )}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight drop-shadow-lg">{series.title}</h1>
             
             <div className="flex flex-wrap items-center gap-3 text-sm text-gray-300 font-medium">
