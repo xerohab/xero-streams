@@ -10,9 +10,9 @@ export default function useBrowseCatalog(type) {
   const [sort, setSort] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setSize] = useState(() => { const n = Number(localStorage.getItem("xero_page_size")); return [20, 30, 40, 50].includes(n) ? n : 20; });
-  const { data: videos = [], isLoading: lv } = useQuery({ queryKey: ["videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
-  const { data: series = [], isLoading: ls } = useQuery({ queryKey: ["series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
-  const { data: franchises = [], isLoading: lf } = useQuery({ queryKey: ["franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: lv } = useQuery({ queryKey: ["cinema_catalog", "videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
+  const { data: series = [], isLoading: ls } = useQuery({ queryKey: ["cinema_catalog", "series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
+  const { data: franchises = [], isLoading: lf } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
   const groups = getCatalogMedia(franchises, series.filter((s) => !s.is_adult), videos.filter((v) => !v.is_adult), type);
   const genreOf = (item) => item.category || categories.find((c) => c.id === item.category_id)?.title || "";

@@ -38,9 +38,9 @@ export default function Search() {
     setCurrentPage(1);
   };
 
-  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
-  const { data: seriesList = [], isLoading: loadingSeries } = useQuery({ queryKey: ["series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
-  const { data: franchises = [] } = useQuery({ queryKey: ["franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["cinema_catalog", "videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
+  const { data: seriesList = [], isLoading: loadingSeries } = useQuery({ queryKey: ["cinema_catalog", "series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
+  const { data: franchises = [] } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
   const { data: books = [] } = useQuery({ queryKey: ["search_books"], queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
   const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], queryFn: () => base44.entities.BookAuthor.list() });

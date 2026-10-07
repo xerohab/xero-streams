@@ -4,9 +4,9 @@ import { getCatalogMedia } from "@/lib/activityUtils";
 import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
 export default function useHomeCatalog() {
-  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
-  const { data: series = [], isLoading: loadingSeries } = useQuery({ queryKey: ["series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
-  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["cinema_catalog", "videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
+  const { data: series = [], isLoading: loadingSeries } = useQuery({ queryKey: ["cinema_catalog", "series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
+  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: user } = useQuery({ queryKey: ["current_user"], queryFn: () => base44.auth.me().catch(() => null), staleTime: 0 });
   const rows = user?.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
   const safeVideos = videos.filter((v) => !v.is_adult);

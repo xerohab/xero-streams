@@ -110,7 +110,7 @@ export default function Dashboard() {
   });
 
   const { data: videos = [] } = useQuery({
-    queryKey: ["videos"],
+    queryKey: ["cinema_catalog", "videos"],
     queryFn: () => loadMediaRecords(base44.entities.Video),
     enabled: !!user,
   });
@@ -144,12 +144,12 @@ export default function Dashboard() {
   });
 
   const { data: allSeries = [] } = useQuery({
-    queryKey: ["series"],
+    queryKey: ["cinema_catalog", "series"],
     queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000)
   });
 
   const { data: allFranchises = [] } = useQuery({
-    queryKey: ["franchises"],
+    queryKey: ["cinema_catalog", "franchises"],
     queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000)
   });
 

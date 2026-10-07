@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { getProgress } from "@/hooks/useContinueWatching";
+import { useState, useEffect } from "react";
+import { getProgress, getWatched } from "@/hooks/useContinueWatching";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 import toast from "react-hot-toast";
@@ -7,9 +7,15 @@ import toast from "react-hot-toast";
 export default function useEpisodeCardState(video, { watched, playable, hrefProp }) {
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const saved = getProgress(video?.id);
+  const [playback, setPlayback] = useState(() => ({ saved: getProgress(video?.id), finished: getWatched().includes(video?.id) }));
+  useEffect(() => {
+    const refresh = () => setPlayback({ saved: getProgress(video?.id), finished: getWatched().includes(video?.id) });
+    refresh(); window.addEventListener("xero-progress-updated", refresh); window.addEventListener("storage", refresh);
+    return () => { window.removeEventListener("xero-progress-updated", refresh); window.removeEventListener("storage", refresh); };
+  }, [video?.id]);
+  const saved = playback.saved;
   const watchedPct = saved?.duration ? Math.min(100, Math.round(saved.currentTime / saved.duration * 100)) : 0;
-  const isWatched = watched || watchedPct > 90;
+  const isWatched = watched || playback.finished || watchedPct > 90;
   const inProgress = !!saved && !isWatched;
   const isComingSoon = playable === undefined ? video?.coming_soon || !video?.video_url : !playable;
   const href = hrefProp || `/watch?id=${video?.id}${inProgress ? `&t=${Math.floor(saved.currentTime)}` : ""}`;

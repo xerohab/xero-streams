@@ -111,7 +111,7 @@ export default function Watch() {
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
-    queryKey: ["videos"],
+    queryKey: ["cinema_catalog", "videos"],
     queryFn: () => loadMediaRecords(base44.entities.Video),
     staleTime: Infinity,
   });
@@ -149,13 +149,13 @@ export default function Watch() {
   }, [video?.id]);
 
   const { data: seriesList = [] } = useQuery({
-    queryKey: ["series"],
+    queryKey: ["cinema_catalog", "series"],
     queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000),
     staleTime: Infinity,
   });
 
   const { data: franchises = [] } = useQuery({
-    queryKey: ["franchises"],
+    queryKey: ["cinema_catalog", "franchises"],
     queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
     staleTime: Infinity,
   });

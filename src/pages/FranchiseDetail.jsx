@@ -45,17 +45,17 @@ export default function FranchiseDetail() {
   });
 
   const { data: allSeries = [], isLoading: loadingSeries } = useQuery({
-    queryKey: ["series"],
+    queryKey: ["cinema_catalog", "series"],
     queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000),
   });
 
   const { data: allVideos = [], isLoading: loadingVideos } = useQuery({
-    queryKey: ["videos"],
+    queryKey: ["cinema_catalog", "videos"],
     queryFn: () => loadMediaRecords(base44.entities.Video),
   });
 
   const { data: allFranchises = [], isLoading: loadingFranchises } = useQuery({
-    queryKey: ["franchises"],
+    queryKey: ["cinema_catalog", "franchises"],
     queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
   });
 
