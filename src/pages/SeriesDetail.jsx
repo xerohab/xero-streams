@@ -34,11 +34,6 @@ export default function SeriesDetail() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (series) document.title = `${series.title} | Xero Streams`;
-    return () => { document.title = "Xero Streams"; };
-  }, [series]);
-
   const isFavourited = user?.favourite_series?.includes(seriesId) ?? false;
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
@@ -56,6 +51,11 @@ export default function SeriesDetail() {
     },
     enabled: !!seriesId,
   });
+
+  useEffect(() => {
+    if (series) document.title = `${series.title} | Xero Streams`;
+    return () => { document.title = "Xero Streams"; };
+  }, [series]);
 
   const { data: episodes = [], isLoading: loadingEpisodes } = useQuery({
     queryKey: ["episodes", seriesId],
