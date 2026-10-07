@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import useHls from "@/hooks/useHls";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CalendarClock, Cast, Loader2, PictureInPicture2, SkipForward } from "lucide-react";
+import { CalendarClock, Loader2, PictureInPicture2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/browse/VideoCard";
 import MediaGrid from "@/components/browse/MediaGrid";
@@ -33,7 +33,7 @@ export default function Watch() {
   const navigate = useNavigate();
   const location = useLocation();
   const videoId = new URLSearchParams(location.search).get("id");
-  const { openCast, isCasting: isMobileCasting } = useCast();
+  const { isCasting: isMobileCasting } = useCast();
   const videoRef = useRef(null);
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
@@ -41,6 +41,13 @@ export default function Watch() {
   const [isFavourited, setIsFavourited] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [showSkipRecap, setShowSkipRecap] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   const lastSaveRef = useRef(0);
   const countdownStartedRef = useRef(false);
@@ -334,31 +341,6 @@ export default function Watch() {
     }
   };
 
-  // Cast — open fullscreen overlay on all devices with proper queue
-  const handleCast = () => {
-    if (!video?.video_url) return;
-    base44.analytics.track({ eventName: "cast_initiated", properties: { video_id: video?.id } });
-    const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
-
-    // Build queue of remaining videos after current
-    let queueItems = [];
-    if (fullQueue.length > 1 && currentQueueIndex >= 0) {
-      // TV series / franchise series queue
-      queueItems = fullQueue
-        .slice(currentQueueIndex + 1)
-        .filter((v) => v.video_url)
-        .map((v) => ({ src: v.video_url, title: v.title || "" }));
-    } else if (franchiseMovies.length > 1 && currentFranchiseIndex >= 0) {
-      // Franchise movies queue
-      queueItems = franchiseMovies
-        .slice(currentFranchiseIndex + 1)
-        .filter((v) => v.video_url)
-        .map((v) => ({ src: v.video_url, title: v.title || "" }));
-    }
-
-    openCast(video.video_url, video.title || "", queueItems, currentTime);
-  };
-
 
 
   if (isLoading) {
@@ -386,7 +368,7 @@ export default function Watch() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      {!isFullscreen && <Navbar />}
 
       <div className="pt-24">
         <div className="xero-container">
@@ -483,15 +465,7 @@ export default function Watch() {
                     <PictureInPicture2 className="w-5 h-5" />
                   </button>
                 )}
-                {!isComingSoon && !embedUrl && (
-                  <button
-                    onClick={handleCast}
-                    className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
-                    title="Cast / Fullscreen Player"
-                  >
-                    <Cast className="w-5 h-5" />
-                  </button>
-                )}
+
               </div>
 
               {/* Autoplay countdown overlay */}
