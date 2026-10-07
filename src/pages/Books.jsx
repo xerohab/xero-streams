@@ -89,7 +89,7 @@ export default function Books() {
               const booksWithoutAuthor = books.filter(b => !b.author_id || !authors.find(a => a.id === b.author_id));
 
               const renderBookGrid = (bookList) => (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 md:gap-6 justify-center mt-6">
                   {bookList.map(book => {
                     const purchasedDefault = purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "default");
                     const purchasedWord = purchasedDefault || purchases.some(p => p.book_id === book.id && p.status === "completed" && p.format === "word");
@@ -181,7 +181,7 @@ export default function Books() {
 
               if (selectedAuthor === null) {
                 return (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 md:gap-6 justify-center">
                     {authorsWithBooks.map(author => (
                       <div 
                         key={author.id} 
