@@ -193,7 +193,7 @@ export default function Home() {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex flex-col items-center justify-center min-h-screen text-center px-6">
-          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-4">
             <Film className="w-8 h-8 text-muted-foreground" />
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-2">No videos yet</h2>
@@ -211,7 +211,7 @@ export default function Home() {
             <button onClick={closeWelcome} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
               <X className="w-5 h-5" />
             </button>
-            <div className="text-center mb-6 mt-2">
+            <div className="text-center mb-4 mt-2">
               <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Film className="w-8 h-8 text-primary" />
               </div>
@@ -278,7 +278,7 @@ export default function Home() {
             <div className="px-6 md:px-16 mb-4">
               <h2 className="text-lg md:text-xl font-bold text-foreground">Latest</h2>
             </div>
-            <div className="px-6 md:px-16 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="px-6 md:px-16 grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
               {finalLatestItems.map((item, i) => (
                 item.type === 'series' 
                   ? <SeriesCard key={`series-${item.data.id}`} series={item.data} episodeCount={episodeCountBySeries(item.data.id)} />
@@ -305,7 +305,7 @@ export default function Home() {
                 <Tv className="w-5 h-5 text-primary" /> Most Watched Series
               </h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
               {mostWatchedSeriesArr.map((s) => (
                 <SeriesCard key={s.id} series={s} episodeCount={episodeCountBySeries(s.id)} />
               ))}
@@ -338,7 +338,7 @@ export default function Home() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
               {(() => {
                 // Merge franchises and standalone series, sorted by newest created_date
                 const franchiseItems = seriesByFranchise.map(({ franchise, totalItems }) => ({
@@ -371,7 +371,7 @@ export default function Home() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(130px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(140px,1fr))] 2xl:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3 md:gap-4 lg:gap-5">
               {(() => {
                 // Merge franchises and standalone movies, sorted by newest created_date
                 const franchiseItems = moviesByFranchise.map(({ franchise, totalItems }) => ({
