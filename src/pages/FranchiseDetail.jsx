@@ -26,11 +26,6 @@ export default function FranchiseDetail() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (franchise) document.title = `${franchise.title} | Xero Streams`;
-    return () => { document.title = "Xero Streams"; };
-  }, [franchise]);
-
   const isFavourited = user?.favourite_franchises?.includes(franchiseId) ?? false;
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(location.pathname + location.search); return; }
@@ -48,6 +43,11 @@ export default function FranchiseDetail() {
     },
     enabled: !!franchiseId,
   });
+
+  useEffect(() => {
+    if (franchise) document.title = `${franchise.title} | Xero Streams`;
+    return () => { document.title = "Xero Streams"; };
+  }, [franchise]);
 
   const { data: allSeries = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["cinema_catalog", "series"],
