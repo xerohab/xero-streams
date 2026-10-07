@@ -17,7 +17,6 @@ import ReviewSection from "@/components/browse/ReviewSection";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
 import Footer from "@/components/browse/Footer";
 import WatchlistButton from "@/components/browse/WatchlistButton";
-import SeriesDownloadButton from "@/components/browse/SeriesDownloadButton";
 import { getAll } from "@/hooks/useContinueWatching";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 
@@ -162,7 +161,6 @@ export default function SeriesDetail() {
           </Button>
         )}
         <WatchlistButton videoId={null} seriesId={series.id} variant="outline" className={OUTLINE_BTN} label="My List" />
-        {firstPlayable && <SeriesDownloadButton series={series} isPremium={isPremium} onViewPlans={openPremium} />}
         <Button
           variant={isFavourited ? "default" : "outline"}
           className={isFavourited ? "gap-2 rounded-full h-11 px-6" : OUTLINE_BTN}
