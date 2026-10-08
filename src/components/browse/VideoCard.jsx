@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Film, Play } from "lucide-react";
 import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
+import CardGenres from "@/components/browse/CardGenres";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
 export default function VideoCard({ video, isUpdated }) {
@@ -29,7 +30,7 @@ export default function VideoCard({ video, isUpdated }) {
       title={video.title}
       FallbackIcon={Film}
       HoverIcon={Play}
-      meta={[year, video.duration]}
+      meta={[year, video.duration, <CardGenres key="g" record={video} max={2} />]}
       badges={
         <>
           {isUpdated && <StatusBadge status={isRecentlyUpdated(toActivityTimestamp(video.created_date)) ? "NEW" : "UPDATED"} />}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Play, Search, User, LogIn, Crown, Film, Tv, Settings, LogOut, Heart, Download, HomeIcon, BookOpen } from "lucide-react";
+import { Play, Search, User, LogIn, Crown, Film, Tv, Settings, LogOut, Heart, Download, HomeIcon, BookOpen, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
+import { useProfile } from "@/lib/ProfileContext";
 import MobileMenu from "@/components/browse/MobileMenu";
 
 export default function Navbar() {
@@ -17,6 +18,7 @@ export default function Navbar() {
   const location = useLocation();
   const inputRef = useRef(null);
   const { open: openPremium } = usePremiumModal();
+  const { profiles, activeProfile, switchProfile } = useProfile() || {};
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -119,7 +121,17 @@ export default function Navbar() {
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
                     
+                    {activeProfile && (
+                      <div className="px-4 py-2 border-b border-border/50 mb-1 flex items-center gap-2">
+                        <span className="text-lg">{(() => { const a = (profiles || []).find(p => p.id === activeProfile.id); return a ? "👤" : "👤"; })()}</span>
+                        <span className="text-xs font-bold text-primary">{activeProfile.name}</span>
+                        {activeProfile.is_kids && <span className="rounded bg-primary px-1 py-0.5 text-[8px] font-bold text-primary-foreground">KIDS</span>}
+                      </div>
+                    )}
                     <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><User className="w-4 h-4 text-muted-foreground" /> My Profile</Link>
+                    {profiles && profiles.length > 1 && (
+                      <Link to="/profiles" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Users className="w-4 h-4 text-muted-foreground" /> Switch Profile</Link>
+                    )}
                     <Link to="/dashboard#list" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Heart className="w-4 h-4 text-muted-foreground" /> My List</Link>
                     <Link to="/dashboard#books" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><BookOpen className="w-4 h-4 text-muted-foreground" /> My Books</Link>
                     <Link to="/dashboard#downloads" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Download className="w-4 h-4 text-muted-foreground" /> Downloads</Link>

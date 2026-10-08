@@ -30,6 +30,8 @@ import { DownloadManagerProvider } from '@/lib/DownloadManagerContext';
 import DownloadManagerPopup from '@/components/browse/DownloadManagerPopup';
 import { PremiumModalProvider } from '@/lib/PremiumModalContext';
 import PremiumModal from '@/components/browse/PremiumModal';
+import { ProfileProvider } from '@/lib/ProfileContext';
+import ProfileSelect from '@/pages/ProfileSelect';
 
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -77,6 +79,7 @@ const AuthenticatedApp = () => {
     <DownloadManagerProvider>
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/profiles" element={<ProfileSelect />} />
       <Route path="/watch" element={<Watch />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/series" element={<SeriesDetail />} />

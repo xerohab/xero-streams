@@ -13,6 +13,7 @@ import CollectionHero from "@/components/browse/CollectionHero";
 import MediaGrid from "@/components/browse/MediaGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 import ReviewSection from "@/components/browse/ReviewSection";
+import GenreChips from "@/components/browse/GenreChips";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
@@ -146,6 +147,7 @@ export default function FranchiseDetail() {
       />
 
       <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
+        <GenreChips record={franchise} legacyField="category" />
         {groups.length > 0 ? (
           <section>
             <SectionHeader title="Titles in this Collection" />

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { Film, Tv, Loader2, Play, Heart, Download as DownloadIcon } from "lucide-react";
+import { Film, Tv, Loader2, Play, Heart, Download as DownloadIcon, Search, SkipForward, Eye, PlayCircle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import DetailHero from "@/components/browse/DetailHero";
@@ -15,10 +15,11 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import StatusBadge from "@/components/browse/StatusBadge";
 import ReviewSection from "@/components/browse/ReviewSection";
 import CastCredits from "@/components/browse/CastCredits";
+import GenreChips from "@/components/browse/GenreChips";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
 import Footer from "@/components/browse/Footer";
 import WatchlistButton from "@/components/browse/WatchlistButton";
-import { getAll } from "@/hooks/useContinueWatching";
+import { getAll, getWatched } from "@/hooks/useContinueWatching";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 
 const OUTLINE_BTN = "xero-action px-5";
@@ -29,6 +30,7 @@ export default function SeriesDetail() {
   const from = searchParams.get("from") || "/";
 
   const [user, setUser] = useState(null);
+  const [epSearch, setEpSearch] = useState("");
   const { open: openPremium } = usePremiumModal();
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -129,6 +131,20 @@ export default function SeriesDetail() {
   const playEpisode = resumeEntry ? sortedEpisodes.find((ep) => ep.id === resumeEntry.id) : firstPlayable;
   const isUpdated = isRecentlyUpdated(getItemActivityAt(series, [], [series], episodes));
 
+  // Episode search + quick actions
+  const watchedIds = new Set(getWatched());
+  const latestEpisode = [...sortedEpisodes].reverse().find((ep) => !ep.coming_soon && ep.video_url);
+  const nextUnwatched = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url && !watchedIds.has(ep.id) && !getAll().some((p) => p.id === ep.id));
+  const filteredEpisodes = (() => {
+    const q = epSearch.trim().toLowerCase();
+    if (!q) return sortedEpisodes;
+    return sortedEpisodes.filter((ep) =>
+      ep.title?.toLowerCase().includes(q) ||
+      String(ep.episode_number || "").includes(q) ||
+      ep.description?.toLowerCase().includes(q)
+    );
+  })();
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -177,6 +193,7 @@ export default function SeriesDetail() {
       </DetailHero>
 
       <main className="xero-container flex-1 space-y-8 pb-12 pt-6">
+        <GenreChips record={series} legacyField="category" />
         {seasons.length > 1 && <section className="flex flex-wrap items-center gap-4 rounded-lg border border-border/60 bg-card/40 p-3"><h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Season</h2><SeasonSelect currentId={seriesId} seasons={seasons} /></section>}
         {sortedEpisodes.length > 0 ? (
           <section>
@@ -184,6 +201,44 @@ export default function SeriesDetail() {
               title="Episodes"
               subtitle={`${sortedEpisodes.length} episode${sortedEpisodes.length !== 1 ? "s" : ""}`}
             />
+            {/* Quick episode actions */}
+            {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {resumeEntry && (
+                  <Button asChild variant="default" className="h-9 gap-2 rounded-lg px-4 text-xs font-bold">
+                    <Link to={`/watch?id=${resumeEntry.id}&t=${Math.floor(resumeEntry.currentTime)}`}><Play className="h-3.5 w-3.5 fill-current" /> Continue Watching</Link>
+                  </Button>
+                )}
+                {nextUnwatched && nextUnwatched.id !== resumeEntry?.id && (
+                  <Button asChild variant="outline" className="h-9 gap-2 rounded-lg px-4 text-xs font-bold">
+                    <Link to={`/watch?id=${nextUnwatched.id}`}><SkipForward className="h-3.5 w-3.5" /> Next Unwatched</Link>
+                  </Button>
+                )}
+                {firstPlayable && (
+                  <Button asChild variant="outline" className="h-9 gap-2 rounded-lg px-4 text-xs font-bold">
+                    <Link to={`/watch?id=${firstPlayable.id}`}><PlayCircle className="h-3.5 w-3.5" /> First Episode</Link>
+                  </Button>
+                )}
+                {latestEpisode && latestEpisode.id !== firstPlayable?.id && (
+                  <Button asChild variant="outline" className="h-9 gap-2 rounded-lg px-4 text-xs font-bold">
+                    <Link to={`/watch?id=${latestEpisode.id}`}><Eye className="h-3.5 w-3.5" /> Latest Episode</Link>
+                  </Button>
+                )}
+              </div>
+            )}
+            {/* Episode search */}
+            {sortedEpisodes.length > 3 && (
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={epSearch}
+                  onChange={(e) => setEpSearch(e.target.value)}
+                  placeholder="Search episodes..."
+                  className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary"
+                />
+              </div>
+            )}
             {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
               <p className="mb-5 flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">
                 <DownloadIcon className="h-5 w-5 shrink-0 text-primary" />
@@ -197,11 +252,17 @@ export default function SeriesDetail() {
                 </span>
               </p>
             )}
-            <EpisodeGrid>
-              {sortedEpisodes.map((ep) => (
-                <EpisodeCard key={ep.id} video={ep} isPremium={isPremium} />
-              ))}
-            </EpisodeGrid>
+            {filteredEpisodes.length > 0 ? (
+              <EpisodeGrid>
+                {filteredEpisodes.map((ep) => (
+                  <EpisodeCard key={ep.id} video={ep} isPremium={isPremium} />
+                ))}
+              </EpisodeGrid>
+            ) : (
+              <div className="rounded-lg border border-border bg-card py-8 text-center text-sm text-muted-foreground">
+                No episodes match "{epSearch}"
+              </div>
+            )}
           </section>
         ) : (
           <div className="rounded-xl border border-border bg-card py-12 text-center">

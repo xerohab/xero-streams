@@ -37,7 +37,7 @@ export default function MediaHoverOverlay({ children, cinema = false, ...props }
         </div>
       </HoverCardPrimitive.Trigger>
       <HoverCardPrimitive.Portal>
-        <HoverCardPrimitive.Content ref={contentRef} side="top" align="center" sideOffset={10} collisionPadding={16} onBlur={blur} className={`z-[100] max-h-[calc(100vh-100px)] w-[310px] max-w-[calc(100vw-32px)] overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-2xl outline-none ${cinema ? "home-cinema-preview" : ""}`}>
+        <HoverCardPrimitive.Content ref={contentRef} side="bottom" align="center" sideOffset={8} collisionPadding={16} onBlur={blur} className={`z-[100] max-h-[calc(100vh-120px)] w-[260px] max-w-[calc(100vw-32px)] overflow-y-auto rounded-xl border border-border bg-popover p-3.5 shadow-2xl outline-none ${cinema ? "home-cinema-preview" : ""}`}>
           {cinema ? <HomeHoverPreview {...props} /> : <MediaPreview {...props} />}
         </HoverCardPrimitive.Content>
       </HoverCardPrimitive.Portal>

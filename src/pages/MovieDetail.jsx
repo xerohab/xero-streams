@@ -13,6 +13,7 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import WatchlistButton from "@/components/browse/WatchlistButton";
 import ReviewSection from "@/components/browse/ReviewSection";
 import CastCredits from "@/components/browse/CastCredits";
+import GenreChips from "@/components/browse/GenreChips";
 import Footer from "@/components/browse/Footer";
 import StatusBadge from "@/components/browse/StatusBadge";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
@@ -215,6 +216,7 @@ export default function MovieDetail() {
       </DetailHero>
 
       <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
+        <GenreChips record={video} legacyField="category" className="flex-wrap gap-2" />
         <CastCredits
           mainCast={video.main_cast?.length ? video.main_cast : castMembers}
           guestStars={video.guest_stars || []}

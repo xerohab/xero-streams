@@ -1,0 +1,55 @@
+{
+  "name": "ViewingProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the parent account that owns this profile"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name for this viewing profile"
+    },
+    "avatar": {
+      "type": "string",
+      "description": "Avatar identifier (predefined key) or URL"
+    },
+    "accent_color": {
+      "type": "string",
+      "description": "Optional profile accent color (hex or token name)"
+    },
+    "is_kids": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is a Kids profile with content filtering"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the auto-created default profile"
+    },
+    "last_used_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last profile selection"
+    }
+  },
+  "required": [
+    "user_id",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}

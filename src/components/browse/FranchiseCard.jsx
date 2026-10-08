@@ -2,6 +2,7 @@ import React from "react";
 import { Layers } from "lucide-react";
 import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
+import CardGenres from "@/components/browse/CardGenres";
 
 export default function FranchiseCard({ franchise, itemCount, isUpdated }) {
   const countLabel = itemCount != null ? `${itemCount} ${itemCount === 1 ? "Title" : "Titles"}` : "Collection";
@@ -14,7 +15,7 @@ export default function FranchiseCard({ franchise, itemCount, isUpdated }) {
       title={franchise.title}
       FallbackIcon={Layers}
       HoverIcon={Layers}
-      meta={[countLabel, franchise.category && <span className="capitalize">{franchise.category}</span>]}
+      meta={[countLabel, <CardGenres key="g" record={franchise} legacyField="category" max={2} />]}
       badges={
         <>
           {isUpdated && <StatusBadge status="UPDATED" />}

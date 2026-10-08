@@ -2,6 +2,7 @@ import React from "react";
 import { Film, Layers, Play, Tv } from "lucide-react";
 import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
+import CardGenres from "@/components/browse/CardGenres";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
 export default function HomeMediaCard({ item }) {
@@ -13,7 +14,9 @@ export default function HomeMediaCard({ item }) {
   const fresh = !collection && isRecentlyUpdated(toActivityTimestamp(data.created_date));
   const href = collection ? `/franchise?id=${data.id}` : series ? `/series?id=${data.id}` : episode ? `/watch?id=${data.id}` : `/movie?id=${data.id}`;
   const year = data.release_year || (data.release_date ? new Date(data.release_date).getFullYear() : null);
-  const metadata = collection ? [`${item.items} ${item.items === 1 ? "Title" : "Titles"}`, data.category] : [year || (series ? "TV Series" : episode ? "Episode" : "Movie"), data.duration || data.category];
+  const metadata = collection
+    ? [`${item.items} ${item.items === 1 ? "Title" : "Titles"}`, <CardGenres key="g" record={data} legacyField="category" max={2} />]
+    : [year || (series ? "TV Series" : episode ? "Episode" : "Movie"), <CardGenres key="g" record={data} legacyField="category" max={2} />];
   return (
     <MediaCard
       to={href}

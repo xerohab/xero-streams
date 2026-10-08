@@ -9,10 +9,16 @@ import { ChevronDown, Search, Check } from "lucide-react";
 const PRIMARY_GENRES = [
   { label: "Action", value: "Action" },
   { label: "Comedy", value: "Comedy" },
+  { label: "Crime", value: "Crime" },
   { label: "Drama", value: "Drama" },
+  { label: "Fantasy", value: "Fantasy" },
   { label: "Horror", value: "Horror" },
+  { label: "Romance", value: "Romance" },
   { label: "Sci-Fi", value: "Science Fiction" },
   { label: "Thriller", value: "Thriller" },
+  { label: "Animation", value: "Animation" },
+  { label: "Adventure", value: "Adventure" },
+  { label: "Documentary", value: "Documentary" },
 ];
 
 /**
