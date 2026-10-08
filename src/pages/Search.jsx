@@ -23,7 +23,7 @@ export default function Search() {
   const [filterType, setFilterType] = useState("all"); 
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterYear, setFilterYear] = useState("");
-  const [filterCast, setFilterCast] = useState("");
+  const [filterCast, setFilterCast] = useState(urlParams.get("cast") || "");
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [itemsPerPage, setItemsPerPage] = useState(() => {
@@ -86,9 +86,17 @@ export default function Search() {
 
     if (filterCast) {
       const c = filterCast.toLowerCase().trim();
-      filteredVideos = filteredVideos.filter(v => v.cast?.toLowerCase().includes(c));
-      filteredSeries = filteredSeries.filter(s => s.cast?.toLowerCase().includes(c));
-      filteredFranchises = []; 
+      filteredVideos = filteredVideos.filter(v =>
+        v.cast?.toLowerCase().includes(c) ||
+        v.main_cast?.some(a => a.toLowerCase().includes(c)) ||
+        v.guest_stars?.some(a => a.toLowerCase().includes(c))
+      );
+      filteredSeries = filteredSeries.filter(s =>
+        s.cast?.toLowerCase().includes(c) ||
+        s.main_cast?.some(a => a.toLowerCase().includes(c)) ||
+        s.guest_stars?.some(a => a.toLowerCase().includes(c))
+      );
+      filteredFranchises = [];
       filteredBooks = [];
     }
 

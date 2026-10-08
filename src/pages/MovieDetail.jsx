@@ -12,6 +12,7 @@ import MediaGrid from "@/components/browse/MediaGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 import WatchlistButton from "@/components/browse/WatchlistButton";
 import ReviewSection from "@/components/browse/ReviewSection";
+import CastCredits from "@/components/browse/CastCredits";
 import Footer from "@/components/browse/Footer";
 import StatusBadge from "@/components/browse/StatusBadge";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
@@ -149,6 +150,10 @@ export default function MovieDetail() {
             {video.quality && video.quality !== "Unknown" && (
               <span className="rounded border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-bold uppercase text-primary">{video.quality}</span>
             )}
+            {video.age_rating && (
+              <span className="rounded border border-border bg-secondary px-2 py-0.5 text-xs font-bold uppercase text-foreground">{video.age_rating}</span>
+            )}
+            {video.runtime_or_episodes && <span>{video.runtime_or_episodes}</span>}
           </>
         }
         description={video.description}
@@ -210,31 +215,11 @@ export default function MovieDetail() {
       </DetailHero>
 
       <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
-        {castMembers.length > 0 && (
-          <section>
-            <SectionHeader title="Cast" />
-            <div className="flex flex-wrap gap-2">
-              {castMembers.map((name) => (
-                <span key={name} className="rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium text-foreground">
-                  {name}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
-        {castInfo?.cast && castInfo.cast.length > 0 && (
-          <section>
-            <SectionHeader title="Cast" />
-            <div className="flex flex-wrap gap-3">
-              {castInfo.cast.map((actor, idx) => (
-                <div key={idx} className="flex w-[140px] flex-col items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-center">
-                  <p className="w-full truncate text-sm font-bold text-foreground" title={actor.actor}>{actor.actor}</p>
-                  <p className="w-full truncate text-xs text-muted-foreground" title={actor.character}>{actor.character}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        <CastCredits
+          mainCast={video.main_cast?.length ? video.main_cast : castMembers}
+          guestStars={video.guest_stars || []}
+          directorOrCreator={video.director_or_creator}
+        />
 
         {moreLikeThis.length > 0 && (
           <section>

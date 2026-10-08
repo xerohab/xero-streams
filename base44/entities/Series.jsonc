@@ -62,7 +62,33 @@
     },
     "cast": {
       "type": "string",
-      "description": "Comma-separated list of cast members"
+      "description": "Comma-separated list of cast members (legacy)"
+    },
+    "main_cast": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lead actors for this series"
+    },
+    "guest_stars": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Notable guest stars across the series"
+    },
+    "director_or_creator": {
+      "type": "string",
+      "description": "Creator or showrunner of the series"
+    },
+    "age_rating": {
+      "type": "string",
+      "description": "Content rating e.g. TV-MA, TV-14"
+    },
+    "runtime_or_episodes": {
+      "type": "string",
+      "description": "Episode count e.g. '10 Episodes' or average runtime"
     },
     "views": {
       "type": "number",

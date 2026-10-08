@@ -86,7 +86,33 @@
     },
     "cast": {
       "type": "string",
-      "description": "Comma-separated list of cast members"
+      "description": "Comma-separated list of cast members (legacy)"
+    },
+    "main_cast": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lead actors for this content"
+    },
+    "guest_stars": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Guest appearances, notable for specific episodes"
+    },
+    "director_or_creator": {
+      "type": "string",
+      "description": "Director (movie) or creator/showrunner (TV)"
+    },
+    "age_rating": {
+      "type": "string",
+      "description": "Content rating e.g. PG-13, TV-MA"
+    },
+    "runtime_or_episodes": {
+      "type": "string",
+      "description": "Runtime e.g. '120 mins' or episode count e.g. '10 Episodes'"
     },
     "is_for_sale": {
       "type": "boolean",

@@ -14,6 +14,7 @@ import MediaGrid from "@/components/browse/MediaGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 import StatusBadge from "@/components/browse/StatusBadge";
 import ReviewSection from "@/components/browse/ReviewSection";
+import CastCredits from "@/components/browse/CastCredits";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
 import Footer from "@/components/browse/Footer";
 import WatchlistButton from "@/components/browse/WatchlistButton";
@@ -148,7 +149,11 @@ export default function SeriesDetail() {
             {series.release_year && <span>{series.release_year}</span>}
             {series.category && <span className="capitalize">{series.category}</span>}
             {series.is_adult && <StatusBadge status="18+" />}
+            {series.age_rating && (
+              <span className="rounded border border-border bg-secondary px-2 py-0.5 text-xs font-bold uppercase text-foreground">{series.age_rating}</span>
+            )}
             <span>{sortedEpisodes.length} Episode{sortedEpisodes.length !== 1 && "s"}</span>
+            {series.runtime_or_episodes && <span>{series.runtime_or_episodes}</span>}
           </>
         }
         description={series.description}
@@ -205,6 +210,12 @@ export default function SeriesDetail() {
             <p className="text-muted-foreground">Check back later for new episodes.</p>
           </div>
         )}
+
+        <CastCredits
+          mainCast={series.main_cast?.length ? series.main_cast : (series.cast ? series.cast.split(",").map(c => c.trim()).filter(Boolean) : [])}
+          guestStars={series.guest_stars || []}
+          directorOrCreator={series.director_or_creator}
+        />
 
         {images.length > 0 && (
           <section>
