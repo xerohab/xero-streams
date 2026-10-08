@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
-import { ensureVideoCategory, enumToGenre, genreToEnum, normaliseToGenre, resolveVideoGenre } from "@/lib/genreAdmin";
+import { normaliseToGenres, resolveVideoGenres } from "@/lib/genreAdmin";
 
 export default function EditVideoModal({ video, seriesList, franchises = [], categories = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -30,7 +30,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
     content_type: video?.content_type || "movie",
     quality: video?.quality || "Unknown",
     quality_notes: video?.quality_notes || "",
-    genre: resolveVideoGenre(video, categories),
+    genres: video?.genres || [],
     coming_soon: video?.coming_soon || false,
     release_date: video?.release_date || "",
     release_year: video?.release_year ?? "",
@@ -125,10 +125,11 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
         seriesName,
         episodeNumber: form.episode_number,
       });
-      if (res.data?.title || res.data?.description || res.data?.genre) {
+      if (res.data?.title || res.data?.description || res.data?.genres?.length) {
         if (res.data.title) update("title", res.data.title);
         if (res.data.description) update("description", res.data.description);
-        if (res.data.genre && form.content_type === "movie") update("genre", normaliseToGenre(res.data.genre));
+        const genres = normaliseToGenres(res.data?.genres);
+        if (genres.length) update("genres", genres);
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
@@ -186,7 +187,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
         recap_start: video.recap_start ?? "",
         recap_end: video.recap_end ?? "",
         subtitles: video.subtitles || [],
-        genre: resolveVideoGenre(video, categories),
+        genres: video?.genres || [],
       });
     }
   }, [video?.id]);
@@ -204,10 +205,6 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
 
   const handleSave = async () => {
     setSaving(true);
-    let categoryId = video.category_id || null;
-    if (form.content_type === "movie") {
-      categoryId = form.genre ? await ensureVideoCategory(form.genre) : null;
-    }
     await base44.entities.Video.update(video.id, {
       ...form,
       content_updated_at: new Date().toISOString(),
@@ -227,7 +224,6 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
       recap_start: form.recap_start !== "" ? Number(form.recap_start) : null,
       recap_end: form.recap_end !== "" ? Number(form.recap_end) : null,
       subtitles: form.subtitles,
-      category_id: categoryId,
     });
     toast.success("Video updated!");
     setSaving(false);
@@ -330,7 +326,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
             </div>
           </div>
           {form.content_type === "movie" && (
-            <GenreSelect value={form.genre || ""} onChange={(g) => update("genre", g)} label="Genre" aiDetected={!!form.genre} />
+            <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="Genres" aiDetected={!!form.genres.length} />
           )}
           <SeriesSearchSelect
             seriesList={seriesList}

@@ -10,13 +10,15 @@ import { Upload, Loader2, Sparkles, Wand2, ImageIcon } from "lucide-react";
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "./FranchiseSearchSelect";
+import GenreSelect from "@/components/admin/GenreSelect";
+import { normaliseToGenres } from "@/lib/genreAdmin";
 
 export default function FranchiseForm({ onSuccess }) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [fetchingAiInfo, setFetchingAiInfo] = useState(false);
   const [fetchingPoster, setFetchingPoster] = useState(false);
   const [aiNaming, setAiNaming] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", cover_image: "", category: "", parent_id: "" });
+  const [form, setForm] = useState({ title: "", description: "", cover_image: "", genres: [], parent_id: "" });
 
   const [franchises, setFranchises] = useState([]);
   useEffect(() => {
@@ -28,9 +30,11 @@ export default function FranchiseForm({ onSuccess }) {
     setFetchingAiInfo(true);
     try {
       const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type: "franchise" });
-      if (res.data?.description) {
-        update("description", res.data.description);
-        toast.success("AI description applied!");
+      if (res.data?.description || res.data?.genres?.length) {
+        if (res.data.description) update("description", res.data.description);
+        const genres = normaliseToGenres(res.data?.genres);
+        if (genres.length && !form.genres.length) update("genres", genres);
+        toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
@@ -90,11 +94,11 @@ export default function FranchiseForm({ onSuccess }) {
     e.preventDefault();
     await base44.entities.Franchise.create({
       ...form,
-      category: form.category || undefined,
+      genres: form.genres.length ? form.genres : undefined,
       parent_id: form.parent_id || undefined,
     });
     toast.success("Franchise created!");
-    setForm({ title: "", description: "", cover_image: "", category: "", parent_id: "" });
+    setForm({ title: "", description: "", cover_image: "", genres: [], parent_id: "" });
     onSuccess?.();
   };
 
@@ -156,19 +160,8 @@ export default function FranchiseForm({ onSuccess }) {
         />
       </div>
       <div className="space-y-2">
-        <Label>Category</Label>
-        <Select value={form.category} onValueChange={(v) => update("category", v)}>
-          <SelectTrigger className="bg-secondary border-border">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c.charAt(0).toUpperCase() + c.slice(1).replace("-", " ")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label>Genres</Label>
+        <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="" />
       </div>
       <div className="space-y-2">
         <Label>Cover Image</Label>

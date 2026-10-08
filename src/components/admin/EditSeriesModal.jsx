@@ -11,7 +11,7 @@ import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
-import { enumToGenre, genreToEnum, normaliseToGenre } from "@/lib/genreAdmin";
+import { normaliseToGenres } from "@/lib/genreAdmin";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -20,7 +20,7 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     title: series?.title || "",
     description: series?.description || "",
     cover_image: series?.cover_image || "",
-    category: series?.category || "",
+    genres: series?.genres || [],
     franchise_id: series?.franchise_id || "",
     sort_order: series?.sort_order ?? "",
     is_adult: series?.is_adult || false,
@@ -37,13 +37,13 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     setFetchingAiInfo(true);
     try {
       const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type: "tv" });
-      if (res.data?.description || res.data?.genre) {
+      if (res.data?.description || res.data?.genres?.length) {
         const updates = {};
         if (res.data.description) updates.description = res.data.description;
-        const genre = normaliseToGenre(res.data?.genre);
-        if (genre && !form.category) updates.category = genreToEnum(genre);
+        const genres = normaliseToGenres(res.data?.genres);
+        if (genres.length && !form.genres.length) updates.genres = genres;
         setForm((prev) => ({ ...prev, ...updates }));
-        toast.success(genre ? `AI info applied — genre: ${genre}` : "AI info applied!");
+        toast.success(genres.length ? `AI info applied — genres: ${genres.join(", ")}` : "AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
@@ -157,8 +157,8 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />
           </div>
           <div className="space-y-1">
-            <Label>Category</Label>
-            <GenreSelect value={form.category ? enumToGenre(form.category) : ""} onChange={(g) => update("category", genreToEnum(g))} label="" />
+            <Label>Genres</Label>
+            <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="" />
           </div>
           <div className="space-y-1">
             <Label>Sort Order <span className="text-muted-foreground font-normal">(within franchise)</span></Label>

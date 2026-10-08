@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
+import GenreSelect from "@/components/admin/GenreSelect";
+import { normaliseToGenres } from "@/lib/genreAdmin";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -17,7 +19,7 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
     title: franchise?.title || "",
     description: franchise?.description || "",
     cover_image: franchise?.cover_image || "",
-    category: franchise?.category || "",
+    genres: franchise?.genres || [],
     parent_id: franchise?.parent_id || "",
   });
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,7 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
         title: franchise.title || "",
         description: franchise.description || "",
         cover_image: franchise.cover_image || "",
-        category: franchise.category || "",
+        genres: franchise.genres || [],
         parent_id: franchise.parent_id || "",
       });
     }
@@ -44,9 +46,10 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
     setFetchingAiInfo(true);
     try {
       const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type: "franchise" });
-      if (res.data?.description) {
+      if (res.data?.description || res.data?.genres?.length) {
         const updates = { description: res.data.description };
-        if (res.data.category && !form.category) updates.category = res.data.category;
+        const genres = normaliseToGenres(res.data?.genres);
+        if (genres.length && !form.genres.length) updates.genres = genres;
         setForm((prev) => ({ ...prev, ...updates }));
         toast.success("AI info applied!");
       } else {
@@ -126,7 +129,7 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
     await base44.entities.Franchise.update(franchise.id, {
       ...form,
       content_updated_at: new Date().toISOString(),
-      category: form.category || undefined,
+      genres: form.genres.length ? form.genres : undefined,
       parent_id: form.parent_id || undefined,
     });
     toast.success("Franchise updated!");
@@ -166,17 +169,8 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />
           </div>
           <div className="space-y-1">
-            <Label>Category</Label>
-            <Select value={form.category} onValueChange={(v) => update("category", v)}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace("-", " ")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Genres</Label>
+            <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="" />
           </div>
           
           {parentOptions.length > 0 && (

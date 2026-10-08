@@ -10,7 +10,7 @@ import { Upload, Loader2, Layers, Sparkles, ImageIcon, Wand2 } from "lucide-reac
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
-import { enumToGenre, genreToEnum, normaliseToGenre } from "@/lib/genreAdmin";
+import { normaliseToGenres } from "@/lib/genreAdmin";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -25,7 +25,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
     title: "",
     description: "",
     cover_image: "",
-    category: "",
+    genres: [],
     franchise_id: "",
     is_adult: false,
   });
@@ -80,13 +80,13 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
     setFetchingAiGenre(true);
     try {
       const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type: "tv" });
-      const genre = normaliseToGenre(res.data?.genre);
-      if (genre) {
-        update("category", genreToEnum(genre));
+      const genres = normaliseToGenres(res.data?.genres);
+      if (genres.length) {
+        update("genres", genres);
         if (res.data?.description && !form.description) update("description", res.data.description);
-        toast.success(`Genre detected: ${genre}`);
+        toast.success(`Genres detected: ${genres.join(", ")}`);
       } else {
-        toast.error("Couldn't detect a genre");
+        toast.error("Couldn't detect genres");
       }
     } catch (e) {
       toast.error("AI genre detection failed");
@@ -100,7 +100,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
     const base = {
       description: form.description || undefined,
       cover_image: form.cover_image || undefined,
-      category: form.category || undefined,
+      genres: form.genres.length ? form.genres : undefined,
       franchise_id: form.franchise_id || undefined,
       is_adult: form.is_adult,
     };
@@ -118,7 +118,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       toast.success("Series created!");
     }
 
-    setForm({ title: "", description: "", cover_image: "", category: "", franchise_id: "", is_adult: false });
+    setForm({ title: "", description: "", cover_image: "", genres: [], franchise_id: "", is_adult: false });
     setBulkCount(2);
     setSubmitting(false);
     onSuccess?.();
@@ -198,8 +198,8 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
           </Button>
         </div>
         <GenreSelect
-          value={form.category ? enumToGenre(form.category) : ""}
-          onChange={(g) => update("category", genreToEnum(g))}
+          value={form.genres}
+          onChange={(arr) => update("genres", arr)}
           label=""
         />
       </div>
