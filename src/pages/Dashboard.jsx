@@ -211,6 +211,11 @@ export default function Dashboard() {
     }
   };
 
+  const handleToggleDigest = async (optOut) => {
+    await base44.auth.updateMe({ weekly_digest_opt_out: optOut });
+    fetchUser();
+  };
+
   const handleToggleRow = async (rowId, checked) => {
     const currentRows = user.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
     const newRows = checked ? [...currentRows, rowId] : currentRows.filter(r => r !== rowId);
@@ -297,7 +302,7 @@ export default function Dashboard() {
             onCancel={handleCancelSub}
           />
         )}
-        {activeTab === "settings" && <SettingsSection user={user} onToggleRow={handleToggleRow} />}
+        {activeTab === "settings" && <SettingsSection user={user} onToggleRow={handleToggleRow} onToggleDigest={handleToggleDigest} />}
           </main>
         </div>
       </div>

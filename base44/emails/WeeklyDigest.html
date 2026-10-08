@@ -1,0 +1,54 @@
+<mjml>
+  <mj-head>
+    <mj-title>What's New on Xero Streams - {{date_range}}</mj-title>
+    <mj-preview>See what's new this week on Xero Streams</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Inter, Helvetica, Arial, sans-serif" />
+      <mj-section background-color="#090a0b" padding="0 36px" />
+      <mj-text color="#f2f2f2" font-size="15px" line-height="1.6" padding="0" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#090a0b">
+
+    <mj-section background-color="#e7b008" padding="14px 36px">
+      <mj-column>
+        <mj-image src="https://media.base44.com/images/public/69e793d6b51b4ec30a25aa0b/dc685f361_logo.png" alt="Xero Streams" width="130px" href="https://xerostreams.com" padding="0" align="left" />
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="36px 36px 8px">
+      <mj-column>
+        <mj-text font-size="28px" font-weight="800" color="#f2f2f2" line-height="1.1" padding-bottom="8px">
+          What's New This Week
+        </mj-text>
+        <mj-text font-size="13px" color="#9da3af">
+          {{date_range}} · {{total_count}} new additions on Xero Streams
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="12px 36px">
+      <mj-column>
+        <mj-raw>{{content_html}}</mj-raw>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="8px 36px 36px">
+      <mj-column>
+        <mj-button background-color="#e7b008" color="#000000" border-radius="12px" href="https://xerostreams.com" font-weight="700" font-size="15px" inner-padding="14px 32px" align="left">
+          Browse Everything
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="20px 36px" border-top="1px solid #333333">
+      <mj-column>
+        <mj-text font-size="11px" color="#9da3af" align="center" line-height="1.6">
+          You're receiving this weekly digest as a Xero Streams member.<br />
+          Prefer no emails? <a href="https://xerostreams.com/dashboard#settings" style="color:#e7b008;text-decoration:underline;">Manage your email preferences</a> to opt out.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

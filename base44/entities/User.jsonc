@@ -55,6 +55,11 @@
       "items": {
         "type": "string"
       }
+    },
+    "weekly_digest_opt_out": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has opted out of the weekly content digest email"
     }
   },
   "required": []

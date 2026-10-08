@@ -1,0 +1,44 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "weekly_digest",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_digest": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendWeeklyDigest"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Send weekly digest",
+            "description": "Email all users about new content"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Sends a weekly email to all users with new movies, series, and episodes added in the past 7 days. Users can opt out from their dashboard settings.",
+  "name": "Weekly Content Digest",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 9 * * 1",
+      "one_time_date": null,
+      "timezone": "Europe/London",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}
