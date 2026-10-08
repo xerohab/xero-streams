@@ -15,59 +15,41 @@ function truncate(str, len) {
   return str.length > len ? str.substring(0, len).trim() + '...' : str;
 }
 
-function buildMeta(item) {
-  const parts = [];
-  if (item.release_year) parts.push(item.release_year);
-  if (item.age_rating) parts.push(item.age_rating);
-  if (item.runtime_or_episodes) parts.push(item.runtime_or_episodes);
-  if (item.quality && item.quality !== 'Unknown') parts.push(item.quality);
-  if (!parts.length) return '';
-  return `<p style="margin:0 0 4px;font-size:11px;color:#9da3af;font-family:Inter,Arial,sans-serif;">${escapeHtml(parts.join(' · '))}</p>`;
-}
-
-function buildItemHtml(item, type) {
-  const image = type === 'series' ? (item.cover_image || '') : (item.thumbnail_url || '');
-  const title = item.title || 'Untitled';
-  const description = truncate(item.description, 120);
-
-  let link = 'https://xerostreams.com';
-  if (type === 'series') {
-    link = `https://xerostreams.com/series?id=${item.id}`;
-  } else if (type === 'movie') {
-    link = `https://xerostreams.com/movie?id=${item.id}`;
-  } else if (type === 'episode') {
-    link = item.series_id ? `https://xerostreams.com/series?id=${item.series_id}` : 'https://xerostreams.com';
+function buildDigestVariables(movies, series, episodes) {
+  const entries = [
+    { label: 'New Movies', items: movies, type: 'movie' },
+    { label: 'New Series', items: series, type: 'series' },
+    { label: 'New Episodes', items: episodes, type: 'episode' }
+  ].flatMap(group => group.items.slice(0, 10).map((item, index) => ({
+    item, type: group.type, heading: index === 0 ? group.label : ''
+  })));
+  const variables = { empty_message: entries.length ? '' : 'No new content this week. Check back next week!' };
+  for (let index = 0; index < 30; index++) {
+    const entry = entries[index];
+    const item = entry?.item;
+    const type = entry?.type;
+    const prefix = `item_${index + 1}`;
+    const image = type === 'series' ? item?.cover_image : item?.thumbnail_url;
+    let link = 'https://xerostreams.com';
+    if (item && type === 'series') link += `/series?id=${encodeURIComponent(item.id)}`;
+    if (item && type === 'movie') link += `/movie?id=${encodeURIComponent(item.id)}`;
+    if (item && type === 'episode' && item.series_id) link += `/series?id=${encodeURIComponent(item.series_id)}`;
+    const meta = [item?.release_year, item?.age_rating, item?.runtime_or_episodes,
+      item?.quality !== 'Unknown' ? item?.quality : ''].filter(Boolean).join(' · ');
+    const episodeLabel = type === 'episode' && item?.episode_number ? ` · Ep ${item.episode_number}` : '';
+    Object.assign(variables, {
+      [`${prefix}_display`]: item ? 'table-row' : 'none',
+      [`${prefix}_heading_display`]: entry?.heading ? 'table-row' : 'none',
+      [`${prefix}_heading`]: entry?.heading || '',
+      [`${prefix}_title`]: item ? escapeHtml((item.title || 'Untitled') + episodeLabel) : '',
+      [`${prefix}_description`]: escapeHtml(truncate(item?.description, 120)),
+      [`${prefix}_meta`]: escapeHtml(meta),
+      [`${prefix}_link`]: escapeHtml(link),
+      [`${prefix}_image`]: escapeHtml(image || 'https://media.base44.com/images/public/69e793d6b51b4ec30a25aa0b/dc685f361_logo.png'),
+      [`${prefix}_image_display`]: image ? 'block' : 'none'
+    });
   }
-
-  const episodeLabel = (type === 'episode' && item.episode_number)
-    ? ` <span style="font-size:12px;color:#9da3af;font-weight:400;">· Ep ${item.episode_number}</span>`
-    : '';
-
-  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">
-    <tr>
-      <td width="86" valign="top" style="padding-right:12px;">
-        <a href="${escapeHtml(link)}" style="text-decoration:none;">
-          <img src="${escapeHtml(image)}" width="76" height="114" style="border-radius:6px;display:block;width:76px;height:114px;object-fit:cover;background:#1a1a1a;" alt="${escapeHtml(title)}" />
-        </a>
-      </td>
-      <td valign="top" style="padding-top:2px;">
-        <a href="${escapeHtml(link)}" style="text-decoration:none;color:#f2f2f2;">
-          <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#f2f2f2;font-family:Inter,Arial,sans-serif;">${escapeHtml(title)}${episodeLabel}</p>
-        </a>
-        ${buildMeta(item)}
-        ${description ? `<p style="margin:0;font-size:12px;color:#9da3af;font-family:Inter,Arial,sans-serif;line-height:1.5;">${escapeHtml(description)}</p>` : ''}
-      </td>
-    </tr>
-  </table>`;
-}
-
-function buildSectionHtml(label, items, type) {
-  if (!items || items.length === 0) return '';
-  let html = `<p style="font-size:16px;font-weight:800;color:#e7b008;font-family:Inter,Arial,sans-serif;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid #333333;">${escapeHtml(label)}</p>`;
-  for (const item of items.slice(0, 10)) {
-    html += buildItemHtml(item, type);
-  }
-  return html;
+  return variables;
 }
 
 export default async function(req) {
