@@ -77,6 +77,11 @@ export default function Dashboard() {
   const activeTab = tabFromHash(location.hash);
   const changeTab = (id) => navigate({ hash: `#${id}` }, { replace: true });
 
+  useEffect(() => {
+    document.title = "My Profile | Xero Streams";
+    return () => { document.title = "Xero Streams"; };
+  }, []);
+
   const { inProgress: continueWatching, completed: watchedHistory } = useContinueWatching();
 
   const fetchUser = () =>
