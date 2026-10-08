@@ -44,8 +44,7 @@ export default async function(req) {
       }
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-    const body = JSON.stringify({
+    const requestBody = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
@@ -53,28 +52,45 @@ export default async function(req) {
       }
     });
 
-    let apiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      signal: AbortSignal.timeout(20000)
-    });
+    // Try gemini-3.8-flash first (Google's recommended model), fall back to gemini-2.5-flash
+    const models = ["gemini-3.8-flash", "gemini-2.5-flash"];
+    let apiRes;
+    let lastError;
 
-    // Retry once on temporary overload (503)
-    if (apiRes.status === 503) {
-      await new Promise((r) => setTimeout(r, 2000));
+    for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
       apiRes = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body,
+        body: requestBody,
         signal: AbortSignal.timeout(20000)
       });
+
+      // Retry once on temporary overload (503)
+      if (apiRes.status === 503) {
+        await new Promise((r) => setTimeout(r, 2000));
+        apiRes = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: requestBody,
+          signal: AbortSignal.timeout(20000)
+        });
+      }
+
+      // 404 = model not available, try the next model
+      if (apiRes.status === 404) {
+        lastError = await apiRes.text();
+        continue;
+      }
+
+      break;
     }
 
-    if (!apiRes.ok) {
-      const errText = await apiRes.text();
+    if (!apiRes || !apiRes.ok) {
+      const errText = lastError || (apiRes ? await apiRes.text() : "All models failed");
       return Response.json(
-        { error: `Gemini API error: ${apiRes.status}`, details: errText },
+        { error: `Gemini API error: ${apiRes?.status || "unknown"}`, details: errText },
         { status: 502 }
       );
     }
