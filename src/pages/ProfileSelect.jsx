@@ -10,7 +10,7 @@ import { base44 } from "@/api/base44Client";
  */
 export default function ProfileSelect({ manage = false }) {
   const navigate = useNavigate();
-  const { profiles, activeProfile, switchProfile, createProfile, updateProfile, deleteProfile, loading, maxProfiles, avatarOptions } = useProfile() || {};
+  const { profiles = [], activeProfile, switchProfile, createProfile, updateProfile, deleteProfile, loading = true, maxProfiles = 5, avatarOptions = [] } = useProfile() || {};
   const [managing, setManaging] = useState(manage);
   const [editing, setEditing] = useState(null); // profile being edited
   const [creating, setCreating] = useState(false);

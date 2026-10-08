@@ -76,6 +76,7 @@ const AuthenticatedApp = () => {
   return (
     <>
     <PremiumModalProvider>
+    <ProfileProvider>
     <DownloadManagerProvider>
     <Routes>
       <Route path="/" element={<Home />} />
@@ -102,6 +103,7 @@ const AuthenticatedApp = () => {
     </Routes>
     <DownloadManagerPopup />
     </DownloadManagerProvider>
+    </ProfileProvider>
     <PremiumModal />
     </PremiumModalProvider>
     </>
