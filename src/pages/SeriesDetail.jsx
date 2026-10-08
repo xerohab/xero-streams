@@ -217,6 +217,32 @@ export default function SeriesDetail() {
           directorOrCreator={series.director_or_creator}
         />
 
+        {sortedEpisodes.some((ep) => ep.guest_stars?.length) && (
+          <section>
+            <SectionHeader title="Episode Guest Stars" />
+            <div className="space-y-3">
+              {sortedEpisodes.filter((ep) => ep.guest_stars?.length).map((ep) => (
+                <div key={ep.id} className="rounded-lg border border-border bg-card/40 p-3">
+                  <p className="mb-2 text-sm font-bold text-foreground">
+                    {ep.episode_number ? `Ep ${ep.episode_number}: ` : ""}{ep.title}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {ep.guest_stars.map((name) => (
+                      <Link
+                        key={name}
+                        to={`/search?cast=${encodeURIComponent(name)}`}
+                        className="rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+                      >
+                        {name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {images.length > 0 && (
           <section>
             <SectionHeader title="Gallery" />

@@ -43,6 +43,11 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
     recap_start: video?.recap_start ?? "",
     recap_end: video?.recap_end ?? "",
     subtitles: video?.subtitles || [],
+    main_cast: (video?.main_cast || []).join(", "),
+    guest_stars: (video?.guest_stars || []).join(", "),
+    director_or_creator: video?.director_or_creator || "",
+    age_rating: video?.age_rating || "",
+    runtime_or_episodes: video?.runtime_or_episodes || "",
   });
   const [saving, setSaving] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
@@ -140,6 +145,37 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
     setFetchingAiInfo(false);
   };
 
+  const [fetchingGemini, setFetchingGemini] = useState(false);
+
+  const handleGeminiFetch = async () => {
+    if (!form.title) { toast.error("Please fill the title first"); return; }
+    setFetchingGemini(true);
+    try {
+      const type = form.content_type === "episode" ? "tv" : "movie";
+      const seriesName = seriesList?.find((s) => s.id === form.series_id)?.title;
+      const res = await base44.functions.invoke("fetchGeminiMetadata", {
+        title: form.title,
+        content_type: type,
+        seriesName,
+        episodeNumber: form.episode_number,
+      });
+      if (res.data?.main_cast || res.data?.description || res.data?.age_rating) {
+        if (res.data.main_cast) update("main_cast", res.data.main_cast.join(", "));
+        if (res.data.guest_stars) update("guest_stars", res.data.guest_stars.join(", "));
+        if (res.data.description && !form.description) update("description", res.data.description);
+        if (res.data.age_rating) update("age_rating", res.data.age_rating);
+        if (res.data.director_or_creator) update("director_or_creator", res.data.director_or_creator);
+        if (res.data.runtime_or_episodes) update("runtime_or_episodes", res.data.runtime_or_episodes);
+        toast.success("Gemini metadata applied!");
+      } else {
+        toast.error("Couldn't find metadata for that title");
+      }
+    } catch (e) {
+      toast.error("Gemini metadata fetch failed");
+    }
+    setFetchingGemini(false);
+  };
+
   const handleAutoFetchPoster = async () => {
     if (!form.title) return;
     setFetchingPoster(true);
@@ -188,6 +224,11 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
         recap_end: video.recap_end ?? "",
         subtitles: video.subtitles || [],
         genres: video?.genres || [],
+        main_cast: (video.main_cast || []).join(", "),
+        guest_stars: (video.guest_stars || []).join(", "),
+        director_or_creator: video.director_or_creator || "",
+        age_rating: video.age_rating || "",
+        runtime_or_episodes: video.runtime_or_episodes || "",
       });
     }
   }, [video?.id]);
@@ -224,6 +265,11 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
       recap_start: form.recap_start !== "" ? Number(form.recap_start) : null,
       recap_end: form.recap_end !== "" ? Number(form.recap_end) : null,
       subtitles: form.subtitles,
+      main_cast: form.main_cast ? form.main_cast.split(",").map(s => s.trim()).filter(Boolean) : [],
+      guest_stars: form.guest_stars ? form.guest_stars.split(",").map(s => s.trim()).filter(Boolean) : [],
+      director_or_creator: form.director_or_creator || "",
+      age_rating: form.age_rating || "",
+      runtime_or_episodes: form.runtime_or_episodes || "",
     });
     toast.success("Video updated!");
     setSaving(false);
@@ -248,6 +294,17 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
               <Button type="button" variant="ghost" size="sm" onClick={handleAiFetch} disabled={fetchingAiInfo} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
                 {fetchingAiInfo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                 {fetchingAiInfo ? "Searching..." : "AI Auto-Fill"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleGeminiFetch}
+                disabled={fetchingGemini || !form.title}
+                className="text-xs gap-1.5 text-amber-400 hover:text-amber-300 h-7"
+              >
+                {fetchingGemini ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {fetchingGemini ? "Fetching..." : "Gemini Metadata"}
               </Button>
             </div>
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />
@@ -321,8 +378,30 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
               <Input type="number" value={form.release_year} onChange={(e) => update("release_year", e.target.value)} className="bg-secondary border-border" placeholder="e.g. 2023" />
             </div>
             <div className="space-y-1">
-              <Label>Cast</Label>
+              <Label>Cast (legacy)</Label>
               <Input value={form.cast} onChange={(e) => update("cast", e.target.value)} className="bg-secondary border-border" placeholder="Tom Hanks, ..." />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 p-3 bg-secondary/50 rounded-lg">
+            <div className="space-y-1">
+              <Label>Main Cast</Label>
+              <Input value={form.main_cast} onChange={(e) => update("main_cast", e.target.value)} className="bg-secondary border-border" placeholder="Comma-separated lead actors" />
+            </div>
+            <div className="space-y-1">
+              <Label>Guest Stars</Label>
+              <Input value={form.guest_stars} onChange={(e) => update("guest_stars", e.target.value)} className="bg-secondary border-border" placeholder="Comma-separated guest stars" />
+            </div>
+            <div className="space-y-1">
+              <Label>Director / Creator</Label>
+              <Input value={form.director_or_creator} onChange={(e) => update("director_or_creator", e.target.value)} className="bg-secondary border-border" placeholder="Director or showrunner" />
+            </div>
+            <div className="space-y-1">
+              <Label>Age Rating</Label>
+              <Input value={form.age_rating} onChange={(e) => update("age_rating", e.target.value)} className="bg-secondary border-border" placeholder="e.g. PG-13, TV-MA" />
+            </div>
+            <div className="space-y-1">
+              <Label>Runtime / Episodes</Label>
+              <Input value={form.runtime_or_episodes} onChange={(e) => update("runtime_or_episodes", e.target.value)} className="bg-secondary border-border" placeholder="e.g. 120 mins, 10 Episodes" />
             </div>
           </div>
           {form.content_type === "movie" && (

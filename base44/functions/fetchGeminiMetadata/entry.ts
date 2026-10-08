@@ -44,21 +44,32 @@ export default async function(req) {
       }
     };
 
-    const apiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const body = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema
+      }
+    });
+
+    let apiRes = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      signal: AbortSignal.timeout(20000)
+    });
+
+    // Retry once on temporary overload (503)
+    if (apiRes.status === 503) {
+      await new Promise((r) => setTimeout(r, 2000));
+      apiRes = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema
-          }
-        }),
+        body,
         signal: AbortSignal.timeout(20000)
-      }
-    );
+      });
+    }
 
     if (!apiRes.ok) {
       const errText = await apiRes.text();
