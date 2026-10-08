@@ -34,7 +34,14 @@
         "adventure",
         "other"
       ],
-      "description": "Franchise category"
+      "description": "Franchise category (legacy single-genre enum)"
+    },
+    "genres": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple genre tags for this franchise"
     },
     "parent_id": {
       "type": "string",

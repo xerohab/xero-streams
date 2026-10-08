@@ -22,7 +22,14 @@
     },
     "category_id": {
       "type": "string",
-      "description": "ID of VideoCategory"
+      "description": "ID of VideoCategory (legacy single-genre reference)"
+    },
+    "genres": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple genre tags for this content"
     },
     "episode_number": {
       "type": "number"
