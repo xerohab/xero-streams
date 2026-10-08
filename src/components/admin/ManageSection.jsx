@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search, Eye, RefreshCw } from "lucide-react";
+import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search, Eye, RefreshCw, Tags } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { ensureVideoCategory, enumToGenre, genreToEnum, normaliseToGenre, resolveVideoGenre } from "@/lib/genreAdmin";
 
 import { Layers } from "lucide-react";
 
@@ -11,6 +12,7 @@ export default function ManageSection({
   videos,
   seriesList,
   franchises = [],
+  categories = [],
   loadingVideos,
   loadingSeries,
   fetchingPosterFor,
@@ -30,6 +32,47 @@ export default function ManageSection({
   const [videosSearch, setVideosSearch] = useState("");
   const [detectingQualities, setDetectingQualities] = useState(false);
   const [detectProgress, setDetectProgress] = useState(0);
+  const [detectingGenres, setDetectingGenres] = useState(false);
+  const [genreProgress, setGenreProgress] = useState(0);
+
+  const handleAutoDetectGenres = async (e) => {
+    e.stopPropagation();
+    if (!confirm("This will use AI to detect a genre for every movie and series that currently has none set, and save it. Existing genres are left untouched. Continue?")) return;
+    setDetectingGenres(true);
+    setGenreProgress(0);
+    let count = 0;
+    let index = 0;
+    const totalMovies = videos.filter((v) => v.content_type !== "episode" && !v.category_id).length;
+    const totalSeries = seriesList.filter((s) => !s.category).length;
+    const total = totalMovies + totalSeries;
+    for (const v of videos) {
+      if (v.content_type === "episode" || v.category_id) continue;
+      index++;
+      setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
+      try {
+        const res = await base44.functions.invoke("aiMediaInfo", { title: v.title, type: "movie" });
+        const genre = normaliseToGenre(res.data?.genre);
+        if (genre) {
+          const categoryId = await ensureVideoCategory(genre);
+          if (categoryId) { await base44.entities.Video.update(v.id, { category_id: categoryId }); count++; }
+        }
+        await new Promise((r) => setTimeout(r, 250));
+      } catch (err) { console.error(err); }
+    }
+    for (const s of seriesList) {
+      if (s.category) continue;
+      index++;
+      setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
+      try {
+        const res = await base44.functions.invoke("aiMediaInfo", { title: s.title, type: "tv" });
+        const genre = normaliseToGenre(res.data?.genre);
+        if (genre) { await base44.entities.Series.update(s.id, { category: genreToEnum(genre) }); count++; }
+        await new Promise((r) => setTimeout(r, 250));
+      } catch (err) { console.error(err); }
+    }
+    setDetectingGenres(false);
+    alert(`Updated genres for ${count} item${count !== 1 ? "s" : ""}! Please refresh the page to see changes.`);
+  };
 
   const handleAutoDetectQualities = async (e) => {
     e.stopPropagation();
@@ -194,7 +237,8 @@ export default function ManageSection({
                       <div>
                         <p className="font-semibold text-foreground text-sm">{s.title}</p>
                         <div className="flex gap-1 mt-0.5 flex-wrap">
-                          {s.category && <Badge variant="outline" className="text-xs">{s.category}</Badge>}
+                          {s.category && <Badge variant="outline" className="text-xs capitalize">{enumToGenre(s.category)}</Badge>}
+                          {!s.category && <Badge variant="outline" className="text-xs text-muted-foreground">No genre</Badge>}
                           {s.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
                           <Badge variant="outline" className="text-xs flex items-center gap-1"><Eye className="w-3 h-3" /> {s.views || 0}</Badge>
                         </div>
@@ -232,12 +276,27 @@ export default function ManageSection({
                 Scanning... {detectProgress}%
               </Badge>
             )}
+            {detectingGenres && (
+              <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
+                Detecting genres... {genreProgress}%
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-7 text-xs" 
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={handleAutoDetectGenres}
+              disabled={detectingGenres}
+            >
+              {detectingGenres ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Tags className="w-3 h-3 mr-1" />}
+              Auto-detect Genres
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
               onClick={handleAutoDetectQualities}
               disabled={detectingQualities}
             >
@@ -286,6 +345,7 @@ export default function ManageSection({
                             {series && <span className="text-xs text-primary">{series.title}</span>}
                             {v.episode_number && <span className="text-xs text-muted-foreground">EP {v.episode_number}</span>}
                             {v.content_type === "movie" && <Badge className="text-xs bg-blue-500/20 text-blue-400">Movie</Badge>}
+                            {v.content_type === "movie" && (resolveVideoGenre(v, categories) ? <Badge variant="outline" className="text-xs">{resolveVideoGenre(v, categories)}</Badge> : <Badge variant="outline" className="text-xs text-muted-foreground">No genre</Badge>)}
                             {v.is_featured && <Badge className="text-xs bg-primary/20 text-primary">Featured</Badge>}
                             {v.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
                             <Badge variant="outline" className="text-xs flex items-center gap-1"><Eye className="w-3 h-3" /> {v.views || 0}</Badge>

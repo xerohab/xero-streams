@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
+import GenreSelect from "@/components/admin/GenreSelect";
+import { enumToGenre, genreToEnum, normaliseToGenre } from "@/lib/genreAdmin";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -35,11 +37,13 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     setFetchingAiInfo(true);
     try {
       const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type: "tv" });
-      if (res.data?.description) {
-        const updates = { description: res.data.description };
-        if (res.data.category && !form.category) updates.category = res.data.category;
+      if (res.data?.description || res.data?.genre) {
+        const updates = {};
+        if (res.data.description) updates.description = res.data.description;
+        const genre = normaliseToGenre(res.data?.genre);
+        if (genre && !form.category) updates.category = genreToEnum(genre);
         setForm((prev) => ({ ...prev, ...updates }));
-        toast.success("AI info applied!");
+        toast.success(genre ? `AI info applied — genre: ${genre}` : "AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
@@ -154,16 +158,7 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
           </div>
           <div className="space-y-1">
             <Label>Category</Label>
-            <Select value={form.category} onValueChange={(v) => update("category", v)}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace("-", " ")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <GenreSelect value={form.category ? enumToGenre(form.category) : ""} onChange={(g) => update("category", genreToEnum(g))} label="" />
           </div>
           <div className="space-y-1">
             <Label>Sort Order <span className="text-muted-foreground font-normal">(within franchise)</span></Label>

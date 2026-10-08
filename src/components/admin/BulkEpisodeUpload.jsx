@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import { detectVideoQuality } from "@/lib/qualityDetection";
+import GenreSelect from "@/components/admin/GenreSelect";
+import { ensureVideoCategory, enumToGenre, genreToEnum, normaliseToGenre } from "@/lib/genreAdmin";
 
 const emptyEpisode = () => ({
   title: "",
@@ -20,6 +22,7 @@ const emptyEpisode = () => ({
   duration: "",
   quality: "Unknown",
   quality_notes: "",
+  genre: "",
   uploading: false,
   uploaded: false,
   coming_soon: false,
@@ -33,6 +36,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
   const [sourceTab, setSourceTab] = useState("link");
   const [fetchingAiFor, setFetchingAiFor] = useState(null);
   const [fetchingAiAll, setFetchingAiAll] = useState(false);
+  const [seriesGenre, setSeriesGenre] = useState("");
 
   const updateEp = (index, field, value) => {
     setEpisodes((prev) => prev.map((ep, i) => i === index ? { ...ep, [field]: value } : ep));
@@ -59,9 +63,10 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
         seriesName,
         episodeNumber: isMovieMode ? undefined : ep.episode_number,
       });
-      if (res.data?.title || res.data?.description) {
+      if (res.data?.title || res.data?.description || res.data?.genre) {
         if (res.data.title) updateEp(index, "title", res.data.title);
         if (res.data.description) updateEp(index, "description", res.data.description);
+        if (res.data.genre) updateEp(index, "genre", normaliseToGenre(res.data.genre));
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
@@ -97,6 +102,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
             ...updated[index],
             ...(data.title ? { title: data.title } : {}),
             ...(data.description ? { description: data.description } : {}),
+            ...(data.genre ? { genre: normaliseToGenre(data.genre) } : {}),
           };
         }
       });
@@ -131,10 +137,22 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
     const seriesCover = !isMovieMode ? seriesList?.find((s) => s.id === selectedSeries)?.cover_image : undefined;
     
     const records = [];
+    // Movies: resolve a single VideoCategory id when all items share one genre.
+    let movieCategoryId = null;
+    if (isMovieMode) {
+      const genres = [...new Set(valid.map((e) => e.genre).filter(Boolean))];
+      if (genres.length === 1) movieCategoryId = await ensureVideoCategory(genres[0]);
+    }
+
     for (const ep of valid) {
       let finalQuality = ep.quality;
       if (finalQuality === "Unknown" && ep.video_url && !ep.coming_soon) {
         finalQuality = await detectVideoQuality(ep.video_url, ep.title);
+      }
+
+      let categoryId = undefined;
+      if (isMovieMode && ep.genre) {
+        categoryId = movieCategoryId && valid.every((e) => e.genre === ep.genre) ? movieCategoryId : await ensureVideoCategory(ep.genre);
       }
       
       records.push({
@@ -151,13 +169,23 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
         quality_notes: ep.quality_notes || undefined,
         coming_soon: ep.coming_soon,
         release_date: ep.release_date || undefined,
+        category_id: categoryId || undefined,
       });
+    }
+
+    // TV mode: update the selected series' genre if the admin chose one.
+    if (!isMovieMode && selectedSeries && seriesGenre) {
+      const current = seriesList?.find((s) => s.id === selectedSeries);
+      if (current && enumToGenre(current.category) !== seriesGenre) {
+        await base44.entities.Series.update(selectedSeries, { category: genreToEnum(seriesGenre), content_updated_at: new Date().toISOString() });
+      }
     }
     
     await base44.entities.Video.bulkCreate(records);
-    toast.success(`${records.length} episode${records.length > 1 ? "s" : ""} added!`, { id: toastId });
+    toast.success(`${records.length} ${isMovieMode ? "movie" : "episode"}${records.length > 1 ? "s" : ""} added!`, { id: toastId });
     setEpisodes([emptyEpisode()]);
     setSelectedSeries("");
+    setSeriesGenre("");
     setSaving(false);
     onSuccess?.();
   };
@@ -167,7 +195,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
       {!isMovieMode && (
         <div className="space-y-2">
           <Label>Series *</Label>
-          <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+          <Select value={selectedSeries} onValueChange={(id) => { setSelectedSeries(id); const s = seriesList?.find((x) => x.id === id); setSeriesGenre(s?.category ? enumToGenre(s.category) : ""); }}>
             <SelectTrigger className="bg-secondary border-border">
               <SelectValue placeholder="Select a series to add episodes to" />
             </SelectTrigger>
@@ -177,6 +205,9 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
               ))}
             </SelectContent>
           </Select>
+          {selectedSeries && (
+            <GenreSelect value={seriesGenre} onChange={setSeriesGenre} label="Series Genre (applied on import)" />
+          )}
         </div>
       )}
 
@@ -300,6 +331,10 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
                 </div>
               </div>
             </div>
+
+            {isMovieMode && (
+              <GenreSelect value={ep.genre || ""} onChange={(v) => updateEp(index, "genre", v)} label="Genre" aiDetected={!!ep.genre} />
+            )}
 
             <div className="flex flex-col gap-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-md">
               <div className="flex items-center gap-2">

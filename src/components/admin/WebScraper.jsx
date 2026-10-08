@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Trash2, Upload, AlertTriangle, ImageIcon, Sparkles, Film, Tv, Globe, X } from "lucide-react";
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
+import GenreSelect from "@/components/admin/GenreSelect";
 import { detectVideoQuality } from "@/lib/qualityDetection";
+import { ensureVideoCategory, enumToGenre, genreToEnum, normaliseToGenre } from "@/lib/genreAdmin";
 
 export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [url, setUrl] = useState("");
@@ -25,6 +27,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [imageScrapeUrl, setImageScrapeUrl] = useState("");
   const [scrapedImages, setScrapedImages] = useState([]);
   const [scrapingImages, setScrapingImages] = useState(false);
+  const [seriesGenre, setSeriesGenre] = useState(""); // TV mode: genre to apply to the selected series
 
   const handleScrapeImages = async () => {
     if (!imageScrapeUrl) return;
@@ -60,7 +63,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     setScanning(false);
     if (res.data.error) { toast.error(res.data.error); return; }
     if (res.data.episodes.length === 0) { toast.error("No files or links found at that URL"); return; }
-    setItems(res.data.episodes.map(ep => ({ ...ep, episode_number: contentMode === "tv" ? ep.episode_number : "", quality: "Unknown", quality_notes: "" })));
+    setItems(res.data.episodes.map(ep => ({ ...ep, episode_number: contentMode === "tv" ? ep.episode_number : "", quality: "Unknown", quality_notes: "", genre: "" })));
     setScanMode(res.data.mode);
     const msg = res.data.mode === "page_links"
       ? `Found ${res.data.total} links — URLs are download pages, not direct video files`
@@ -94,9 +97,10 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
         seriesName,
         episodeNumber: item.episode_number,
       });
-      if (res.data?.title || res.data?.description) {
+      if (res.data?.title || res.data?.description || res.data?.genre) {
         if (res.data.title) updateItem(index, "title", res.data.title);
         if (res.data.description) updateItem(index, "description", res.data.description);
+        if (res.data.genre) updateItem(index, "genre", normaliseToGenre(res.data.genre));
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
@@ -135,6 +139,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
             ...updated[index],
             ...(data.title ? { title: data.title } : {}),
             ...(data.description ? { description: data.description } : {}),
+            ...(data.genre ? { genre: normaliseToGenre(data.genre) } : {}),
           };
         }
       });
@@ -156,11 +161,23 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     let records = [];
     const seriesCover = contentMode === "tv" ? seriesList?.find(s => s.id === selectedSeries)?.cover_image : undefined;
 
+    // Movies: resolve a VideoCategory id per distinct genre so we can set category_id.
+    let movieCategoryId = null;
+    if (contentMode === "movies") {
+      const genres = [...new Set(items.map((i) => i.genre).filter(Boolean))];
+      if (genres.length === 1) movieCategoryId = await ensureVideoCategory(genres[0]);
+    }
+
     for (const item of items) {
       let finalQuality = item.quality || "Unknown";
       if (finalQuality === "Unknown" && item.video_url && scanMode !== "page_links") {
         // Only auto-detect if we have a direct video link, page links won't work in video elements
         finalQuality = await detectVideoQuality(item.video_url, item.title);
+      }
+
+      let categoryId = undefined;
+      if (contentMode === "movies" && item.genre) {
+        categoryId = movieCategoryId && items.every((i) => i.genre === item.genre) ? movieCategoryId : await ensureVideoCategory(item.genre);
       }
 
       records.push({
@@ -175,7 +192,16 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
         is_featured: false,
         quality: finalQuality,
         quality_notes: item.quality_notes || undefined,
+        category_id: categoryId || undefined,
       });
+    }
+
+    // TV mode: update the selected series' genre if the admin chose one.
+    if (contentMode === "tv" && selectedSeries && seriesGenre) {
+      const current = seriesList?.find((s) => s.id === selectedSeries);
+      if (current && enumToGenre(current.category) !== seriesGenre) {
+        await base44.entities.Series.update(selectedSeries, { category: genreToEnum(seriesGenre), content_updated_at: new Date().toISOString() });
+      }
     }
 
     await base44.entities.Video.bulkCreate(records);
@@ -184,6 +210,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     setUrl("");
     setSelectedSeries("");
     setSelectedFranchise("");
+    setSeriesGenre("");
     setSaving(false);
     onSuccess?.();
   };
@@ -243,13 +270,26 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
         <>
           {/* Assignment */}
           {isTV ? (
-            <SeriesSearchSelect
-              seriesList={seriesList}
-              value={selectedSeries}
-              onChange={setSelectedSeries}
-              label="Assign to Series"
-              required
-            />
+            <>
+              <SeriesSearchSelect
+                seriesList={seriesList}
+                value={selectedSeries}
+                onChange={(id) => {
+                  setSelectedSeries(id);
+                  const s = seriesList?.find((x) => x.id === id);
+                  setSeriesGenre(s?.category ? enumToGenre(s.category) : "");
+                }}
+                label="Assign to Series"
+                required
+              />
+              {selectedSeries && (
+                <GenreSelect
+                  value={seriesGenre}
+                  onChange={setSeriesGenre}
+                  label="Series Genre (applied on import)"
+                />
+              )}
+            </>
           ) : (
             <div className="space-y-2">
               <Label>Assign to Franchise (optional)</Label>
@@ -389,6 +429,15 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
                         </SelectContent>
                       </Select>
                     </div>
+                    {!isTV && (
+                      <GenreSelect
+                        value={item.genre || ""}
+                        onChange={(v) => updateItem(index, "genre", v)}
+                        label=""
+                        size="sm"
+                        aiDetected={!!item.genre}
+                      />
+                    )}
                   </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">
                     <Input

@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Upload, Loader2, Layers, Sparkles, ImageIcon, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
+import GenreSelect from "@/components/admin/GenreSelect";
+import { enumToGenre, genreToEnum, normaliseToGenre } from "@/lib/genreAdmin";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -18,6 +20,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [generatingCover, setGeneratingCover] = useState(false);
   const [aiNaming, setAiNaming] = useState(false);
+  const [fetchingAiGenre, setFetchingAiGenre] = useState(false);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -70,6 +73,25 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       toast.error("AI naming failed");
     }
     setAiNaming(false);
+  };
+
+  const handleAiGenre = async () => {
+    if (!form.title) return;
+    setFetchingAiGenre(true);
+    try {
+      const res = await base44.functions.invoke("aiMediaInfo", { title: form.title, type: "tv" });
+      const genre = normaliseToGenre(res.data?.genre);
+      if (genre) {
+        update("category", genreToEnum(genre));
+        if (res.data?.description && !form.description) update("description", res.data.description);
+        toast.success(`Genre detected: ${genre}`);
+      } else {
+        toast.error("Couldn't detect a genre");
+      }
+    } catch (e) {
+      toast.error("AI genre detection failed");
+    }
+    setFetchingAiGenre(false);
   };
 
   const handleSubmit = async (e) => {
@@ -168,19 +190,18 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       </div>
 
       <div className="space-y-2">
-        <Label>Category</Label>
-        <Select value={form.category} onValueChange={(v) => update("category", v)}>
-          <SelectTrigger className="bg-secondary border-border">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c.charAt(0).toUpperCase() + c.slice(1).replace("-", " ")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center justify-between">
+          <Label>Category</Label>
+          <Button type="button" variant="ghost" size="sm" onClick={handleAiGenre} disabled={fetchingAiGenre || !form.title} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
+            {fetchingAiGenre ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            AI Detect Genre
+          </Button>
+        </div>
+        <GenreSelect
+          value={form.category ? enumToGenre(form.category) : ""}
+          onChange={(g) => update("category", genreToEnum(g))}
+          label=""
+        />
       </div>
 
       {franchises.length > 0 && (

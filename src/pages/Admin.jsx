@@ -61,6 +61,11 @@ export default function Admin() {
     queryFn: () => base44.entities.Franchise.list(),
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["videoCategories"],
+    queryFn: () => base44.entities.VideoCategory.list(),
+  });
+
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ["allUsers"],
     queryFn: async () => {
@@ -327,6 +332,7 @@ export default function Admin() {
             videos={videos}
             seriesList={seriesList}
             franchises={franchises}
+            categories={categories}
             loadingVideos={loadingVideos}
             loadingSeries={loadingSeries}
             fetchingPosterFor={fetchingPosterFor}
@@ -482,6 +488,7 @@ export default function Admin() {
           video={editingVideo}
           seriesList={seriesList}
           franchises={franchises}
+          categories={categories}
           open={!!editingVideo}
           onClose={() => setEditingVideo(null)}
           onSaved={refresh}
