@@ -107,19 +107,10 @@ export default async function(req) {
 
     const totalCount = movies.length + episodes.length + series.length;
 
-    let contentHtml = '';
-    contentHtml += buildSectionHtml('New Movies', movies, 'movie');
-    contentHtml += buildSectionHtml('New Series', series, 'series');
-    contentHtml += buildSectionHtml('New Episodes', episodes, 'episode');
-
-    if (!contentHtml) {
-      contentHtml = '<p style="font-size:14px;color:#9da3af;font-family:Inter,Arial,sans-serif;text-align:center;padding:20px 0;">No new content this week. Check back next week!</p>';
-    }
-
     const dateRange = `${sevenDaysAgo.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}`;
 
     const emailVariables = {
-      content_html: contentHtml,
+      ...buildDigestVariables(movies, series, episodes),
       date_range: dateRange,
       total_count: String(totalCount)
     };
