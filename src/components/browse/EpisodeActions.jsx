@@ -8,14 +8,14 @@ const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-primary focu
 export default function EpisodeActions({ video, state, isPremium }) {
   const canDownload = isPremium && !state.isComingSoon && video.video_url;
   return (
-    <div className="mt-2 flex items-center justify-between gap-2">
+    <div className="mt-1 flex min-h-5 items-center justify-between gap-1">
       {state.isComingSoon
-        ? <span className="text-[11px] font-semibold text-muted-foreground">Coming soon</span>
-        : <Link to={state.href} onClick={state.handleClick} className={`inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 ${FOCUS}`}><Play className="h-3.5 w-3.5 fill-current" />{state.inProgress ? "Resume" : "Play"}</Link>}
+        ? <span className="text-[9.5px] font-semibold text-muted-foreground">Coming soon</span>
+        : <Link to={state.href} onClick={state.handleClick} className={`inline-flex h-5 items-center gap-1 rounded px-1 text-[10px] font-bold text-primary hover:bg-primary/10 ${FOCUS}`}><Play className="h-3 w-3 fill-current" />{state.inProgress ? "Resume" : "Play"}</Link>}
       {canDownload && (
-        <button type="button" onClick={state.handleDownload} disabled={state.downloading} aria-label={`Download ${video.title}`} className={`inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-md border border-border px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-100 ${FOCUS}`}>
-          {state.downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-          <span className={state.downloading ? "" : "hidden sm:inline"}>{state.downloading ? `${state.progress}%` : "Download"}</span>
+        <button type="button" onClick={state.handleDownload} disabled={state.downloading} aria-label={`Download ${video.title}`} title={`Download ${video.title}`} className={`inline-flex h-5 min-w-5 items-center justify-center gap-1 rounded px-1 text-[9.5px] font-semibold text-muted-foreground transition-colors hover:text-primary disabled:opacity-100 ${FOCUS}`}>
+          {state.downloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+          {state.downloading && <span>{state.progress}%</span>}
         </button>
       )}
     </div>

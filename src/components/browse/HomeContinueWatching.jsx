@@ -18,12 +18,12 @@ export default function HomeContinueWatching({ videos, series }) {
   return (
     <section className="home-section" id="home-continue">
       <HomeSectionHeader title="Continue Watching" />
-      <EpisodeGrid>
+      <EpisodeGrid landscape>
         {items.slice(0, 7).map((saved) => {
           const video = videos.find((item) => item.id === saved.id);
           const season = series.find((item) => item.id === video?.series_id);
           const display = { ...video, ...saved, title: season ? `${season.title} · ${saved.title}` : saved.title };
-          return <EpisodeCard key={saved.id} video={display} playable href={`/watch?id=${saved.id}&t=${Math.floor(saved.currentTime)}`} onRemove={removeProgress} />;
+          return <EpisodeCard key={saved.id} video={display} landscape playable href={`/watch?id=${saved.id}&t=${Math.floor(saved.currentTime)}`} onRemove={removeProgress} />;
         })}
       </EpisodeGrid>
     </section>

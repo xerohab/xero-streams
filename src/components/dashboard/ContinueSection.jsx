@@ -12,9 +12,9 @@ export default function ContinueSection({ items, isPremium }) {
       {items.length === 0 ? (
         <EmptyState icon={Play} title="Nothing in progress" text="Start watching and anything you leave unfinished will appear here." ctaTo="/" />
       ) : (
-        <EpisodeGrid>
+        <EpisodeGrid landscape>
           {items.map(({ video }) => (
-            <EpisodeCard key={video.id} video={video} isPremium={isPremium} />
+            <EpisodeCard key={video.id} video={video} isPremium={isPremium} landscape />
           ))}
         </EpisodeGrid>
       )}

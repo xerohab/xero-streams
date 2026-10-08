@@ -112,10 +112,8 @@ img:not([data-allow-context]) {
     @apply mx-auto w-full max-w-none px-4 sm:px-6 md:px-12 lg:px-16;
   }
 
-  /* Poster and episode widths never expand to fill an incomplete row. */
-  .xero-media-card { width: 100%; max-width: 160px; }
-  /* Episode cards size to their content: no fixed/min heights, never stretched by the grid. */
-  .xero-episode-card { width: 100%; min-width: 0; height: auto; }
+  /* Episode posters use exactly the same fixed tracks as movie and series posters. */
+  .xero-media-card, .xero-episode-card { width: 100%; max-width: 160px; min-width: 0; }
   .xero-media-grid {
     display: grid;
     gap: 1rem 0.75rem;
@@ -123,21 +121,12 @@ img:not([data-allow-context]) {
     justify-content: start;
     align-items: stretch;
   }
-  /* Phones: single column of compact horizontal rows. sm+: fixed 280px landscape tracks. */
-  .xero-episode-grid {
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    align-content: start;
-  }
+  /* Continue Watching retains its landscape artwork and compact phone rows. */
+  .xero-continue-grid { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .xero-continue-grid .xero-episode-card { max-width: none; }
   @media (min-width: 640px) {
     .xero-media-grid { gap: 1.25rem 0.875rem; grid-template-columns: repeat(auto-fill, 150px); }
-    .xero-episode-grid { gap: 1rem; grid-template-columns: repeat(auto-fill, 280px); justify-content: start; }
-    .xero-episode-card { max-width: 280px; }
-  }
-  @media (min-width: 1024px) {
-    .xero-media-grid { grid-template-columns: repeat(auto-fill, 150px); }
+    .xero-continue-grid .xero-episode-card { max-width: 160px; }
   }
   @media (min-width: 1536px) {
     .xero-media-grid { grid-template-columns: repeat(auto-fill, 155px); }

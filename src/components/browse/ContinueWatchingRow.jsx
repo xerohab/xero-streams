@@ -24,11 +24,12 @@ export default function ContinueWatchingRow({ isAdult = false }) {
   return (
     <section className="xero-section">
       <SectionHeader title="Continue Watching" />
-      <EpisodeGrid>
+      <EpisodeGrid landscape>
         {items.map((item) => (
           <EpisodeCard
             key={item.id}
             video={item}
+            landscape
             playable
             href={`/watch?id=${item.id}&t=${Math.floor(item.currentTime)}`}
             onRemove={handleRemove}

@@ -8,11 +8,12 @@ export default function HomeMediaCard({ item }) {
   const { data, type } = item;
   const collection = type === "franchise";
   const series = type === "series";
+  const episode = !collection && !series && (data.content_type === "episode" || !!data.series_id);
   const updated = isRecentlyUpdated(item.latestActivityAt);
   const fresh = !collection && isRecentlyUpdated(toActivityTimestamp(data.created_date));
-  const href = collection ? `/franchise?id=${data.id}` : series ? `/series?id=${data.id}` : `/movie?id=${data.id}`;
+  const href = collection ? `/franchise?id=${data.id}` : series ? `/series?id=${data.id}` : episode ? `/watch?id=${data.id}` : `/movie?id=${data.id}`;
   const year = data.release_year || (data.release_date ? new Date(data.release_date).getFullYear() : null);
-  const metadata = collection ? [`${item.items} ${item.items === 1 ? "Title" : "Titles"}`, data.category] : [year || (series ? "TV Series" : "Movie"), data.duration || data.category];
+  const metadata = collection ? [`${item.items} ${item.items === 1 ? "Title" : "Titles"}`, data.category] : [year || (series ? "TV Series" : episode ? "Episode" : "Movie"), data.duration || data.category];
   return (
     <MediaCard
       to={href}
