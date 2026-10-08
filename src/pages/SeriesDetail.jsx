@@ -183,7 +183,7 @@ export default function SeriesDetail() {
               <p className="mb-5 flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">
                 <DownloadIcon className="h-5 w-5 shrink-0 text-primary" />
                 <span>
-                  Downloading is available for premium members. Hover over an episode to save it for offline viewing.
+                  Premium members can download episodes for offline viewing.
                   {!isPremium && (
                     <button type="button" onClick={openPremium} className="ml-2 font-bold text-primary underline hover:text-primary/80">
                       View plans

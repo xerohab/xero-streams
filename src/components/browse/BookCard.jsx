@@ -10,7 +10,7 @@ const BUY = `${BTN} bg-primary text-primary-foreground hover:bg-primary/90`;
 const OWNED = `${BTN} border border-primary/40 bg-black/60 text-primary hover:bg-primary/15`;
 
 /**
- * Shared Book card (Books, Search, Home, My Xero).
+ * Shared Book card (Books, Search, My Profile).
  * - `to`: whole card links there (browse mode, no inline actions).
  * - otherwise: hover (or always-on for touch) overlay with valid buy / download actions.
  * - `onPurchase`: omit to hide Buy actions (e.g. in My Books, where only owned titles show).

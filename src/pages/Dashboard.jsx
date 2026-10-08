@@ -66,7 +66,7 @@ function useContinueWatching() {
 }
 
 export default function Dashboard() {
-  // "My Xero" is the user-facing name; the route stays /dashboard
+  // "My Profile" is the user-facing name; the route stays /dashboard
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);

@@ -19,7 +19,7 @@ export default function HeroContent({ slide, active, reducedMotion }) {
 
   const synopsis = data.description;
   const year = data.release_year || (data.release_date ? new Date(data.release_date).getFullYear() : null);
-  const category = data.category || data.category_id;
+  const category = data.category && data.category.toLowerCase() !== "other" ? data.category : null;
   const updated = isRecentlyUpdated(toActivityTimestamp(data.content_updated_at)) || isRecentlyUpdated(slide.latestActivityAt);
   const fresh = !collection && isRecentlyUpdated(toActivityTimestamp(data.created_date));
 

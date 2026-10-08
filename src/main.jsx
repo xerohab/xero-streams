@@ -3,11 +3,9 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
-// Suppress all console output in production
+// Silence debug chatter in production; warnings and errors stay visible for error reporting
 if (import.meta.env.PROD) {
   console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
   console.info = () => {};
   console.debug = () => {};
 }

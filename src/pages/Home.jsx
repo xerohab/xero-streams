@@ -5,7 +5,6 @@ import Footer from "@/components/browse/Footer";
 import HeroSection from "@/components/browse/HeroSection";
 import HomeContinueWatching from "@/components/browse/HomeContinueWatching";
 import HomeMediaSection from "@/components/browse/HomeMediaSection";
-import HomeBooksRow from "@/components/browse/HomeBooksRow";
 import useHomeCatalog from "@/components/browse/useHomeCatalog";
 import "@/components/browse/HomeCinema.css";
 
@@ -21,7 +20,6 @@ export default function Home() {
         {catalog.rows.includes("latest") && <HomeMediaSection title="Recently Added & Updated" items={catalog.latest} to="/search" id="home-recent" />}
         {catalog.rows.includes("tv") && <HomeMediaSection title="TV Series" items={catalog.tv} to="/tv-series" id="home-series" />}
         {catalog.rows.includes("movies") && <HomeMediaSection title="Movies" items={catalog.movies} to="/movies" id="home-movies" />}
-        <HomeBooksRow />
         {!catalog.latest.length && <p className="py-16 text-center text-muted-foreground">Content is coming soon. Check back later!</p>}
       </main>
       <Footer />

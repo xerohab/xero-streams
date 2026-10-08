@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export default function DashboardNav({ tabs, active, onChange }) {
   return (
-    <nav className="overflow-x-auto rounded-lg border border-border/60 bg-card/40 p-1.5 scrollbar-hide lg:sticky lg:top-24" aria-label="My Xero sections">
+    <nav className="overflow-x-auto rounded-lg border border-border/60 bg-card/40 p-1.5 scrollbar-hide lg:sticky lg:top-24" aria-label="My Profile sections">
       <div className="flex w-max min-w-full gap-1 lg:w-full lg:flex-col">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button

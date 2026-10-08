@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Play, Search, User, LogIn, Crown, Film, Tv, Settings, LogOut, Heart, Download, HomeIcon } from "lucide-react";
+import { Play, Search, User, LogIn, Crown, Film, Tv, Settings, LogOut, Heart, Download, HomeIcon, BookOpen } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePremiumModal } from "@/lib/PremiumModalContext";
+import MobileMenu from "@/components/browse/MobileMenu";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -80,7 +81,8 @@ export default function Navbar() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search movies, series, books..."
-                  className="h-9 w-48 md:w-64 bg-black/40 border-border text-sm rounded-full px-4"
+                  aria-label="Search"
+                  className="h-9 w-36 sm:w-48 md:w-64 bg-black/40 border-border text-sm rounded-full px-4"
                   onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
                 />
               </form>
@@ -97,10 +99,14 @@ export default function Navbar() {
               </Button>
             )}
 
+            {!searchOpen && <MobileMenu onPremium={openPremium} />}
+
             {user ? (
               <div className="relative" ref={profileRef}>
                 <button 
                   onClick={() => setProfileOpen(!profileOpen)}
+                  aria-label="My Profile menu"
+                  aria-expanded={profileOpen}
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary text-secondary-foreground hover:ring-2 hover:ring-primary transition-all ml-1"
                 >
                   <User className="w-5 h-5" />
@@ -113,8 +119,9 @@ export default function Navbar() {
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
                     
-                    <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><User className="w-4 h-4 text-muted-foreground" /> My Xero</Link>
+                    <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><User className="w-4 h-4 text-muted-foreground" /> My Profile</Link>
                     <Link to="/dashboard#list" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Heart className="w-4 h-4 text-muted-foreground" /> My List</Link>
+                    <Link to="/dashboard#books" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><BookOpen className="w-4 h-4 text-muted-foreground" /> My Books</Link>
                     <Link to="/dashboard#downloads" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Download className="w-4 h-4 text-muted-foreground" /> Downloads</Link>
                     {user.role === "admin" && (
                       <Link to="/admin" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Settings className="w-4 h-4 text-muted-foreground" /> Admin Settings</Link>
@@ -164,7 +171,7 @@ export default function Navbar() {
           </button>
           <Link to="/dashboard" className={`flex flex-col items-center p-2 min-w-[64px] transition-colors ${location.pathname === '/dashboard' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
             <User className="w-5 h-5 mb-1" />
-            <span className="text-[10px] font-medium">My Xero</span>
+            <span className="text-[10px] font-medium">My Profile</span>
           </Link>
         </div>
       </div>

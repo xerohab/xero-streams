@@ -12,7 +12,7 @@ export default function DashboardHeader({ user, activeSub, activePlan, stats }) 
       </div>
 
       <div className="min-w-0 flex-1">
-        <h1 className="text-xl font-black uppercase tracking-[0.12em] text-foreground md:text-2xl">My Xero</h1>
+        <h1 className="text-xl font-black uppercase tracking-[0.12em] text-foreground md:text-2xl">My Profile</h1>
         <p className="truncate text-sm text-muted-foreground">Welcome back, {user.full_name || "User"}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {activeSub ? (

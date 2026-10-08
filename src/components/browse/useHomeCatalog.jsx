@@ -23,7 +23,7 @@ export default function useHomeCatalog() {
     .filter((item) => {
       if (item.type === "franchise") return item.data.backdrop_url || item.data.cover_image;
       if (item.type === "series") return item.data.backdrop_url || item.data.cover_image;
-      if (item.type === "video") return !item.data.series_id && (item.data.backdrop_url || item.data.thumbnail_url);
+      if (item.type === "video") return !item.data.series_id && item.data.content_type !== "episode" && (item.data.backdrop_url || item.data.thumbnail_url);
       return false;
     })
     .slice(0, 5);
