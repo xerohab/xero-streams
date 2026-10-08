@@ -41,11 +41,11 @@ function buildDigestVariables(movies, series, episodes) {
       [`${prefix}_display`]: item ? 'table-row' : 'none',
       [`${prefix}_heading_display`]: entry?.heading ? 'table-row' : 'none',
       [`${prefix}_heading`]: entry?.heading || '',
-      [`${prefix}_title`]: item ? escapeHtml((item.title || 'Untitled') + episodeLabel) : '',
-      [`${prefix}_description`]: escapeHtml(truncate(item?.description, 120)),
-      [`${prefix}_meta`]: escapeHtml(meta),
-      [`${prefix}_link`]: escapeHtml(link),
-      [`${prefix}_image`]: escapeHtml(image || 'https://media.base44.com/images/public/69e793d6b51b4ec30a25aa0b/dc685f361_logo.png'),
+      [`${prefix}_title`]: item ? (item.title || 'Untitled') + episodeLabel : '',
+      [`${prefix}_description`]: truncate(item?.description, 120),
+      [`${prefix}_meta`]: meta,
+      [`${prefix}_link`]: link,
+      [`${prefix}_image`]: image || 'https://media.base44.com/images/public/69e793d6b51b4ec30a25aa0b/dc685f361_logo.png',
       [`${prefix}_image_display`]: image ? 'block' : 'none'
     });
   }
