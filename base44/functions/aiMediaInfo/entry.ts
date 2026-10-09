@@ -14,21 +14,23 @@ Deno.serve(async (req) => {
     let prompt;
     if (type === "episode") {
       const seasonStr = seasonNumber ? `Season: ${seasonNumber}` : 'Season: Unknown (extract from title if possible)';
+      const isLikelyFilename = /\.(mp4|mkv|avi|webm|mov)$|[Ss]\d{1,2}[Ee]\d{1,2}|1080p|720p|480p|2160p|x264|x265|web-dl|webrip|bluray|hdrip/i.test(title || '');
       prompt = `I need information about a specific TV series episode.
 Series: "${seriesName || 'Unknown (extract from title)'}"
 ${seasonStr}
 Episode Number: ${episodeNumber || 'Unknown (extract from title)'}
-Original Filename / Title: "${title || 'unknown'}"
+Provided Title: "${title || 'unknown'}"
 
-CRITICAL: Identify the EXACT episode from this specific season and episode number. Do NOT confuse seasons — Season ${seasonNumber || 'X'} Episode ${episodeNumber || 'X'} is a specific, real episode. Look up the correct episode title for this exact season and episode.
+${isLikelyFilename
+  ? `The provided title appears to be a filename. Extract the actual episode title from it, removing all quality tags, season/episode codes, file extensions, and series names. Then look up that episode to write its description.`
+  : `The provided title "${title}" already appears to be a clean episode title. USE IT AS-IS — do NOT change it to a different episode title. Simply write a description for THIS episode and assign genres.`}
 
-Please figure out the actual series name, the season number, the episode number, and the correct episode title based on the filename or title provided. Then write a concise, engaging 2-3 sentence description of THIS SPECIFIC episode's plot.
-If you genuinely cannot determine the exact episode, provide a general description for the series, but try your best to identify the correct episode first.
+Write a concise, engaging 2-3 sentence description of THIS SPECIFIC episode's plot based on the series "${seriesName || 'the title'}"${seasonNumber ? `, Season ${seasonNumber}` : ''}${episodeNumber ? `, Episode ${episodeNumber}` : ''}.
 ${genreInstruction} Use the genres of the parent series.
 
 Respond in JSON with exactly these keys:
 {
-  "title": "The correct episode title (just the episode title, clean without series name or video quality tags, e.g., 'Pilot', not 'Show - Pilot' or 'Dexter.S02.720p')",
+  "title": ${isLikelyFilename ? '"The extracted clean episode title (just the episode name, no series name or quality tags)"' : `"${title || 'unknown'}"`},
   "description": "A concise 2-3 sentence description of this episode",
   "genres": ["One value from the genre list above", "Optional second", "Optional third"]
 }`;

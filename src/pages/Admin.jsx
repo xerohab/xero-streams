@@ -48,12 +48,18 @@ export default function Admin() {
 
   const { data: videos = [], isLoading: loadingVideos } = useQuery({
     queryKey: ["videos"],
-    queryFn: () => base44.entities.Video.list("-created_date"),
+    queryFn: async () => {
+      const page = await base44.entities.Video.filter({}, { sort: "-created_date", limit: 200 });
+      return page.items;
+    },
   });
 
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
     queryKey: ["series"],
-    queryFn: () => base44.entities.Series.list(),
+    queryFn: async () => {
+      const page = await base44.entities.Series.filter({}, { sort: "-title", limit: 200 });
+      return page.items;
+    },
   });
 
   const { data: franchises = [] } = useQuery({
