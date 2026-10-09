@@ -1,6 +1,7 @@
 import React from "react";
 import SectionHeader from "@/components/browse/SectionHeader";
 import { Switch } from "@/components/ui/switch";
+import PerkSphereSection from "@/components/dashboard/PerkSphereSection";
 
 const DEFAULT_ROWS = ["hero", "continue_watching", "latest", "tv", "movies"];
 const ROW_OPTIONS = [
@@ -47,6 +48,8 @@ export default function SettingsSection({ user, onToggleRow, onToggleDigest }) {
           </div>
         </div>
       </div>
+
+      <PerkSphereSection user={user} />
     </section>
   );
 }

@@ -1,0 +1,83 @@
+{
+  "name": "PerkSphereConnection",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Local Base44 user ID that owns this connection"
+    },
+    "partner_id": {
+      "type": "string",
+      "default": "xero-streams",
+      "description": "Partner identity that owns this link"
+    },
+    "perksphere_connection_id": {
+      "type": "string",
+      "description": "Connection ID issued by the Perk Sphere Linux bridge on confirm"
+    },
+    "perksphere_user_id": {
+      "type": "string",
+      "description": "Perk Sphere user ID returned on confirm, if provided"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "linked",
+        "unlinked"
+      ],
+      "default": "linked"
+    },
+    "linked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "unlinked_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
