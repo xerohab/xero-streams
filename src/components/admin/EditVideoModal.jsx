@@ -48,6 +48,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
     director_or_creator: video?.director_or_creator || "",
     age_rating: video?.age_rating || "",
     runtime_or_episodes: video?.runtime_or_episodes || "",
+    season_number: video?.season_number || "",
   });
   const [saving, setSaving] = useState(false);
   const [uploadingThumb, setUploadingThumb] = useState(false);
@@ -129,6 +130,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
         type,
         seriesName,
         episodeNumber: form.episode_number,
+        seasonNumber: form.season_number,
       });
       if (res.data?.title || res.data?.description || res.data?.genres?.length) {
         if (res.data.title) update("title", res.data.title);
@@ -158,6 +160,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
         content_type: type,
         seriesName,
         episodeNumber: form.episode_number,
+        seasonNumber: form.season_number,
       });
       if (res.data?.main_cast || res.data?.description || res.data?.age_rating) {
         if (res.data.main_cast) update("main_cast", res.data.main_cast.join(", "));
@@ -229,6 +232,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
         director_or_creator: video.director_or_creator || "",
         age_rating: video.age_rating || "",
         runtime_or_episodes: video.runtime_or_episodes || "",
+        season_number: video.season_number || "",
       });
     }
   }, [video?.id]);
@@ -250,6 +254,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
       ...form,
       content_updated_at: new Date().toISOString(),
       episode_number: form.episode_number ? Number(form.episode_number) : null,
+      season_number: form.season_number ? Number(form.season_number) : null,
       sort_order: form.sort_order !== "" ? Number(form.sort_order) : 0,
       series_id: form.series_id || null,
       franchise_id: form.franchise_id || null,
@@ -362,7 +367,11 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
               <Input value={form.quality_notes} onChange={(e) => update("quality_notes", e.target.value)} className="bg-secondary border-border" placeholder="e.g. Chinese Subs, Hardcoded" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label>Season #</Label>
+              <Input type="number" value={form.season_number} onChange={(e) => update("season_number", e.target.value)} className="bg-secondary border-border" placeholder="Auto" />
+            </div>
             <div className="space-y-1">
               <Label>Episode #</Label>
               <Input type="number" value={form.episode_number} onChange={(e) => update("episode_number", e.target.value)} className="bg-secondary border-border" placeholder="1" />
@@ -404,9 +413,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
               <Input value={form.runtime_or_episodes} onChange={(e) => update("runtime_or_episodes", e.target.value)} className="bg-secondary border-border" placeholder="e.g. 120 mins, 10 Episodes" />
             </div>
           </div>
-          {form.content_type === "movie" && (
-            <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="Genres" aiDetected={!!form.genres.length} />
-          )}
+          <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="Genres" aiDetected={!!form.genres.length} />
           <SeriesSearchSelect
             seriesList={seriesList}
             value={form.series_id}

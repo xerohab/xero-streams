@@ -34,6 +34,10 @@
     "episode_number": {
       "type": "number"
     },
+    "season_number": {
+      "type": "number",
+      "description": "Season number for TV episodes"
+    },
     "duration": {
       "type": "string"
     },

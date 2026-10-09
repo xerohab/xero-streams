@@ -12,7 +12,7 @@ export default async function(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { title, content_type, seriesName, episodeNumber } = await req.json();
+    const { title, content_type, seriesName, episodeNumber, seasonNumber } = await req.json();
     if (!title) return Response.json({ error: 'Title is required' }, { status: 400 });
 
     const apiKey = secrets.get("GEMINI_API_KEY");
@@ -22,7 +22,8 @@ export default async function(req) {
 
     let prompt;
     if (isTv && seriesName && episodeNumber) {
-      prompt = `Provide detailed metadata for the TV series episode "${title}" from the series "${seriesName}", episode ${episodeNumber}. Include the main cast of the series, any notable guest stars appearing in this specific episode, the release year of the series, a short 2-3 sentence plot overview of this episode, the content rating (e.g. TV-MA, TV-14, TV-PG), the creator or showrunner, and the runtime.`;
+      const seasonStr = seasonNumber ? ` Season ${seasonNumber},` : "";
+      prompt = `Provide detailed metadata for the TV series episode "${title}" from the series "${seriesName}",${seasonStr} episode ${episodeNumber}. Include the main cast of the series, any notable guest stars appearing in this specific episode, the release year of the series, a short 2-3 sentence plot overview of this episode, the content rating (e.g. TV-MA, TV-14, TV-PG), the creator or showrunner, and the runtime.`;
     } else if (isTv && seriesName) {
       prompt = `Provide detailed metadata for the TV series episode "${title}" from the series "${seriesName}". Include the main cast of the series, any notable guest stars for this episode, the release year of the series, a short 2-3 sentence plot overview, the content rating (e.g. TV-MA, TV-14), the creator or showrunner, and the runtime.`;
     } else if (isTv) {
@@ -52,38 +53,39 @@ export default async function(req) {
       }
     });
 
-    // Try gemini-3.8-flash first (Google's recommended model), fall back to gemini-2.5-flash
-    const models = ["gemini-3.8-flash", "gemini-2.5-flash"];
+    // Valid model names from ListModels: gemini-3.8-flash (fast, recommended) and gemini-2.5-flash (fallback).
+    const models = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-flash-latest"];
     let apiRes;
     let lastError;
 
     for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-      apiRes = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: requestBody,
-        signal: AbortSignal.timeout(20000)
-      });
-
-      // Retry once on temporary overload (503)
-      if (apiRes.status === 503) {
-        await new Promise((r) => setTimeout(r, 2000));
+      // Retry up to 3 times on 503 (overloaded) with exponential backoff, then try next model
+      let attempts = 0;
+      while (attempts < 3) {
         apiRes = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: requestBody,
-          signal: AbortSignal.timeout(20000)
+          signal: AbortSignal.timeout(30000)
         });
+
+        if (apiRes.status === 503 && attempts < 2) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempts + 1)));
+          attempts++;
+          continue;
+        }
+        break;
       }
 
-      // 404 = model not available, try the next model
-      if (apiRes.status === 404) {
+      // 404 or 503 after retries = try the next model
+      if (apiRes.status === 404 || apiRes.status === 503) {
         lastError = await apiRes.text();
         continue;
       }
 
+      // Success or a non-retryable error — stop trying models
       break;
     }
 

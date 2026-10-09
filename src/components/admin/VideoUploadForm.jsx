@@ -11,6 +11,8 @@ import { Upload, Link as LinkIcon, Loader2, Wand2, Sparkles, Search, AudioLines 
 import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
+import GenreSelect from "@/components/admin/GenreSelect";
+import { normaliseToGenres } from "@/lib/genreAdmin";
 import { detectVideoQuality } from "@/lib/qualityDetection";
 
 export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
@@ -45,6 +47,8 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
     director_or_creator: "",
     age_rating: "",
     runtime_or_episodes: "",
+    genres: [],
+    season_number: "",
   });
 
   const handleFileUpload = async (e) => {
@@ -82,6 +86,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       quality: finalQuality,
       quality_notes: form.quality_notes || undefined,
       episode_number: seriesId ? (form.episode_number ? Number(form.episode_number) : undefined) : undefined,
+      season_number: seriesId ? (form.season_number ? Number(form.season_number) : undefined) : undefined,
       series_id: seriesId,
       franchise_id: form.franchise_id || undefined,
       // Auto-correct content_type based on series assignment
@@ -100,6 +105,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       director_or_creator: form.director_or_creator || undefined,
       age_rating: form.age_rating || undefined,
       runtime_or_episodes: form.runtime_or_episodes || undefined,
+      genres: form.genres || [],
     };
     await base44.entities.Video.create(payload);
     toast.success("Video added successfully!");
@@ -132,6 +138,8 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       director_or_creator: "",
       age_rating: "",
       runtime_or_episodes: "",
+      genres: [],
+      season_number: "",
     });
     onSuccess?.();
   };
@@ -214,10 +222,13 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         type,
         seriesName,
         episodeNumber: form.episode_number,
+        seasonNumber: form.season_number,
       });
-      if (res.data?.title || res.data?.description) {
+      if (res.data?.title || res.data?.description || res.data?.genres?.length) {
         if (res.data.title) update("title", res.data.title);
         if (res.data.description) update("description", res.data.description);
+        const genres = normaliseToGenres(res.data?.genres);
+        if (genres.length) update("genres", genres);
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
@@ -241,6 +252,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         content_type: type === "episode" ? "tv" : "movie",
         seriesName,
         episodeNumber: form.episode_number,
+        seasonNumber: form.season_number,
       });
       if (res.data?.main_cast || res.data?.description || res.data?.age_rating) {
         if (res.data.main_cast) update("main_cast", res.data.main_cast.join(", "));
@@ -286,21 +298,30 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         const filename = decodeURIComponent(link.split('/').pop().split('?')[0]);
         const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
         let episodeNumber = null;
+        let seasonNumber = null;
 
-        const patterns = [
-          /[Ss]\d+[Ee](\d+)/,
-          /[Ee]p(?:isode)?[-_\s]?(\d+)/i,
-          /[-_](\d+)[-_]?$/,
-          /[\s._-](\d+)[\s._-]/,
-          /^(\d+)[\s._-]/,
-          /(\d+)$/,
-        ];
+        // Try S##E## pattern first (captures both season and episode)
+        const sxxexxMatch = nameWithoutExt.match(/[Ss](\d+)[Ee](\d+)/);
+        if (sxxexxMatch) {
+          seasonNumber = parseInt(sxxexxMatch[1], 10);
+          episodeNumber = parseInt(sxxexxMatch[2], 10);
+        }
 
-        for (const pattern of patterns) {
-          const m = (nameWithoutExt + ' ' + link).match(pattern);
-          if (m) {
-            episodeNumber = parseInt(m[1], 10);
-            break;
+        if (!episodeNumber) {
+          const patterns = [
+            /[Ee]p(?:isode)?[-_\s]?(\d+)/i,
+            /[-_](\d+)[-_]?$/,
+            /[\s._-](\d+)[\s._-]/,
+            /^(\d+)[\s._-]/,
+            /(\d+)$/,
+          ];
+
+          for (const pattern of patterns) {
+            const m = (nameWithoutExt + ' ' + link).match(pattern);
+            if (m) {
+              episodeNumber = parseInt(m[1], 10);
+              break;
+            }
           }
         }
 
@@ -315,7 +336,10 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
           title: prev.title || title,
           episode_number: prev.content_type === "movie" || !prev.series_id 
             ? prev.episode_number 
-            : (prev.episode_number || (episodeNumber ? String(episodeNumber) : prev.episode_number))
+            : (prev.episode_number || (episodeNumber ? String(episodeNumber) : prev.episode_number)),
+          season_number: prev.content_type === "movie" || !prev.series_id
+            ? prev.season_number
+            : (prev.season_number || (seasonNumber ? String(seasonNumber) : prev.season_number))
         }));
       } catch (e) {}
     }
@@ -465,16 +489,30 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         label="Series"
       />
 
-      <div className="space-y-2">
-        <Label>Episode #</Label>
-        <Input
-          type="number"
-          value={form.episode_number}
-          onChange={(e) => update("episode_number", e.target.value)}
-          placeholder="1"
-          className="bg-secondary border-border"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Season #</Label>
+          <Input
+            type="number"
+            value={form.season_number}
+            onChange={(e) => update("season_number", e.target.value)}
+            placeholder="Auto-detected from filename"
+            className="bg-secondary border-border"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Episode #</Label>
+          <Input
+            type="number"
+            value={form.episode_number}
+            onChange={(e) => update("episode_number", e.target.value)}
+            placeholder="1"
+            className="bg-secondary border-border"
+          />
+        </div>
       </div>
+
+      <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="Genres" aiDetected={!!form.genres.length} />
 
       {franchises.length > 0 && (
         <FranchiseSearchSelect franchises={franchises} value={form.franchise_id} onChange={(id) => update("franchise_id", id)} />

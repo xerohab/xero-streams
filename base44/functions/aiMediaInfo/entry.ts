@@ -6,20 +6,24 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { title, type, seriesName, episodeNumber } = await req.json();
+    const { title, type, seriesName, episodeNumber, seasonNumber } = await req.json();
 
     const genreList = "Action, Action Comedy, Action Thriller, Adventure, Animation, Anime, Anthology, Art House, Biopic, Black Comedy, Body Horror, Business & Entrepreneurship, Children & Family, Combat Sports, Comedy, Cooking & Food, Cosmic Horror, Costume Drama, Courtroom Drama, Crime, Crime Thriller, Cyberpunk, Cyber Thriller, Dark Fantasy, Disaster, Documentary, Docudrama, Drama, Dystopian, Educational, Erotic Thriller, Esports, Extreme Sports, Fairy Tale, Fantasy, Film Noir, Game Show, Governance & Politics, Heist, Historical, Historical Drama, Horror, Horror Comedy, House & Garden, Human Interest, Industrial & Manufacturing, Isekai, Kaiju, Late Night, Life Extension & Wellness, Live Performance, Lucha Libre, Martial Arts, Mecha, Medical Drama, Military, Mockumentary, Monster, Motor Sports, Music & Dance, Musical, Mystery, Nature & Wildlife, Neo-Noir, News & Current Affairs, Paranormal, Period Piece, Political Thriller, Post-Apocalyptic, Psychological Horror, Psychological Thriller, Public Access, Reality TV, Religion & Spirituality, Romance, Romantic Comedy, Satire, Science & Technology, Science Fiction, Sci-Fi Fantasy, Slasher, Slice of Life, Soap Opera, Space Opera, Sports, Sports Documentary, Sports Drama, Spy Thriller, Stand-Up Comedy, Superhero, Supernatural, Survival, Talk Show, Teen Drama, Travel & Tourism, True Crime, Urban Fantasy, Variety Show, War, Western, Wrestling, Wrestling Documentary, Wrestling Drama, Zombie";
     const genreInstruction = `Also identify the best-fit genres for this content. Choose between 1 and 3 genres from this list: ${genreList}. Put them as an array of exact matching strings in the "genres" field (most relevant first).`;
 
     let prompt;
     if (type === "episode") {
-      prompt = `I need information about a TV series episode.
+      const seasonStr = seasonNumber ? `Season: ${seasonNumber}` : 'Season: Unknown (extract from title if possible)';
+      prompt = `I need information about a specific TV series episode.
 Series: "${seriesName || 'Unknown (extract from title)'}"
-Episode Number: ${episodeNumber || 'Unknown (extract from title)'}"
+${seasonStr}
+Episode Number: ${episodeNumber || 'Unknown (extract from title)'}
 Original Filename / Title: "${title || 'unknown'}"
 
-Please figure out the actual series name, the episode number, and the correct episode title based on the filename or title provided. Then write a concise, engaging 2-3 sentence description of this episode's plot.
-If you can't determine the exact episode, provide a general description for the series or guess based on the filename.
+CRITICAL: Identify the EXACT episode from this specific season and episode number. Do NOT confuse seasons — Season ${seasonNumber || 'X'} Episode ${episodeNumber || 'X'} is a specific, real episode. Look up the correct episode title for this exact season and episode.
+
+Please figure out the actual series name, the season number, the episode number, and the correct episode title based on the filename or title provided. Then write a concise, engaging 2-3 sentence description of THIS SPECIFIC episode's plot.
+If you genuinely cannot determine the exact episode, provide a general description for the series, but try your best to identify the correct episode first.
 ${genreInstruction} Use the genres of the parent series.
 
 Respond in JSON with exactly these keys:
