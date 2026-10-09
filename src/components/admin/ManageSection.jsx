@@ -37,16 +37,39 @@ export default function ManageSection({
 
   const handleAutoDetectGenres = async (e) => {
     e.stopPropagation();
-    if (!confirm("This will use AI to detect genres for every movie and series that currently has none set, and save them. Existing genres are left untouched. Continue?")) return;
+    if (!confirm("This will use AI to detect genres for movies and series with none set, and inherit genres from the parent series for episodes with none set. Continue?")) return;
     setDetectingGenres(true);
     setGenreProgress(0);
     let count = 0;
     let index = 0;
-    const totalMovies = videos.filter((v) => v.content_type !== "episode" && !(v.genres?.length)).length;
-    const totalSeries = seriesList.filter((s) => !(s.genres?.length)).length;
-    const total = totalMovies + totalSeries;
-    for (const v of videos) {
-      if (v.content_type === "episode" || v.genres?.length) continue;
+
+    // Build a map of series_id -> genres for quick lookup
+    const seriesGenreMap = {};
+    for (const s of seriesList) seriesGenreMap[s.id] = s.genres || [];
+
+    const moviesNeeding = videos.filter((v) => v.content_type !== "episode" && !(v.genres?.length));
+    const seriesNeeding = seriesList.filter((s) => !(s.genres?.length));
+    const episodesNeeding = videos.filter((v) => v.content_type === "episode" && !(v.genres?.length));
+    const total = moviesNeeding.length + seriesNeeding.length + episodesNeeding.length;
+
+    // 1. AI-detect genres for series without any (must run first so episodes can inherit)
+    for (const s of seriesNeeding) {
+      index++;
+      setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
+      try {
+        const res = await base44.functions.invoke("aiMediaInfo", { title: s.title, type: "tv" });
+        const genres = normaliseToGenres(res.data?.genres);
+        if (genres.length) {
+          await base44.entities.Series.update(s.id, { genres });
+          seriesGenreMap[s.id] = genres;
+          count++;
+        }
+        await new Promise((r) => setTimeout(r, 250));
+      } catch (err) { console.error(err); }
+    }
+
+    // 2. AI-detect genres for movies without any
+    for (const v of moviesNeeding) {
       index++;
       setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
       try {
@@ -56,17 +79,20 @@ export default function ManageSection({
         await new Promise((r) => setTimeout(r, 250));
       } catch (err) { console.error(err); }
     }
-    for (const s of seriesList) {
-      if (s.genres?.length) continue;
+
+    // 3. Inherit genres for episodes without any (from parent series)
+    for (const v of episodesNeeding) {
       index++;
       setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
-      try {
-        const res = await base44.functions.invoke("aiMediaInfo", { title: s.title, type: "tv" });
-        const genres = normaliseToGenres(res.data?.genres);
-        if (genres.length) { await base44.entities.Series.update(s.id, { genres }); count++; }
-        await new Promise((r) => setTimeout(r, 250));
-      } catch (err) { console.error(err); }
+      const parentGenres = seriesGenreMap[v.series_id] || [];
+      if (parentGenres.length) {
+        try {
+          await base44.entities.Video.update(v.id, { genres: parentGenres });
+          count++;
+        } catch (err) { console.error(err); }
+      }
     }
+
     setDetectingGenres(false);
     alert(`Updated genres for ${count} item${count !== 1 ? "s" : ""}! Please refresh the page to see changes.`);
   };
@@ -341,7 +367,8 @@ export default function ManageSection({
                             {series && <span className="text-xs text-primary">{series.title}</span>}
                             {v.episode_number && <span className="text-xs text-muted-foreground">EP {v.episode_number}</span>}
                             {v.content_type === "movie" && <Badge className="text-xs bg-blue-500/20 text-blue-400">Movie</Badge>}
-                            {v.content_type === "movie" && (resolveVideoGenres(v, categories).length ? resolveVideoGenres(v, categories).map((g) => <Badge key={g} variant="outline" className="text-xs">{g}</Badge>) : <Badge variant="outline" className="text-xs text-muted-foreground">No genre</Badge>)}
+                            {v.content_type === "episode" && <Badge className="text-xs bg-purple-500/20 text-purple-400">Episode</Badge>}
+                            {(resolveVideoGenres(v, categories).length ? resolveVideoGenres(v, categories).map((g) => <Badge key={g} variant="outline" className="text-xs">{g}</Badge>) : <Badge variant="outline" className="text-xs text-muted-foreground">No genre</Badge>)}
                             {v.is_featured && <Badge className="text-xs bg-primary/20 text-primary">Featured</Badge>}
                             {v.is_adult && <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">18+</Badge>}
                             <Badge variant="outline" className="text-xs flex items-center gap-1"><Eye className="w-3 h-3" /> {v.views || 0}</Badge>
