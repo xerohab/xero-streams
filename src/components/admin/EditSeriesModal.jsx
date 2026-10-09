@@ -58,33 +58,6 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
     setFetchingAiInfo(false);
   };
 
-  const [fetchingGemini, setFetchingGemini] = useState(false);
-
-  const handleGeminiFetch = async () => {
-    if (!form.title) return;
-    setFetchingGemini(true);
-    try {
-      const res = await base44.functions.invoke("fetchGeminiMetadata", {
-        title: form.title,
-        content_type: "tv",
-      });
-      if (res.data?.main_cast || res.data?.description || res.data?.age_rating) {
-        if (res.data.main_cast) update("main_cast", res.data.main_cast.join(", "));
-        if (res.data.guest_stars) update("guest_stars", res.data.guest_stars.join(", "));
-        if (res.data.description && !form.description) update("description", res.data.description);
-        if (res.data.age_rating) update("age_rating", res.data.age_rating);
-        if (res.data.director_or_creator) update("director_or_creator", res.data.director_or_creator);
-        if (res.data.runtime_or_episodes) update("runtime_or_episodes", res.data.runtime_or_episodes);
-        toast.success("Gemini metadata applied!");
-      } else {
-        toast.error("Couldn't find metadata for that title");
-      }
-    } catch (e) {
-      toast.error("Gemini metadata fetch failed");
-    }
-    setFetchingGemini(false);
-  };
-
   const handleGenerateCover = async () => {
     if (!form.title) return;
     setGeneratingCover(true);
@@ -189,17 +162,6 @@ export default function EditSeriesModal({ series, franchises = [], open, onClose
               <Button type="button" variant="ghost" size="sm" onClick={handleAiDescription} disabled={fetchingAiInfo || !form.title} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
                 {fetchingAiInfo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                 AI Auto-Fill
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleGeminiFetch}
-                disabled={fetchingGemini || !form.title}
-                className="text-xs gap-1.5 text-amber-400 hover:text-amber-300 h-7"
-              >
-                {fetchingGemini ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                Gemini Metadata
               </Button>
             </div>
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />

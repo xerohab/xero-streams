@@ -11,7 +11,7 @@ import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle, Sparkles 
 import toast from "react-hot-toast";
 import { detectVideoQuality } from "@/lib/qualityDetection";
 import GenreSelect from "@/components/admin/GenreSelect";
-import { normaliseToGenres } from "@/lib/genreAdmin";
+import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
 const emptyEpisode = () => ({
   title: "",
@@ -57,23 +57,22 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
     try {
       const type = isMovieMode ? "movie" : "episode";
       const seriesName = isMovieMode ? undefined : seriesList?.find(s => s.id === selectedSeries)?.title;
-      const res = await base44.functions.invoke("aiMediaInfo", {
+      const res = await fetchMediaAutoFill({
         title: ep.title || "",
+        videoUrl: ep.video_url,
         type,
         seriesName,
         episodeNumber: isMovieMode ? undefined : ep.episode_number,
+        seasonNumber: isMovieMode ? undefined : ep.season_number,
       });
       if (res.data?.title || res.data?.description || res.data?.genres?.length) {
-        if (res.data.title) updateEp(index, "title", res.data.title);
-        if (res.data.description) updateEp(index, "description", res.data.description);
-        const genres = normaliseToGenres(res.data?.genres);
-        if (genres.length) updateEp(index, "genres", genres);
+        setEpisodes(prev => prev.map((current, i) => i === index ? { ...current, ...mediaInfoUpdates(res.data) } : current));
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
     } catch (e) {
-      toast.error("AI info failed");
+      toast.error(e.message || "AI info failed");
     }
     setFetchingAiFor(null);
   };
@@ -85,11 +84,13 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
 
     const results = await Promise.allSettled(
       episodes.map((ep, i) =>
-        base44.functions.invoke("aiMediaInfo", {
+        fetchMediaAutoFill({
           title: ep.title || "",
+          videoUrl: ep.video_url,
           type,
           seriesName,
           episodeNumber: isMovieMode ? undefined : ep.episode_number,
+          seasonNumber: isMovieMode ? undefined : ep.season_number,
         }).then(res => ({ index: i, data: res.data }))
       )
     );
@@ -101,16 +102,17 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
           const { index, data } = result.value;
           updated[index] = {
             ...updated[index],
-            ...(data.title ? { title: data.title } : {}),
-            ...(data.description ? { description: data.description } : {}),
-            ...(data.genres?.length ? { genres: normaliseToGenres(data.genres) } : {}),
+            ...mediaInfoUpdates(data),
           };
         }
       });
       return updated;
     });
     setFetchingAiAll(false);
-    toast.success("AI info applied to all!");
+    const applied = results.filter(result => result.status === "fulfilled").length;
+    if (applied) toast.success(`AI info applied to ${applied} item${applied === 1 ? "" : "s"}!`);
+    const failure = results.find(result => result.status === "rejected");
+    if (failure) toast.error(failure.reason?.message || "Some items could not be identified and were left unchanged.");
   };
 
   const handleVideoFileUpload = async (index, e) => {
@@ -152,6 +154,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
         thumbnail_url: ep.thumbnail_url || seriesCover || undefined,
         series_id: isMovieMode ? undefined : selectedSeries,
         episode_number: (!isMovieMode && ep.episode_number) ? Number(ep.episode_number) : undefined,
+        season_number: (!isMovieMode && ep.season_number) ? Number(ep.season_number) : undefined,
         duration: ep.duration || undefined,
         content_type: isMovieMode ? "movie" : "episode",
         is_featured: false,

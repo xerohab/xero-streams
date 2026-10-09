@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { detectVideoQuality } from "@/lib/qualityDetection";
-import { normaliseToGenres } from "@/lib/genreAdmin";
+import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
 export default function WebScraper({ seriesList, franchises, onSuccess }) {
   const [url, setUrl] = useState("");
@@ -91,23 +91,22 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       const seriesName = contentMode === "tv"
         ? seriesList?.find(s => s.id === selectedSeries)?.title
         : undefined;
-      const res = await base44.functions.invoke("aiMediaInfo", {
+      const res = await fetchMediaAutoFill({
         title: item.title || "",
+        videoUrl: item.video_url,
         type,
         seriesName,
         episodeNumber: item.episode_number,
+        seasonNumber: item.season_number,
       });
       if (res.data?.title || res.data?.description || res.data?.genres?.length) {
-        if (res.data.title) updateItem(index, "title", res.data.title);
-        if (res.data.description) updateItem(index, "description", res.data.description);
-        const genres = normaliseToGenres(res.data?.genres);
-        if (genres.length) updateItem(index, "genres", genres);
+        setItems(prev => prev.map((current, i) => i === index ? { ...current, ...mediaInfoUpdates(res.data) } : current));
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
     } catch (e) {
-      toast.error("AI info failed");
+      toast.error(e.message || "AI info failed");
     }
     setFetchingAiFor(null);
   };
@@ -122,11 +121,13 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     // Run all requests in parallel
     const results = await Promise.allSettled(
       items.map((item, i) =>
-        base44.functions.invoke("aiMediaInfo", {
+        fetchMediaAutoFill({
           title: item.title || "",
+          videoUrl: item.video_url,
           type,
           seriesName,
           episodeNumber: item.episode_number,
+          seasonNumber: item.season_number,
         }).then(res => ({ index: i, data: res.data }))
       )
     );
@@ -138,9 +139,7 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
           const { index, data } = result.value;
           updated[index] = {
             ...updated[index],
-            ...(data.title ? { title: data.title } : {}),
-            ...(data.description ? { description: data.description } : {}),
-            ...(data.genres?.length ? { genres: normaliseToGenres(data.genres) } : {}),
+            ...mediaInfoUpdates(data),
           };
         }
       });
@@ -148,7 +147,10 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
     });
 
     setFetchingAiAll(false);
-    toast.success("AI info applied to all items!");
+    const applied = results.filter(result => result.status === "fulfilled").length;
+    if (applied) toast.success(`AI info applied to ${applied} item${applied === 1 ? "" : "s"}!`);
+    const failure = results.find(result => result.status === "rejected");
+    if (failure) toast.error(failure.reason?.message || "Some items could not be identified and were left unchanged.");
   };
 
   const removeItem = (index) => setItems(prev => prev.filter((_, i) => i !== index));
@@ -176,7 +178,8 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       thumbnail_url: item.thumbnail_url || seriesCover || undefined,
       series_id: contentMode === "tv" ? selectedSeries : undefined,
       franchise_id: contentMode !== "tv" ? selectedFranchise || undefined : undefined,
-      episode_number: item.episode_number || undefined,
+      episode_number: item.episode_number ? Number(item.episode_number) : undefined,
+      season_number: contentMode === "tv" && item.season_number ? Number(item.season_number) : undefined,
       content_type: contentMode === "tv" ? "episode" : "movie",
         is_featured: false,
         quality: finalQuality,

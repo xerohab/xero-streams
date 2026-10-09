@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
-import { normaliseToGenres, resolveVideoGenres } from "@/lib/genreAdmin";
+import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
 export default function EditVideoModal({ video, seriesList, franchises = [], categories = [], open, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -125,58 +125,24 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
     try {
       const type = form.content_type === "episode" ? "episode" : "movie";
       const seriesName = seriesList?.find((s) => s.id === form.series_id)?.title;
-      const res = await base44.functions.invoke("aiMediaInfo", {
+      const res = await fetchMediaAutoFill({
         title: form.title || "",
+        videoUrl: form.video_url,
         type,
         seriesName,
         episodeNumber: form.episode_number,
         seasonNumber: form.season_number,
       });
       if (res.data?.title || res.data?.description || res.data?.genres?.length) {
-        if (res.data.title) update("title", res.data.title);
-        if (res.data.description) update("description", res.data.description);
-        const genres = normaliseToGenres(res.data?.genres);
-        if (genres.length) update("genres", genres);
+        setForm(prev => ({ ...prev, ...mediaInfoUpdates(res.data) }));
         toast.success("AI info applied!");
       } else {
         toast.error("Couldn't find info for that title");
       }
     } catch (e) {
-      toast.error("AI info failed");
+      toast.error(e.message || "AI info failed");
     }
     setFetchingAiInfo(false);
-  };
-
-  const [fetchingGemini, setFetchingGemini] = useState(false);
-
-  const handleGeminiFetch = async () => {
-    if (!form.title) { toast.error("Please fill the title first"); return; }
-    setFetchingGemini(true);
-    try {
-      const type = form.content_type === "episode" ? "tv" : "movie";
-      const seriesName = seriesList?.find((s) => s.id === form.series_id)?.title;
-      const res = await base44.functions.invoke("fetchGeminiMetadata", {
-        title: form.title,
-        content_type: type,
-        seriesName,
-        episodeNumber: form.episode_number,
-        seasonNumber: form.season_number,
-      });
-      if (res.data?.main_cast || res.data?.description || res.data?.age_rating) {
-        if (res.data.main_cast) update("main_cast", res.data.main_cast.join(", "));
-        if (res.data.guest_stars) update("guest_stars", res.data.guest_stars.join(", "));
-        if (res.data.description && !form.description) update("description", res.data.description);
-        if (res.data.age_rating) update("age_rating", res.data.age_rating);
-        if (res.data.director_or_creator) update("director_or_creator", res.data.director_or_creator);
-        if (res.data.runtime_or_episodes) update("runtime_or_episodes", res.data.runtime_or_episodes);
-        toast.success("Gemini metadata applied!");
-      } else {
-        toast.error("Couldn't find metadata for that title");
-      }
-    } catch (e) {
-      toast.error("Gemini metadata fetch failed");
-    }
-    setFetchingGemini(false);
   };
 
   const handleAutoFetchPoster = async () => {
@@ -299,17 +265,6 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
               <Button type="button" variant="ghost" size="sm" onClick={handleAiFetch} disabled={fetchingAiInfo} className="text-xs gap-1.5 text-primary hover:text-primary/80 h-7">
                 {fetchingAiInfo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                 {fetchingAiInfo ? "Searching..." : "AI Auto-Fill"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleGeminiFetch}
-                disabled={fetchingGemini || !form.title}
-                className="text-xs gap-1.5 text-amber-400 hover:text-amber-300 h-7"
-              >
-                {fetchingGemini ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                {fetchingGemini ? "Fetching..." : "Gemini Metadata"}
               </Button>
             </div>
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} className="bg-secondary border-border h-20" placeholder="Description or use AI Auto-Fill" />
