@@ -1,20 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Loader2, Play, Search, Eye, RefreshCw, Tags } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { normaliseToGenres, resolveVideoGenres } from "@/lib/genreAdmin";
+import { usePaginatedSearch } from "@/hooks/usePaginatedSearch";
 
 import { Layers } from "lucide-react";
 
 export default function ManageSection({
-  videos,
   seriesList,
   franchises = [],
   categories = [],
-  loadingVideos,
-  loadingSeries,
   fetchingPosterFor,
   onEditVideo,
   onDeleteVideo,
@@ -23,17 +21,55 @@ export default function ManageSection({
   onEditFranchise,
   onDeleteFranchise,
   onFetchPoster,
+  refreshSignal = 0,
 }) {
   const [franchisesOpen, setFranchisesOpen] = useState(true);
   const [seriesOpen, setSeriesOpen] = useState(true);
   const [videosOpen, setVideosOpen] = useState(true);
   const [franchiseSearch, setFranchiseSearch] = useState("");
-  const [seriesSearch, setSeriesSearch] = useState("");
-  const [videosSearch, setVideosSearch] = useState("");
   const [detectingQualities, setDetectingQualities] = useState(false);
   const [detectProgress, setDetectProgress] = useState(0);
   const [detectingGenres, setDetectingGenres] = useState(false);
   const [genreProgress, setGenreProgress] = useState(0);
+
+  // Two-step video search: match by episode title OR by series name (via series_id $in)
+  const buildVideoQuery = useCallback(async (q) => {
+    const seriesPage = await base44.entities.Series.filter(
+      { title: { $regex: q, $options: "i" } },
+      { limit: 100, fields: ["id"] }
+    );
+    const seriesIds = (seriesPage.items || []).map(s => s.id);
+    const conditions = [{ title: { $regex: q, $options: "i" } }];
+    if (seriesIds.length) conditions.push({ series_id: { $in: seriesIds } });
+    return { $or: conditions };
+  }, []);
+
+  const videosHook = usePaginatedSearch({ entity: "Video", sort: "-created_date", buildQuery: buildVideoQuery });
+  const seriesHook = usePaginatedSearch({ entity: "Series", sort: "title", searchFields: ["title"] });
+
+  // Merge Admin's seriesList (for forms) with hook items for video-row series-name lookups
+  const seriesMap = useMemo(() => {
+    const map = {};
+    for (const s of [...seriesList, ...seriesHook.items]) map[s.id] = s;
+    return map;
+  }, [seriesList, seriesHook.items]);
+
+  // Reload hooks when Admin signals a data change (edit save, poster fetch, franchise delete)
+  useEffect(() => {
+    if (refreshSignal > 0) {
+      videosHook.refresh();
+      seriesHook.refresh();
+    }
+  }, [refreshSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDeleteVideo = async (id) => {
+    await onDeleteVideo(id);
+    videosHook.removeItem(id);
+  };
+  const handleDeleteSeries = async (id) => {
+    await onDeleteSeries(id);
+    seriesHook.removeItem(id);
+  };
 
   const handleAutoDetectGenres = async (e) => {
     e.stopPropagation();
@@ -43,16 +79,14 @@ export default function ManageSection({
     let count = 0;
     let index = 0;
 
-    // Build a map of series_id -> genres for quick lookup
     const seriesGenreMap = {};
-    for (const s of seriesList) seriesGenreMap[s.id] = s.genres || [];
+    for (const s of seriesHook.items) seriesGenreMap[s.id] = s.genres || [];
 
-    const moviesNeeding = videos.filter((v) => v.content_type !== "episode" && !(v.genres?.length));
-    const seriesNeeding = seriesList.filter((s) => !(s.genres?.length));
-    const episodesNeeding = videos.filter((v) => v.content_type === "episode" && !(v.genres?.length));
+    const moviesNeeding = videosHook.items.filter((v) => v.content_type !== "episode" && !(v.genres?.length));
+    const seriesNeeding = seriesHook.items.filter((s) => !(s.genres?.length));
+    const episodesNeeding = videosHook.items.filter((v) => v.content_type === "episode" && !(v.genres?.length));
     const total = moviesNeeding.length + seriesNeeding.length + episodesNeeding.length;
 
-    // 1. AI-detect genres for series without any (must run first so episodes can inherit)
     for (const s of seriesNeeding) {
       index++;
       setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
@@ -68,7 +102,6 @@ export default function ManageSection({
       } catch (err) { console.error(err); }
     }
 
-    // 2. AI-detect genres for movies without any
     for (const v of moviesNeeding) {
       index++;
       setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
@@ -80,7 +113,6 @@ export default function ManageSection({
       } catch (err) { console.error(err); }
     }
 
-    // 3. Inherit genres for episodes without any (from parent series)
     for (const v of episodesNeeding) {
       index++;
       setGenreProgress(Math.round((index / Math.max(total, 1)) * 100));
@@ -99,39 +131,38 @@ export default function ManageSection({
 
   const handleAutoDetectQualities = async (e) => {
     e.stopPropagation();
-    if (!confirm("This will scan all videos and assign quality (HD, Full HD, etc.) based on titles/URLs. Continue?")) return;
-    
+    if (!confirm("This will scan all loaded videos and assign quality (HD, Full HD, etc.) based on titles/URLs. Continue?")) return;
+
     setDetectingQualities(true);
     setDetectProgress(0);
     let count = 0;
     let index = 0;
-    
-    for (const v of videos) {
+
+    for (const v of videosHook.items) {
       index++;
-      setDetectProgress(Math.round((index / videos.length) * 100));
-      
+      setDetectProgress(Math.round((index / videosHook.items.length) * 100));
+
       if (v.quality && v.quality !== "Unknown") continue;
 
       const text = `${v.title || ''} ${v.video_url || ''} ${v.description || ''}`.toLowerCase();
       let q = "Unknown";
-      
+
       if (text.includes("4k") || text.includes("2160") || text.includes("uhd")) q = "4K";
       else if (text.includes("1080") || text.includes("full hd") || text.includes("fhd")) q = "Full HD";
       else if (text.includes("720") || text.includes(" hd") || text.includes("hd ") || text.endsWith("hd")) q = "HD";
       else if (text.includes("cam") || text.includes("ts") || text.includes("telesync") || text.includes("hdcam")) q = "CAM";
-      
+
       if (q !== "Unknown") {
         try {
           await base44.entities.Video.update(v.id, { quality: q });
           count++;
-          // Small delay to prevent hitting API rate limits from the browser
           await new Promise(r => setTimeout(r, 200));
         } catch (err) {
           console.error(err);
         }
       }
     }
-    
+
     setDetectingQualities(false);
     alert(`Updated ${count} videos! Please refresh the page to see changes.`);
   };
@@ -139,19 +170,6 @@ export default function ManageSection({
   const filteredFranchises = franchises.filter((f) =>
     f.title?.toLowerCase().includes(franchiseSearch.toLowerCase())
   );
-
-  const filteredSeries = seriesList.filter((s) =>
-    s.title?.toLowerCase().includes(seriesSearch.toLowerCase())
-  );
-
-  const filteredVideos = videos.filter((v) => {
-    const q = videosSearch.toLowerCase();
-    const series = seriesList.find((s) => s.id === v.series_id);
-    return (
-      v.title?.toLowerCase().includes(q) ||
-      series?.title?.toLowerCase().includes(q)
-    );
-  });
 
   return (
     <div className="space-y-4">
@@ -228,7 +246,7 @@ export default function ManageSection({
           <div className="flex items-center gap-2 font-bold text-foreground">
             <Film className="w-4 h-4" />
             Series
-            <Badge variant="secondary" className="ml-1 text-xs">{seriesList.length}</Badge>
+            <Badge variant="secondary" className="ml-1 text-xs">{seriesHook.items.length}{seriesHook.hasMore ? "+" : ""}</Badge>
           </div>
           {seriesOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </button>
@@ -238,20 +256,20 @@ export default function ManageSection({
             <div className="relative">
               <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={seriesSearch}
-                onChange={(e) => setSeriesSearch(e.target.value)}
-                placeholder="Search series..."
+                value={seriesHook.search}
+                onChange={(e) => seriesHook.setSearch(e.target.value)}
+                placeholder="Search series by name..."
                 className="bg-secondary border-border pl-8 h-8 text-sm"
               />
             </div>
 
-            {loadingSeries ? (
+            {seriesHook.loading && seriesHook.items.length === 0 ? (
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            ) : filteredSeries.length === 0 ? (
+            ) : seriesHook.items.length === 0 ? (
               <p className="text-muted-foreground text-sm">No series found.</p>
             ) : (
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {filteredSeries.map((s) => (
+                {seriesHook.items.map((s) => (
                   <div key={s.id} className="flex items-center justify-between bg-secondary rounded-lg p-3">
                     <div className="flex items-center gap-3">
                       {s.cover_image && (
@@ -270,12 +288,18 @@ export default function ManageSection({
                       <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => onEditSeries(s)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDeleteSeries(s.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteSeries(s.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 ))}
+                {seriesHook.hasMore && (
+                  <Button variant="outline" size="sm" className="w-full" onClick={seriesHook.loadMore} disabled={seriesHook.loading}>
+                    {seriesHook.loading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                    Load More
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -291,8 +315,8 @@ export default function ManageSection({
           <div className="flex items-center gap-2 font-bold text-foreground">
             <Video className="w-4 h-4" />
             Videos
-            <Badge variant="secondary" className="ml-1 text-xs">{videos.length}</Badge>
-            
+            <Badge variant="secondary" className="ml-1 text-xs">{videosHook.items.length}{videosHook.hasMore ? "+" : ""}</Badge>
+
             {detectingQualities && (
               <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
                 Scanning... {detectProgress}%
@@ -334,21 +358,21 @@ export default function ManageSection({
             <div className="relative">
               <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={videosSearch}
-                onChange={(e) => setVideosSearch(e.target.value)}
-                placeholder="Search videos or series..."
+                value={videosHook.search}
+                onChange={(e) => videosHook.setSearch(e.target.value)}
+                placeholder="Search by episode or series name..."
                 className="bg-secondary border-border pl-8 h-8 text-sm"
               />
             </div>
 
-            {loadingVideos ? (
+            {videosHook.loading && videosHook.items.length === 0 ? (
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            ) : filteredVideos.length === 0 ? (
+            ) : videosHook.items.length === 0 ? (
               <p className="text-muted-foreground text-sm">No videos found.</p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                {filteredVideos.map((v) => {
-                  const series = seriesList.find((s) => s.id === v.series_id);
+                {videosHook.items.map((v) => {
+                  const series = seriesMap[v.series_id];
                   return (
                     <div key={v.id} className="flex items-center justify-between bg-secondary rounded-lg p-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -389,13 +413,19 @@ export default function ManageSection({
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => onEditVideo(v)}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDeleteVideo(v.id)}>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteVideo(v.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   );
                 })}
+                {videosHook.hasMore && (
+                  <Button variant="outline" size="sm" className="w-full" onClick={videosHook.loadMore} disabled={videosHook.loading}>
+                    {videosHook.loading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                    Load More
+                  </Button>
+                )}
               </div>
             )}
           </div>

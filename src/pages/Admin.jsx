@@ -29,7 +29,7 @@ import RequestsManager from "@/components/admin/RequestsManager";
 import EmailManager from "@/components/admin/EmailManager";
 import DownloadsManager from "@/components/admin/DownloadsManager";
 import { Toaster } from "react-hot-toast";
-import { Link as RouterLink } from "react-router-dom";
+
 
 export default function Admin() {
   const [user, setUser] = useState(null);
@@ -39,6 +39,7 @@ export default function Admin() {
   const [editingFranchise, setEditingFranchise] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [fetchingPosterFor, setFetchingPosterFor] = useState(null);
+  const [refreshSignal, setRefreshSignal] = useState(0);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -46,20 +47,30 @@ export default function Admin() {
     base44.functions.invoke("checkAdminStatus", {}).then(r => setIsAdmin(r.data?.isAdmin === true)).catch(() => setIsAdmin(false));
   }, []);
 
-  const { data: videos = [], isLoading: loadingVideos } = useQuery({
-    queryKey: ["videos"],
+  const { data: seriesList = [] } = useQuery({
+    queryKey: ["series"],
     queryFn: async () => {
-      const page = await base44.entities.Video.filter({}, { sort: "-created_date", limit: 200 });
+      const page = await base44.entities.Series.filter({}, { sort: "-title", limit: 500 });
       return page.items;
     },
   });
 
-  const { data: seriesList = [], isLoading: loadingSeries } = useQuery({
-    queryKey: ["series"],
+  const { data: videos = [] } = useQuery({
+    queryKey: ["videos"],
     queryFn: async () => {
-      const page = await base44.entities.Series.filter({}, { sort: "-title", limit: 200 });
+      const page = await base44.entities.Video.filter({}, { sort: "-created_date", limit: 500 });
       return page.items;
     },
+  });
+
+  const { data: videoCount = 0 } = useQuery({
+    queryKey: ["videoCount"],
+    queryFn: () => base44.entities.Video.count({}),
+  });
+
+  const { data: seriesCount = 0 } = useQuery({
+    queryKey: ["seriesCount"],
+    queryFn: () => base44.entities.Series.count({}),
   });
 
   const { data: franchises = [] } = useQuery({
@@ -99,19 +110,22 @@ export default function Admin() {
   };
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["videos"] });
     queryClient.invalidateQueries({ queryKey: ["series"] });
     queryClient.invalidateQueries({ queryKey: ["franchises"] });
+    queryClient.invalidateQueries({ queryKey: ["videoCount"] });
+    queryClient.invalidateQueries({ queryKey: ["seriesCount"] });
+    setRefreshSignal(s => s + 1);
   };
 
   const deleteVideo = async (id) => {
     await base44.entities.Video.delete(id);
-    refresh();
+    queryClient.invalidateQueries({ queryKey: ["videoCount"] });
   };
 
   const deleteSeries = async (id) => {
     await base44.entities.Series.delete(id);
-    refresh();
+    queryClient.invalidateQueries({ queryKey: ["seriesCount"] });
+    queryClient.invalidateQueries({ queryKey: ["series"] });
   };
 
   const deleteFranchise = async (id) => {
@@ -169,10 +183,10 @@ export default function Admin() {
           </div>
           <div className="flex gap-3 flex-wrap">
             <Badge variant="secondary" className="gap-1.5">
-              <Film className="w-3 h-3" />{seriesList.length} Series
+              <Film className="w-3 h-3" />{seriesCount} Series
             </Badge>
             <Badge variant="secondary" className="gap-1.5">
-              <Video className="w-3 h-3" />{videos.length} Videos
+              <Video className="w-3 h-3" />{videoCount} Videos
             </Badge>
             {/* Adult Admin link hidden */}
           </div>
@@ -335,13 +349,11 @@ export default function Admin() {
 
           <TabsContent value="manage">
             <ManageSection
-            videos={videos}
             seriesList={seriesList}
             franchises={franchises}
             categories={categories}
-            loadingVideos={loadingVideos}
-            loadingSeries={loadingSeries}
             fetchingPosterFor={fetchingPosterFor}
+            refreshSignal={refreshSignal}
             onEditVideo={setEditingVideo}
             onDeleteVideo={deleteVideo}
             onEditSeries={setEditingSeries}
