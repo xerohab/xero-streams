@@ -1,8 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import { getCredentials, signedFetch, PARTNER_ID } from "../../shared/perkSphereClient.ts";
 
-// Account disconnection: notifies the Perk Sphere Linux bridge (trusted unlink)
-// and updates the local connection record so the UI reflects the result.
+// Account disconnection: updates the local connection record. Server-side
+// revocation requires a Perk Sphere service-side unlink function (dependency).
 
 export default async function (req) {
   try {
@@ -36,31 +35,26 @@ export default async function (req) {
       );
     }
 
-    // Notify Perk Sphere of the unlink (best-effort; local state is authoritative
-    // for the UI). Endpoint assumed pending confirmation — see shared client.
-    const creds = getCredentials();
-    if (creds) {
-      try {
-        await signedFetch("/v1/partner-links", {
-          method: "DELETE",
-          body: JSON.stringify({
-            connection_id: connection.perksphere_connection_id,
-            partner_id: PARTNER_ID,
-            partner_user_id: user.id,
-          }),
-        });
-      } catch (e) {
-        // Proceed with the local unlink so the UI reflects the user's intent.
-        console.warn("Perk Sphere unlink notification failed:", e.message);
-      }
-    }
+    // Linux unlink endpoint: POST /partners/account-link/unlink (service auth)
+    // Body: { "partner_uuid": "...", "user_reference": "..." }
+    // This requires Perk Sphere service authentication, which XeroStreams does
+    // not hold. Server-side revocation must be routed through an authenticated
+    // Perk Sphere service function — this is a dependency (see completion report).
+    // Never forge Perk Sphere service authentication.
+    // Local state is updated so the UI reflects the user's intent; the local
+    // disconnect is NOT treated as complete server-side revocation.
 
     await base44.entities.PerkSphereConnection.update(connection.id, {
       status: "unlinked",
       unlinked_at: new Date().toISOString(),
     });
 
-    return Response.json({ ok: true, status: "unlinked" });
+    return Response.json({
+      ok: true,
+      status: "unlinked",
+      warning:
+        "Local connection disconnected. Server-side revocation requires a Perk Sphere service-side unlink function (POST /partners/account-link/unlink with service auth). This is a pending dependency.",
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -88,13 +88,12 @@ export default async function (req) {
       );
     }
 
-    // Confirm with the Perk Sphere Linux bridge.
+    // Confirm with the Perk Sphere Linux bridge using the verified contract.
+    // POST /v1/partner-links/confirm (partner HMAC auth)
+    // Body: { "challenge": "...", "partner_account_reference": "..." }
     const confirmPayload = {
-      connection_code: code,
-      partner_id: PARTNER_ID,
-      partner_user_id: user.id,
-      partner_user_email: user.email,
-      partner_user_display_name: user.full_name || user.email,
+      challenge: code,
+      partner_account_reference: user.id,
     };
 
     let psRes;

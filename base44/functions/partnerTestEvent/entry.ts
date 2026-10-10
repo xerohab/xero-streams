@@ -1,14 +1,13 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import {
-  getCredentials,
-  submitPartnerEvent,
-  logIntegration,
-  pageItems,
-} from "../../shared/perkSphereClient.ts";
+import { getCredentials, pageItems } from "../../shared/perkSphereClient.ts";
 
-// Admin-only test event submission. Submits a non-reward TEST_EVENT to verify
-// signed event delivery to the Perk Sphere Linux API. Does not generate real
-// rewards. The admin must have their own linked Perk Sphere connection.
+// Admin-only test event submission.
+//
+// The Linux partner configuration permits exactly three event types:
+// registration_completed, stream_watch_progress, stream_ended.
+// There is no test_event type in the Linux contract. This function reports
+// that test events are not supported and directs the admin to the proof-of-
+// possession verification and admin status dashboard for integration verification.
 
 export default async function (req) {
   try {
@@ -18,59 +17,12 @@ export default async function (req) {
     if (user.role !== "admin")
       return Response.json({ error: "Forbidden" }, { status: 403 });
 
-    const creds = getCredentials();
-    if (!creds) {
-      return Response.json(
-        { error: "Perk Sphere is not configured.", code: "NOT_CONFIGURED" },
-        { status: 503 }
-      );
-    }
-
-    // Admin must have a linked connection to test event delivery.
-    const connections = pageItems(
-      await base44.entities.PerkSphereConnection.filter(
-        { user_id: user.id, status: "linked" },
-        { limit: 1 }
-      )
-    );
-    if (connections.length === 0) {
-      return Response.json(
-        {
-          error:
-            "Connect your own Perk Sphere account first to test event delivery.",
-          code: "NOT_LINKED",
-        },
-        { status: 409 }
-      );
-    }
-    const connection = connections[0];
-
-    const eventId = `ps_test_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
-    const result = await submitPartnerEvent(connection, {
-      event_id: eventId,
-      activity: "TEST_EVENT",
-      timestamp: new Date().toISOString(),
-      evidence: { test: true, initiated_by: user.id },
-    });
-
-    await logIntegration(base44, {
-      event_type: "test_event",
-      status: result.ok ? "success" : "error",
-      error_code: result.ok ? null : result.data?.error?.code || "unknown",
-      http_status: result.status,
-      user_id: user.id,
-      activity: "TEST_EVENT",
-      event_id: eventId,
-    });
-
     return Response.json({
-      ok: result.ok,
-      event_id: eventId,
-      ps_status: result.status,
-      ps_response: result.data,
-      message: result.ok
-        ? "Test event accepted by Perk Sphere. No rewards are generated."
-        : "Perk Sphere rejected the test event. The partner may not be active yet.",
+      ok: false,
+      supported: false,
+      code: "TEST_EVENT_NOT_SUPPORTED",
+      message:
+        "The Linux partner contract does not include a test event type. Permitted types: registration_completed, stream_watch_progress, stream_ended. Use the proof-of-possession verification and admin status dashboard to verify integration health.",
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

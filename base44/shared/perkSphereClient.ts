@@ -246,22 +246,22 @@ export async function performProofOfPossession(keyId, hmacSecret) {
 }
 
 // Submit a partner event to the Linux API using the verified signing contract.
-// Used by partnerSubmitEvent, partnerTrackViewing, and partnerTestEvent.
+// Linux validator allows ONLY these top-level fields:
+//   event_type, partner_event_id, partner_account_reference, occurred_at,
+//   task_reference, resource_reference, evidence
 // Perk Sphere is the authoritative rewards platform — XeroStreams never sets
 // reward_eligible, points, or xp. All signing is server-side.
 export async function submitPartnerEvent(connection, event) {
   const payload = {
-    event_id: event.event_id,
-    partner_id: PARTNER_ID,
-    partner_user_id: connection.user_id,
-    perksphere_connection_id: connection.perksphere_connection_id,
-    activity: event.activity,
-    reward_eligible: false,
-    points: 0,
-    xp: 0,
-    timestamp: event.timestamp,
+    event_type: event.event_type,
+    partner_event_id: event.partner_event_id,
+    partner_account_reference: connection.user_id,
+    occurred_at: event.occurred_at,
     evidence: event.evidence || {},
   };
+  if (event.task_reference) payload.task_reference = event.task_reference;
+  if (event.resource_reference) payload.resource_reference = event.resource_reference;
+
   const res = await signedFetch("/v1/partners/events", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -273,6 +273,15 @@ export async function submitPartnerEvent(connection, event) {
     data = {};
   }
   return { ok: res.ok, status: res.status, data };
+}
+
+// Check if a video URL is YouTube content (ineligible for rewards).
+// YouTube content is suppressed from event submission entirely — no points:0
+// or reward_eligible:false is sent to Linux.
+export function isYouTubeContent(url) {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.includes("youtube.com") || lower.includes("youtu.be");
 }
 
 // Best-effort integration logging for admin diagnostics. Never throws.

@@ -6,16 +6,19 @@ import {
   pageItems,
 } from "../../shared/perkSphereClient.ts";
 
-// ACCOUNT_REGISTERED event handler — called by the signup workflow when a
+// registration_completed event handler — called by the signup workflow when a
 // genuinely new XeroStreams account is created. Uses the service role for
 // entity access (no user session in workflow context).
 //
+// Linux evidence contract for registration_completed:
+//   { "registration_reference": "unique_registration_reference" }
+//
 // Requirements:
 // - Uses the actual account creation event (workflow fires on signup only).
-// - Idempotent event ID (ps_reg_<user_id>) prevents duplicate registration rewards.
+// - Idempotent partner_event_id (ps_reg_<user_id>) prevents duplicate rewards.
 // - Only submits if the user has a linked Perk Sphere connection.
-// - If registration occurs before linking, the event is logged as pending —
-//   the Linux backend's reconciliation rules handle retrospective rewards.
+// - If registration occurs before linking, preserves pending state WITHOUT
+//   claiming a reward has been issued or assuming retrospective reconciliation.
 // - Never awards registration rewards for existing accounts.
 
 export default async function (req) {
@@ -35,7 +38,6 @@ export default async function (req) {
 
     const body = await req.json().catch(() => ({}));
     const userId = String(body.user_id || "").trim();
-    const email = String(body.email || "").trim();
     const authMethod = String(body.auth_method || "").trim();
 
     if (!userId) {
@@ -52,7 +54,7 @@ export default async function (req) {
         status: "pending",
         error_code: "NOT_CONFIGURED",
         user_id: userId,
-        activity: "ACCOUNT_REGISTERED",
+        activity: "registration_completed",
       });
       return Response.json({
         ok: false,
@@ -62,8 +64,10 @@ export default async function (req) {
       });
     }
 
-    // Idempotent event ID — prevents duplicate registration rewards on retry.
-    const eventId = `ps_reg_${userId}`;
+    // Idempotent partner_event_id — prevents duplicate registration rewards on retry.
+    const partnerEventId = `ps_reg_${userId}`;
+    const registrationReference = `xero_reg_${userId}`;
+    const occurredAt = new Date().toISOString();
 
     // Check if the user has a linked Perk Sphere connection (service role).
     const connections = pageItems(
@@ -74,38 +78,37 @@ export default async function (req) {
     );
 
     if (connections.length === 0) {
-      // Registration occurred before account linking — log as pending.
-      // The Linux backend's reconciliation rules handle this when the user
-      // later links their account.
+      // Registration occurred before account linking — preserve pending state.
+      // Do NOT claim a reward has been issued.
+      // Do NOT assume Linux supports retrospective reward reconciliation.
       await logIntegration(base44, {
         event_type: "registration",
         status: "pending",
         error_code: "NOT_LINKED",
         user_id: userId,
-        activity: "ACCOUNT_REGISTERED",
-        event_id: eventId,
+        activity: "registration_completed",
+        event_id: partnerEventId,
       });
       return Response.json({
         ok: true,
         submitted: false,
         reason: "NOT_LINKED",
         message:
-          "User is not yet linked to Perk Sphere. Registration event logged as pending — Linux reconciliation will handle it when the user links their account.",
+          "User is not yet linked to Perk Sphere. Registration event logged as pending. No reward has been issued. Retrospective reward reconciliation has not been verified and is not assumed.",
       });
     }
 
     const connection = connections[0];
 
-    // Submit the ACCOUNT_REGISTERED event.
+    // Submit the registration_completed event.
     let result;
     try {
       result = await submitPartnerEvent(connection, {
-        event_id: eventId,
-        activity: "ACCOUNT_REGISTERED",
-        timestamp: new Date().toISOString(),
+        event_type: "registration_completed",
+        partner_event_id: partnerEventId,
+        occurred_at: occurredAt,
         evidence: {
-          auth_method: authMethod,
-          registered_at: new Date().toISOString(),
+          registration_reference: registrationReference,
         },
       });
     } catch (e) {
@@ -115,8 +118,8 @@ export default async function (req) {
         error_code: "PS_UNREACHABLE",
         details: e.message,
         user_id: userId,
-        activity: "ACCOUNT_REGISTERED",
-        event_id: eventId,
+        activity: "registration_completed",
+        event_id: partnerEventId,
       });
       return Response.json(
         { error: "Unable to reach Perk Sphere.", code: "PS_UNREACHABLE" },
@@ -130,14 +133,14 @@ export default async function (req) {
       error_code: result.ok ? null : result.data?.error?.code || "unknown",
       http_status: result.status,
       user_id: userId,
-      activity: "ACCOUNT_REGISTERED",
-      event_id: eventId,
+      activity: "registration_completed",
+      event_id: partnerEventId,
     });
 
     return Response.json({
       ok: result.ok,
       submitted: result.ok,
-      event_id: eventId,
+      partner_event_id: partnerEventId,
       ps_status: result.status,
       message: result.ok
         ? "Registration event submitted to Perk Sphere."

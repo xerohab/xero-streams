@@ -236,45 +236,16 @@ export default function PerkSphereAdminSection() {
           <h3 className="text-sm font-semibold">Test Event Submission</h3>
         </div>
         <p className="text-xs text-muted-foreground mb-3">
-          Submit a non-reward TEST_EVENT to verify signed event delivery. You
-          must have your own Perk Sphere account linked first.
+          The Linux partner contract does not include a test event type.
+          Permitted types: <code className="text-foreground">registration_completed</code>,{" "}
+          <code className="text-foreground">stream_watch_progress</code>,{" "}
+          <code className="text-foreground">stream_ended</code>. Use the
+          proof-of-possession verification above to confirm integration health.
         </p>
-        <Button
-          onClick={handleTestEvent}
-          disabled={testing}
-          size="sm"
-          className="gap-2"
-        >
-          {testing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-          Submit Test Event
-        </Button>
         {testResult && (
-          <div
-            className={`mt-3 flex items-start gap-2 rounded-md border p-3 text-xs ${
-              testResult.ok
-                ? "border-green-500/40 bg-green-500/10"
-                : "border-destructive/40 bg-destructive/10"
-            }`}
-          >
-            {testResult.ok ? (
-              <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-            ) : (
-              <ShieldAlert className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-            )}
-            <div>
-              <p className={testResult.ok ? "text-green-400" : "text-destructive"}>
-                {testResult.message}
-              </p>
-              {testResult.ps_status && (
-                <p className="text-muted-foreground mt-1">
-                  HTTP {testResult.ps_status}
-                </p>
-              )}
-            </div>
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-border/40 bg-secondary/30 p-3 text-xs">
+            <AlertCircle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+            <p className="text-muted-foreground">{testResult.message}</p>
           </div>
         )}
       </div>

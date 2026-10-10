@@ -4,21 +4,19 @@ import {
   submitPartnerEvent,
   logIntegration,
   pageItems,
-  PARTNER_ID,
 } from "../../shared/perkSphereClient.ts";
 
 // Signed partner event submission using the verified Linux signing contract.
-// Supports ACCOUNT_REGISTERED, STREAM_VIEW_PROGRESS, STREAM_ENDED, and admin
-// TEST_EVENT. All signing is server-side. Perk Sphere is the authoritative
-// rewards platform — XeroStreams never sets reward_eligible, points, or xp.
-// Event IDs are idempotent for safe retries. A successful HTTP response does
-// NOT confirm Points/XP have been awarded.
+// Linux permits exactly: registration_completed, stream_watch_progress, stream_ended.
+// Payload fields: event_type, partner_event_id, partner_account_reference,
+// occurred_at, task_reference (optional), resource_reference (optional), evidence.
+// Perk Sphere is the authoritative rewards platform — XeroStreams never sets
+// reward_eligible, points, or xp. partner_event_id is idempotent for safe retries.
 
-const SUPPORTED_ACTIVITIES = [
-  "ACCOUNT_REGISTERED",
-  "STREAM_VIEW_PROGRESS",
-  "STREAM_ENDED",
-  "TEST_EVENT",
+const SUPPORTED_EVENT_TYPES = [
+  "registration_completed",
+  "stream_watch_progress",
+  "stream_ended",
 ];
 
 export default async function (req) {
@@ -36,21 +34,21 @@ export default async function (req) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const activity = String(body.activity || "").trim();
-    if (!SUPPORTED_ACTIVITIES.includes(activity)) {
+    const eventType = String(body.event_type || "").trim();
+    if (!SUPPORTED_EVENT_TYPES.includes(eventType)) {
       return Response.json(
         {
-          error: "Unsupported activity type.",
-          code: "INVALID_ACTIVITY",
-          supported: SUPPORTED_ACTIVITIES,
+          error: "Unsupported event type.",
+          code: "INVALID_EVENT_TYPE",
+          supported: SUPPORTED_EVENT_TYPES,
         },
         { status: 400 }
       );
     }
 
     const evidence = body.evidence || {};
-    const eventId = String(body.event_id || "").trim() || crypto.randomUUID();
-    const timestamp = body.timestamp || new Date().toISOString();
+    const partnerEventId = String(body.partner_event_id || "").trim() || crypto.randomUUID();
+    const occurredAt = body.occurred_at || new Date().toISOString();
 
     // The user must have an active Perk Sphere connection.
     const connections = pageItems(
@@ -71,10 +69,12 @@ export default async function (req) {
     let result;
     try {
       result = await submitPartnerEvent(connection, {
-        event_id: eventId,
-        activity,
+        event_type: eventType,
+        partner_event_id: partnerEventId,
+        occurred_at: occurredAt,
         evidence,
-        timestamp,
+        task_reference: body.task_reference || null,
+        resource_reference: body.resource_reference || null,
       });
     } catch (e) {
       await logIntegration(base44, {
@@ -83,8 +83,8 @@ export default async function (req) {
         error_code: "PS_UNREACHABLE",
         details: e.message,
         user_id: user.id,
-        activity,
-        event_id: eventId,
+        activity: eventType,
+        event_id: partnerEventId,
       });
       return Response.json(
         { error: "Unable to reach Perk Sphere.", code: "PS_UNREACHABLE", detail: e.message },
@@ -99,8 +99,8 @@ export default async function (req) {
       http_status: result.status,
       details: result.ok ? "Event accepted" : JSON.stringify(result.data).substring(0, 200),
       user_id: user.id,
-      activity,
-      event_id: eventId,
+      activity: eventType,
+      event_id: partnerEventId,
     });
 
     if (!result.ok) {
@@ -110,18 +110,16 @@ export default async function (req) {
           code: "PS_REJECTED",
           detail: result.data,
           ps_status: result.status,
-          event_id: eventId,
+          partner_event_id: partnerEventId,
         },
         { status: 502 }
       );
     }
 
-    // A successful HTTP response does NOT confirm Points/XP have been awarded.
     return Response.json({
       ok: true,
-      event_id: eventId,
+      partner_event_id: partnerEventId,
       submitted: true,
-      rewards_pending: true,
       message:
         "Event accepted by Perk Sphere. Rewards, if any, are determined by Perk Sphere's reward rules.",
     });

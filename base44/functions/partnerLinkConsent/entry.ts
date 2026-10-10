@@ -35,7 +35,7 @@ export default async function (req) {
     const code = String(body.code || "").trim();
     if (!code || code.length < 6 || code.length > 128) {
       return Response.json(
-        { error: "Please enter a valid Perk Sphere connection code.", code: "INVALID_CODE" },
+        { error: "Please enter a valid Perk Sphere challenge code.", code: "INVALID_CODE" },
         { status: 400 }
       );
     }
@@ -75,7 +75,7 @@ export default async function (req) {
         PARTNER_NAME +
         " account (" +
         user.email +
-        ") will be linked to your Perk Sphere account. Eligible activity may be shared with Perk Sphere to earn Points and Loyalty XP. You can disconnect at any time.",
+        ") will be linked to your Perk Sphere account. Eligible activity may be shared with Perk Sphere. You can disconnect at any time.",
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

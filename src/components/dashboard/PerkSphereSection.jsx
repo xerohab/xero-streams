@@ -90,7 +90,7 @@ export default function PerkSphereSection({ user }) {
       await base44.functions.invoke("partnerUnlink", {
         connection_id: connection.id,
       });
-      setInfo("Your Perk Sphere account has been disconnected.");
+      setInfo("Your Perk Sphere account has been disconnected locally. Server-side revocation is pending — a Perk Sphere service-side unlink function is required.");
       refetch();
     } catch (e) {
       setError(e.response?.data?.error || "Disconnection failed.");
@@ -186,11 +186,11 @@ export default function PerkSphereSection({ user }) {
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Generate a connection code at perksphere.org, then enter it below to
+              Generate a challenge code at perksphere.org, then enter it below to
               link your account.
             </p>
             <Input
-              placeholder="Enter Perk Sphere connection code"
+              placeholder="Enter Perk Sphere challenge code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               disabled={busy}

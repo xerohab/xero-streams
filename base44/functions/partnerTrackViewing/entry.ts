@@ -2,6 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import {
   getCredentials,
   submitPartnerEvent,
+  isYouTubeContent,
   logIntegration,
   pageItems,
 } from "../../shared/perkSphereClient.ts";
@@ -9,19 +10,27 @@ import {
 // Server-side viewing evidence tracking and signed event submission.
 //
 // Tracks actual accumulated watch time (not browser-reported position alone),
-// detects seeking/skipping/pausing/rewinding, and submits STREAM_VIEW_PROGRESS
-// at 5-minute milestones and STREAM_ENDED on completion. Only submits when the
-// user has a linked Perk Sphere connection. All signing is server-side.
+// detects seeking/skipping/pausing/rewinding, and submits stream_watch_progress
+// at 5-minute milestones. Only submits when the user has a linked Perk Sphere
+// connection and the content is not YouTube (YouTube content is suppressed
+// entirely — no points:0 or reward_eligible:false is sent to Linux).
+//
+// stream_ended is NOT submitted here — that Linux event represents the end of
+// the stream itself (content going offline), not an individual viewer finishing
+// playback. XeroStreams is a VOD platform; stream_ended would only apply to an
+// admin content-removal action, which is not part of this tracking flow.
 //
 // Anti-abuse measures:
 // - Position jumps (seek/skip) are not counted as watch time.
 // - Paused periods are not counted.
 // - Rewinds do not accumulate watch time.
-// - Milestone events use deterministic idempotent IDs for deduplication.
+// - Milestone events use deterministic idempotent partner_event_id for dedup.
 // - Multiple tabs are isolated by client-generated session_id.
+// - eligible_seconds is a safe integer between 0 and 86400.
 
 const PROGRESS_INTERVAL_SECONDS = 300; // 5-minute milestones
-const SEEK_TOLERANCE_SECONDS = 5; // buffer for seeking detection
+const SEEK_TOLERANCE_SECONDS = 5;
+const MAX_ELIGIBLE_SECONDS = 86400;
 
 export default async function (req) {
   try {
@@ -55,6 +64,16 @@ export default async function (req) {
         { error: "Video not found.", code: "VIDEO_NOT_FOUND" },
         { status: 404 }
       );
+    }
+
+    // Suppress YouTube content entirely — do not submit any event to Linux.
+    if (isYouTubeContent(video.video_url)) {
+      return Response.json({
+        ok: true,
+        suppressed: true,
+        reason: "YOUTUBE_CONTENT",
+        message: "YouTube content is not eligible for Perk Sphere rewards. No event submitted.",
+      });
     }
 
     // Find or create the viewing session.
@@ -91,13 +110,10 @@ export default async function (req) {
       const positionDelta = currentTime - (session.last_position || 0);
 
       if (positionDelta < 0) {
-        // Rewound — don't count.
         delta = 0;
       } else if (positionDelta > elapsedReal + SEEK_TOLERANCE_SECONDS) {
-        // Seeked/skipped forward — don't count the jump.
         delta = 0;
       } else {
-        // Normal playback — count actual time elapsed (capped to real time).
         delta = Math.min(positionDelta, elapsedReal);
         if (delta < 0) delta = 0;
       }
@@ -116,7 +132,7 @@ export default async function (req) {
     );
     const connection = connections[0] || null;
 
-    // Submit STREAM_VIEW_PROGRESS at milestones (only if connected).
+    // Submit stream_watch_progress at milestones (only if connected).
     if (connection && !isPaused) {
       const lastMilestone = Math.floor(
         (session.accumulated_watch_seconds || 0) / PROGRESS_INTERVAL_SECONDS
@@ -128,24 +144,21 @@ export default async function (req) {
       for (let m = lastMilestone + 1; m <= currentMilestone; m++) {
         const milestoneSeconds = m * PROGRESS_INTERVAL_SECONDS;
         if (!newMilestones.includes(milestoneSeconds)) {
-          const eventId = `ps_evt_${sessionId}_${milestoneSeconds}`;
+          const partnerEventId = `ps_evt_${sessionId}_${milestoneSeconds}`;
+          // eligible_seconds: safe integer between 0 and 86400.
+          const eligibleSeconds = Math.min(
+            PROGRESS_INTERVAL_SECONDS,
+            MAX_ELIGIBLE_SECONDS
+          );
           try {
             const result = await submitPartnerEvent(connection, {
-              event_id: eventId,
-              activity: "STREAM_VIEW_PROGRESS",
-              timestamp: nowIso,
+              event_type: "stream_watch_progress",
+              partner_event_id: partnerEventId,
+              occurred_at: nowIso,
               evidence: {
-                video_id: videoId,
-                video_title: video.title,
-                content_type: video.content_type,
-                series_id: video.series_id || null,
-                accumulated_watch_seconds: milestoneSeconds,
-                video_duration_seconds: duration || 0,
-                progress_percent:
-                  duration > 0
-                    ? Math.round((milestoneSeconds / duration) * 1000) / 10
-                    : 0,
-                session_id: sessionId,
+                stream_id: videoId,
+                viewer_session_id: sessionId,
+                eligible_seconds: eligibleSeconds,
               },
             });
             await logIntegration(base44, {
@@ -156,13 +169,13 @@ export default async function (req) {
                 : result.data?.error?.code || "unknown",
               http_status: result.status,
               user_id: user.id,
-              activity: "STREAM_VIEW_PROGRESS",
-              event_id: eventId,
+              activity: "stream_watch_progress",
+              event_id: partnerEventId,
             });
             if (result.ok) {
               newMilestones.push(milestoneSeconds);
               eventsSubmitted.push({
-                activity: "STREAM_VIEW_PROGRESS",
+                event_type: "stream_watch_progress",
                 milestone: milestoneSeconds,
               });
             }
@@ -173,62 +186,17 @@ export default async function (req) {
               error_code: "PS_UNREACHABLE",
               details: e.message,
               user_id: user.id,
-              activity: "STREAM_VIEW_PROGRESS",
-              event_id: eventId,
+              activity: "stream_watch_progress",
+              event_id: partnerEventId,
             });
           }
         }
       }
     }
 
-    // Submit STREAM_ENDED on completion (only if connected).
-    let endedSubmitted = session.ended_submitted || false;
-    if (connection && isEnded && !endedSubmitted) {
-      const eventId = `ps_evt_${sessionId}_ended`;
-      try {
-        const result = await submitPartnerEvent(connection, {
-          event_id: eventId,
-          activity: "STREAM_ENDED",
-          timestamp: nowIso,
-          evidence: {
-            video_id: videoId,
-            video_title: video.title,
-            content_type: video.content_type,
-            series_id: video.series_id || null,
-            accumulated_watch_seconds: newAccumulated,
-            video_duration_seconds: duration || 0,
-            completion_percent:
-              duration > 0
-                ? Math.round((newAccumulated / duration) * 1000) / 10
-                : 0,
-            session_id: sessionId,
-          },
-        });
-        await logIntegration(base44, {
-          event_type: "event_submit",
-          status: result.ok ? "success" : "error",
-          error_code: result.ok ? null : result.data?.error?.code || "unknown",
-          http_status: result.status,
-          user_id: user.id,
-          activity: "STREAM_ENDED",
-          event_id: eventId,
-        });
-        if (result.ok) {
-          endedSubmitted = true;
-          eventsSubmitted.push({ activity: "STREAM_ENDED" });
-        }
-      } catch (e) {
-        await logIntegration(base44, {
-          event_type: "event_submit",
-          status: "error",
-          error_code: "PS_UNREACHABLE",
-          details: e.message,
-          user_id: user.id,
-          activity: "STREAM_ENDED",
-          event_id: eventId,
-        });
-      }
-    }
+    // stream_ended is NOT submitted here — it represents the end of the stream
+    // itself (content going offline), not an individual viewer finishing playback.
+    // XeroStreams is a VOD platform; stream_ended is an admin content-removal action.
 
     // Update the session.
     await base44.entities.ViewingSession.update(session.id, {
@@ -238,7 +206,6 @@ export default async function (req) {
       duration: duration || session.duration || 0,
       is_paused: isPaused,
       progress_milestones: newMilestones,
-      ended_submitted: endedSubmitted,
       status: isEnded ? "ended" : "active",
     });
 
