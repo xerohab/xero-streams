@@ -1,0 +1,41 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "account_registration",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "submit_registration": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "partnerRegistrationEvent",
+            "args": {
+              "user_id": "${ .trigger.user_id }",
+              "email": "${ .trigger.email }",
+              "auth_method": "${ .trigger.auth_method }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Submit registration event",
+            "description": "ACCOUNT_REGISTERED to Perk Sphere"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "app_user_auth",
+      "events": [
+        "signup"
+      ]
+    }
+  },
+  "name": "Account Registration",
+  "description": "Submits ACCOUNT_REGISTERED event to Perk Sphere when a new user signs up"
+}

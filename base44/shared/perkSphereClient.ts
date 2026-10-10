@@ -245,6 +245,54 @@ export async function performProofOfPossession(keyId, hmacSecret) {
   };
 }
 
+// Submit a partner event to the Linux API using the verified signing contract.
+// Used by partnerSubmitEvent, partnerTrackViewing, and partnerTestEvent.
+// Perk Sphere is the authoritative rewards platform — XeroStreams never sets
+// reward_eligible, points, or xp. All signing is server-side.
+export async function submitPartnerEvent(connection, event) {
+  const payload = {
+    event_id: event.event_id,
+    partner_id: PARTNER_ID,
+    partner_user_id: connection.user_id,
+    perksphere_connection_id: connection.perksphere_connection_id,
+    activity: event.activity,
+    reward_eligible: false,
+    points: 0,
+    xp: 0,
+    timestamp: event.timestamp,
+    evidence: event.evidence || {},
+  };
+  const res = await signedFetch("/v1/partners/events", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = {};
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
+// Best-effort integration logging for admin diagnostics. Never throws.
+export async function logIntegration(base44, entry) {
+  try {
+    await base44.entities.IntegrationLog.create({
+      event_type: entry.event_type,
+      status: entry.status || "success",
+      error_code: entry.error_code || null,
+      http_status: entry.http_status || null,
+      details: entry.details || null,
+      user_id: entry.user_id || null,
+      activity: entry.activity || null,
+      event_id: entry.event_id || null,
+    });
+  } catch (e) {
+    // Logging is best-effort — never fail the request
+  }
+}
+
 // Normalise a filter() result to an items array (array or page-object form).
 export function pageItems(res) {
   if (!res) return [];

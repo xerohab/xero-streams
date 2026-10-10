@@ -1,0 +1,94 @@
+{
+  "name": "ViewingSession",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user watching"
+    },
+    "video_id": {
+      "type": "string",
+      "description": "ID of the video being watched"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Client-generated unique session identifier per browser tab"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_update": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "accumulated_watch_seconds": {
+      "type": "number",
+      "default": 0,
+      "description": "Server-calculated actual watch time, excluding pauses and seeks"
+    },
+    "last_position": {
+      "type": "number",
+      "default": 0,
+      "description": "Last reported player position in seconds"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Video duration in seconds"
+    },
+    "is_paused": {
+      "type": "boolean",
+      "default": false
+    },
+    "progress_milestones": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Accumulated-second thresholds already submitted as STREAM_VIEW_PROGRESS"
+    },
+    "ended_submitted": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "ended",
+        "abandoned"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "user_id",
+    "video_id",
+    "session_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -51,6 +51,8 @@ export default function Watch() {
 
   const lastSaveRef = useRef(0);
   const countdownStartedRef = useRef(false);
+  const psSessionIdRef = useRef(null);
+  const lastPsTrackRef = useRef(0);
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const nextVideoRef = useRef(null);
@@ -142,6 +144,8 @@ export default function Watch() {
 
   useEffect(() => {
     if (video) {
+      psSessionIdRef.current = crypto.randomUUID();
+      lastPsTrackRef.current = 0;
       document.title = `${video.title} | Xero Streams`;
       base44.analytics.track({
         eventName: "video_viewed",
@@ -314,17 +318,41 @@ export default function Watch() {
     if (now - lastSaveRef.current < 10000) return;
     lastSaveRef.current = now;
     saveProgress(video, t, duration);
-  }, [video, startCountdown]);
+
+    // Perk Sphere viewing tracking (every 30 seconds)
+    if (user && videoRef.current && now - lastPsTrackRef.current >= 30000) {
+      lastPsTrackRef.current = now;
+      base44.functions.invoke("partnerTrackViewing", {
+        video_id: video.id,
+        session_id: psSessionIdRef.current,
+        current_time: videoRef.current.currentTime,
+        duration: videoRef.current.duration,
+        is_paused: videoRef.current.paused,
+        is_ended: false,
+      }).catch(() => {});
+    }
+  }, [video, startCountdown, user]);
 
   const handleEnded = useCallback(() => {
     if (video?.id) {
       removeProgress(video.id);
       addWatched(video.id);
     }
+    // Perk Sphere viewing ended signal
+    if (user && video?.id && psSessionIdRef.current) {
+      base44.functions.invoke("partnerTrackViewing", {
+        video_id: video.id,
+        session_id: psSessionIdRef.current,
+        current_time: videoRef.current?.duration || 0,
+        duration: videoRef.current?.duration || 0,
+        is_paused: false,
+        is_ended: true,
+      }).catch(() => {});
+    }
     if (!countdownStartedRef.current) {
       startCountdown(0);
     }
-  }, [video, startCountdown]);
+  }, [video, startCountdown, user]);
 
   // Picture-in-Picture
   const handlePiP = async () => {

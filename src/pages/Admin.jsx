@@ -28,6 +28,7 @@ import StoreManager from "@/components/admin/StoreManager";
 import RequestsManager from "@/components/admin/RequestsManager";
 import EmailManager from "@/components/admin/EmailManager";
 import DownloadsManager from "@/components/admin/DownloadsManager";
+import PerkSphereAdminSection from "@/components/admin/PerkSphereAdminSection";
 import { Toaster } from "react-hot-toast";
 
 
@@ -213,6 +214,7 @@ export default function Admin() {
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="downloads">Downloads</TabsTrigger>
             <TabsTrigger value="emails">Emails</TabsTrigger>
+            <TabsTrigger value="perksphere">Perk Sphere</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload">
@@ -494,6 +496,19 @@ export default function Admin() {
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <EmailManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="perksphere">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-primary" /> Perk Sphere Integration
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PerkSphereAdminSection />
               </CardContent>
             </Card>
           </TabsContent>

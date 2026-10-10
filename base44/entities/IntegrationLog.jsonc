@@ -1,0 +1,62 @@
+{
+  "name": "IntegrationLog",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "description": "Type of integration event: challenge, confirm, link, unlink, event_submit, rewards_fetch, test_event"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "pending"
+      ],
+      "default": "success"
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "http_status": {
+      "type": "number"
+    },
+    "details": {
+      "type": "string",
+      "description": "Safe, non-sensitive context about the event"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "activity": {
+      "type": "string",
+      "description": "Partner activity type if applicable"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "Partner event ID if applicable"
+    }
+  },
+  "required": [
+    "event_type",
+    "status"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,16 +1,25 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import {
   getCredentials,
-  signedFetch,
+  submitPartnerEvent,
+  logIntegration,
   pageItems,
   PARTNER_ID,
 } from "../../shared/perkSphereClient.ts";
 
-// Signed activity-event submission. Uses the authenticated local user and a
-// server-generated event identifier. Only non-rewarded verification events are
-// submitted here — points/xp are always 0 unless Perk Sphere's trusted reward
-// rules explicitly mark an activity eligible. YouTube activity always awards
-// 0 Points and 0 XP.
+// Signed partner event submission using the verified Linux signing contract.
+// Supports ACCOUNT_REGISTERED, STREAM_VIEW_PROGRESS, STREAM_ENDED, and admin
+// TEST_EVENT. All signing is server-side. Perk Sphere is the authoritative
+// rewards platform — XeroStreams never sets reward_eligible, points, or xp.
+// Event IDs are idempotent for safe retries. A successful HTTP response does
+// NOT confirm Points/XP have been awarded.
+
+const SUPPORTED_ACTIVITIES = [
+  "ACCOUNT_REGISTERED",
+  "STREAM_VIEW_PROGRESS",
+  "STREAM_ENDED",
+  "TEST_EVENT",
+];
 
 export default async function (req) {
   try {
@@ -28,13 +37,20 @@ export default async function (req) {
 
     const body = await req.json().catch(() => ({}));
     const activity = String(body.activity || "").trim();
-    const metadata = body.metadata || {};
-    if (!activity) {
+    if (!SUPPORTED_ACTIVITIES.includes(activity)) {
       return Response.json(
-        { error: "Activity type is required.", code: "INVALID_REQUEST" },
+        {
+          error: "Unsupported activity type.",
+          code: "INVALID_ACTIVITY",
+          supported: SUPPORTED_ACTIVITIES,
+        },
         { status: 400 }
       );
     }
+
+    const evidence = body.evidence || {};
+    const eventId = String(body.event_id || "").trim() || crypto.randomUUID();
+    const timestamp = body.timestamp || new Date().toISOString();
 
     // The user must have an active Perk Sphere connection.
     const connections = pageItems(
@@ -51,63 +67,64 @@ export default async function (req) {
     }
     const connection = connections[0];
 
-    // Server-generated event identifier (never trust a client-supplied id).
-    const eventId = crypto.randomUUID();
-    const timestamp = new Date().toISOString();
-    const isYouTube =
-      activity === "youtube" || String(metadata.platform || "").toLowerCase() === "youtube";
-
-    const eventPayload = {
-      event_id: eventId,
-      partner_id: PARTNER_ID,
-      partner_user_id: user.id,
-      perksphere_connection_id: connection.perksphere_connection_id,
-      activity,
-      reward_eligible: false,
-      points: 0,
-      xp: 0,
-      youtube: !!isYouTube,
-      timestamp,
-      metadata,
-    };
-
-    let psRes;
+    // Submit the event via the verified signed contract.
+    let result;
     try {
-      psRes = await signedFetch("/events", {
-        method: "POST",
-        body: JSON.stringify(eventPayload),
+      result = await submitPartnerEvent(connection, {
+        event_id: eventId,
+        activity,
+        evidence,
+        timestamp,
       });
     } catch (e) {
+      await logIntegration(base44, {
+        event_type: "event_submit",
+        status: "error",
+        error_code: "PS_UNREACHABLE",
+        details: e.message,
+        user_id: user.id,
+        activity,
+        event_id: eventId,
+      });
       return Response.json(
-        {
-          error: "Unable to reach Perk Sphere.",
-          code: "PS_UNREACHABLE",
-          detail: e.message,
-        },
+        { error: "Unable to reach Perk Sphere.", code: "PS_UNREACHABLE", detail: e.message },
         { status: 502 }
       );
     }
 
-    let psData;
-    try {
-      psData = await psRes.json();
-    } catch {
-      psData = {};
-    }
+    await logIntegration(base44, {
+      event_type: "event_submit",
+      status: result.ok ? "success" : "error",
+      error_code: result.ok ? null : result.data?.error?.code || "unknown",
+      http_status: result.status,
+      details: result.ok ? "Event accepted" : JSON.stringify(result.data).substring(0, 200),
+      user_id: user.id,
+      activity,
+      event_id: eventId,
+    });
 
-    if (!psRes.ok) {
+    if (!result.ok) {
       return Response.json(
         {
           error: "Perk Sphere rejected the event.",
           code: "PS_REJECTED",
-          detail: psData,
-          ps_status: psRes.status,
+          detail: result.data,
+          ps_status: result.status,
+          event_id: eventId,
         },
         { status: 502 }
       );
     }
 
-    return Response.json({ ok: true, event_id: eventId, submitted: true });
+    // A successful HTTP response does NOT confirm Points/XP have been awarded.
+    return Response.json({
+      ok: true,
+      event_id: eventId,
+      submitted: true,
+      rewards_pending: true,
+      message:
+        "Event accepted by Perk Sphere. Rewards, if any, are determined by Perk Sphere's reward rules.",
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
