@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { downloadSeriesZip } from "@/lib/downloadUtils";
 import toast from "react-hot-toast";
 
-export default function SeriesDownloadButton({ series, isPremium, onViewPlans }) {
+export default function SeriesDownloadButton({ series, isPremium = undefined, onViewPlans }) {
   const [progress, setProgress] = useState(null);
   const download = async () => {
     if (!isPremium) { onViewPlans(); return; }

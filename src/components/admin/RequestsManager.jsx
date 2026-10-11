@@ -2,7 +2,7 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, MessageSquare, Mail, Download as DownloadIcon } from "lucide-react";
+import { Loader2, CheckCircle2, MessageSquare, Download as DownloadIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function RequestsManager() {
@@ -28,7 +28,7 @@ export default function RequestsManager() {
   });
 
   const markFulfilled = useMutation({
-    mutationFn: async (req) => {
+    mutationFn: /** @param {{id: string, user_id: string, title: string}} req */ async (req) => {
       await base44.entities.ContentRequest.update(req.id, { status: "fulfilled" });
       const user = users.find(u => u.id === req.user_id);
       if (user?.email) {
@@ -40,18 +40,18 @@ export default function RequestsManager() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["content_requests_all"]);
+      queryClient.invalidateQueries({ queryKey: ["content_requests_all"] });
       toast.success("Request marked as fulfilled and email sent!");
     }
   });
 
   const deleteRequest = useMutation({
-    mutationFn: (id) => base44.entities.ContentRequest.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["content_requests_all"])
+    mutationFn: /** @param {string} id */ (id) => base44.entities.ContentRequest.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content_requests_all"] })
   });
 
   const markDownloadFulfilled = useMutation({
-    mutationFn: async (req) => {
+    mutationFn: /** @param {{id: string, user_id: string, title: string}} req */ async (req) => {
       await base44.entities.DownloadRequest.update(req.id, { status: "fulfilled" });
       const user = users.find(u => u.id === req.user_id);
       if (user?.email) {
@@ -63,14 +63,14 @@ export default function RequestsManager() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["download_requests_all"]);
+      queryClient.invalidateQueries({ queryKey: ["download_requests_all"] });
       toast.success("Download request marked as fulfilled and email sent!");
     }
   });
 
   const deleteDownloadRequest = useMutation({
-    mutationFn: (id) => base44.entities.DownloadRequest.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["download_requests_all"])
+    mutationFn: /** @param {string} id */ (id) => base44.entities.DownloadRequest.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["download_requests_all"] })
   });
 
   if (isLoading) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
@@ -79,14 +79,14 @@ export default function RequestsManager() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex gap-4 border-b border-border w-full pb-2">
-          <button 
-            onClick={() => setActiveTab("content")} 
+          <button
+            onClick={() => setActiveTab("content")}
             className={`font-semibold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'content' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
           >
             <span className="flex items-center gap-2"><MessageSquare className="w-4 h-4" /> Content Requests</span>
           </button>
-          <button 
-            onClick={() => setActiveTab("download")} 
+          <button
+            onClick={() => setActiveTab("download")}
             className={`font-semibold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'download' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}
           >
             <span className="flex items-center gap-2"><DownloadIcon className="w-4 h-4" /> Download Requests</span>
@@ -109,7 +109,7 @@ export default function RequestsManager() {
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   {req.status === "pending" ? (
-                    <Button size="sm" onClick={() => markFulfilled.mutate(req)} disabled={markFulfilled.isPending} className="bg-green-600 hover:bg-green-700">
+                    <Button size="sm" onClick={() => markFulfilled.mutate({ id: req.id, user_id: req.user_id, title: req.title })} disabled={markFulfilled.isPending} className="bg-green-600 hover:bg-green-700">
                       <CheckCircle2 className="w-4 h-4 mr-2" /> Mark Fulfilled & Notify
                     </Button>
                   ) : (
@@ -144,7 +144,7 @@ export default function RequestsManager() {
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   {req.status === "pending" ? (
-                    <Button size="sm" onClick={() => markDownloadFulfilled.mutate(req)} disabled={markDownloadFulfilled.isPending} className="bg-green-600 hover:bg-green-700">
+                    <Button size="sm" onClick={() => markDownloadFulfilled.mutate({ id: req.id, user_id: req.user_id, title: req.title })} disabled={markDownloadFulfilled.isPending} className="bg-green-600 hover:bg-green-700">
                       <CheckCircle2 className="w-4 h-4 mr-2" /> Mark Fulfilled & Notify
                     </Button>
                   ) : (

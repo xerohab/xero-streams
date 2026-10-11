@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Pencil, Trash, Link as LinkIcon, BookOpen, Users, Wand2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash, BookOpen, Users, Wand2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export default function BooksManager() {
@@ -24,33 +24,33 @@ export default function BooksManager() {
   });
 
   const createBook = useMutation({
-    mutationFn: (data) => base44.entities.Book.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["books"]); setEditing(null); }
+    mutationFn: /** @param {Record<string, unknown>} data */ (data) => base44.entities.Book.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["books"] }); setEditing(null); }
   });
 
   const updateBook = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Book.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["books"]); setEditing(null); }
+    mutationFn: /** @param {{id: string, data: Record<string, unknown>}} variables */ ({ id, data }) => base44.entities.Book.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["books"] }); setEditing(null); }
   });
 
   const deleteBook = useMutation({
-    mutationFn: (id) => base44.entities.Book.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["books"])
+    mutationFn: /** @param {string} id */ (id) => base44.entities.Book.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["books"] })
   });
 
   const createAuthor = useMutation({
-    mutationFn: (data) => base44.entities.BookAuthor.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["book_authors"]); setEditingAuthor(null); }
+    mutationFn: /** @param {Record<string, unknown>} data */ (data) => base44.entities.BookAuthor.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["book_authors"] }); setEditingAuthor(null); }
   });
 
   const updateAuthor = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.BookAuthor.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["book_authors"]); setEditingAuthor(null); }
+    mutationFn: /** @param {{id: string, data: Record<string, unknown>}} variables */ ({ id, data }) => base44.entities.BookAuthor.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["book_authors"] }); setEditingAuthor(null); }
   });
 
   const deleteAuthor = useMutation({
-    mutationFn: (id) => base44.entities.BookAuthor.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["book_authors"])
+    mutationFn: /** @param {string} id */ (id) => base44.entities.BookAuthor.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["book_authors"] })
   });
 
   const handleSave = (e) => {
@@ -60,10 +60,10 @@ export default function BooksManager() {
       title: formData.get("title"),
       description: formData.get("description"),
       author_id: formData.get("author_id"),
-      sort_order: parseFloat(formData.get("sort_order") || 0),
-      price: parseFloat(formData.get("price") || 0),
-      price_word: parseFloat(formData.get("price_word") || 0),
-      price_ebook: parseFloat(formData.get("price_ebook") || 0),
+      sort_order: parseFloat(String(formData.get("sort_order") || 0)),
+      price: parseFloat(String(formData.get("price") || 0)),
+      price_word: parseFloat(String(formData.get("price_word") || 0)),
+      price_ebook: parseFloat(String(formData.get("price_ebook") || 0)),
       cover_image: formData.get("cover_image"),
       file_url: formData.get("file_url"),
       file_url_word: formData.get("file_url_word"),
@@ -79,14 +79,14 @@ export default function BooksManager() {
   };
 
   const handleAiInfo = async () => {
-    const titleInput = document.querySelector('input[name="title"]');
+    const titleInput = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="title"]'));
     if (!titleInput || !titleInput.value) return alert("Enter a title first");
     setIsAiLoading(true);
     try {
       const res = await base44.functions.invoke("aiMediaInfo", { title: titleInput.value, type: "book" });
       if (res.data?.title) titleInput.value = res.data.title;
       if (res.data?.description) {
-        const descInput = document.querySelector('textarea[name="description"]');
+        const descInput = /** @type {HTMLTextAreaElement | null} */ (document.querySelector('textarea[name="description"]'));
         if (descInput) descInput.value = res.data.description;
       }
     } catch (e) {
@@ -129,12 +129,12 @@ export default function BooksManager() {
           <Input name="name" placeholder="Author Name" defaultValue={editingAuthor.name} required />
           <Textarea name="description" placeholder="Author Bio / Description" defaultValue={editingAuthor.description} />
           <Input name="avatar_url" placeholder="Avatar Image URL" defaultValue={editingAuthor.avatar_url} />
-          
+
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setEditingAuthor(null)}>Cancel</Button>
             <Button type="submit">Save Author</Button>
           </div>
-          
+
           {/* List of existing authors for easy editing/deleting */}
           <div className="mt-4 pt-4 border-t border-border">
             <h5 className="text-sm font-medium text-muted-foreground mb-2">Existing Authors</h5>
@@ -167,13 +167,13 @@ export default function BooksManager() {
             </Button>
           </div>
           <Textarea name="description" placeholder="Description" defaultValue={editing.description} className="h-24" />
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Author (Optional)</label>
-              <select 
-                name="author_id" 
-                defaultValue={editing.author_id || ""} 
+              <select
+                name="author_id"
+                defaultValue={editing.author_id || ""}
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">No specific author</option>
@@ -206,7 +206,7 @@ export default function BooksManager() {
           <Input name="file_url" placeholder="Default Book File URL / Purchase Link" defaultValue={editing.file_url} />
           <Input name="file_url_word" placeholder="Word Document Download Link" defaultValue={editing.file_url_word} />
           <Input name="file_url_ebook" placeholder="Ebook Download Link" defaultValue={editing.file_url_ebook} />
-          
+
           <div className="flex items-center gap-2">
             <Switch name="is_active" defaultChecked={editing.is_active !== false} />
             <label className="text-sm">Available for Purchase</label>

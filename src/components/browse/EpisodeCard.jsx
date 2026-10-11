@@ -6,7 +6,7 @@ import MediaHoverOverlay from "@/components/browse/MediaHoverOverlay";
 import useEpisodeCardState from "@/components/browse/useEpisodeCardState";
 
 /** Compact poster by default; Continue Watching explicitly keeps landscape artwork. */
-export default function EpisodeCard({ video, isPremium, watched = false, playable, href: hrefProp, onRemove, active = false, landscape = false }) {
+export default function EpisodeCard({ video, isPremium = undefined, watched = false, playable = undefined, href: hrefProp = undefined, onRemove = undefined, active = false, landscape = false }) {
   const state = useEpisodeCardState(video, { watched, playable, hrefProp });
   if (!video) return null;
   const progressLabel = state.isWatched ? "Watched" : state.inProgress ? `${state.watchedPct}% watched` : null;

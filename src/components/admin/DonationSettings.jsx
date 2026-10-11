@@ -35,9 +35,9 @@ function PayPalDonateButton({ buttonId }) {
   }, [buttonId]);
 
   const renderButton = (id) => {
-    if (window.PayPal && containerRef.current) {
+    if (/** @type {Window & {PayPal?: {Donation: {Button: Function}}}} */ (window).PayPal && containerRef.current) {
       containerRef.current.innerHTML = "";
-      window.PayPal.Donation.Button({
+      /** @type {Window & {PayPal?: {Donation: {Button: Function}}}} */ (window).PayPal.Donation.Button({
         env: "production",
         hosted_button_id: id,
         image: {

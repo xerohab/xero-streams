@@ -10,7 +10,7 @@ import MediaGrid from "@/components/browse/MediaGrid";
 import PaginationControls from "@/components/browse/PaginationControls";
 import useBrowseCatalog from "@/components/browse/useBrowseCatalog";
 
-export default function BrowseCatalog({ type, title, subtitle }) {
+export default function BrowseCatalog({ type, title, subtitle  = undefined}) {
   const catalog = useBrowseCatalog(type);
   const noun = type === "video" ? "Movies" : "Series";
   const genreLabel = catalog.genre !== "all" ? `${catalog.genre} ${title}` : title;

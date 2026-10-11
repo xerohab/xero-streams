@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
@@ -18,7 +18,7 @@ const emptyEpisode = () => ({
   description: "",
   video_url: "",
   thumbnail_url: "",
-  episode_number: "",
+  episode_number: "", season_number: "",
   duration: "",
   quality: "Unknown",
   quality_notes: "",
@@ -138,7 +138,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
     setSaving(true);
     const toastId = toast.loading("Processing & auto-detecting qualities...");
     const seriesCover = !isMovieMode ? seriesList?.find((s) => s.id === selectedSeries)?.cover_image : undefined;
-    
+
     const records = [];
 
     for (const ep of valid) {
@@ -146,7 +146,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
       if (finalQuality === "Unknown" && ep.video_url && !ep.coming_soon) {
         finalQuality = await detectVideoQuality(ep.video_url, ep.title);
       }
-      
+
       records.push({
         title: ep.title,
         description: ep.description || undefined,
@@ -173,7 +173,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
         await base44.entities.Series.update(selectedSeries, { genres: seriesGenres, content_updated_at: new Date().toISOString() });
       }
     }
-    
+
     await base44.entities.Video.bulkCreate(records);
     toast.success(`${records.length} ${isMovieMode ? "movie" : "episode"}${records.length > 1 ? "s" : ""} added!`, { id: toastId });
     setEpisodes([emptyEpisode()]);

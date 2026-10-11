@@ -3,7 +3,7 @@ import EpisodeCard from "@/components/browse/EpisodeCard";
 import EpisodeGrid from "@/components/browse/EpisodeGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 
-export default function EpisodeRow({ title, videos, isPremium }) {
+export default function EpisodeRow({ title, videos, isPremium  = undefined}) {
   if (!videos || videos.length === 0) return null;
 
   return (

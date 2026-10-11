@@ -18,7 +18,18 @@ export default function Donate() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("success") === "true") setSuccess(true);
+    if (params.get("success") === "true") {
+      const orderId = params.get("token");
+      const raw = orderId && sessionStorage.getItem("paypal_receipt_" + orderId);
+      if (!raw) { setError("Payment receipt unavailable. Contact support to confirm your donation."); return; }
+      setLoading(true);
+      let receipt;
+      try { receipt = JSON.parse(raw); } catch { setError("Payment receipt is invalid."); setLoading(false); return; }
+      base44.functions.invoke("capturePaypalOrder", { orderId, ...receipt })
+        .then(res => { if (res.data?.success !== true) throw new Error("Payment is not confirmed"); setSuccess(true); })
+        .catch(() => setError("Payment could not be confirmed. Reload this page to retry confirmation before creating another donation."))
+        .finally(() => setLoading(false));
+    }
     if (params.get("cancelled") === "true") setCancelled(true);
   }, []);
 
@@ -36,6 +47,7 @@ export default function Donate() {
     try {
       const res = await base44.functions.invoke("createPaypalOrder", { amount: val, currency: "GBP" });
       if (res.data?.approvalUrl) {
+        sessionStorage.setItem("paypal_receipt_" + res.data.orderId, JSON.stringify({ receiptId: res.data.receiptId, captureToken: res.data.captureToken }));
         window.location.href = res.data.approvalUrl;
       } else {
         setError(res.data?.error || "Something went wrong. Please try again.");

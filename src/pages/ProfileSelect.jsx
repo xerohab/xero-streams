@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Check, X, Trash2, ArrowLeft } from "lucide-react";
-import { useProfile, AVATAR_OPTIONS } from "@/lib/ProfileContext";
-import { base44 } from "@/api/base44Client";
+import { useProfile } from "@/lib/ProfileContext";
 
 /**
  * "Who's Watching?" profile selector screen.

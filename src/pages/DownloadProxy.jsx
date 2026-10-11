@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Download, AlertCircle, FileArchive } from "lucide-react";
+import { Loader2, AlertCircle, FileArchive } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { downloadSeriesZip } from "@/lib/downloadUtils";

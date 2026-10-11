@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Upload, Sparkles, Wand2, ImageIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
@@ -83,7 +82,7 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `The user is adding a movie franchise / collection called "${form.title}". Identify the official or most common name for this franchise (e.g. "The Fast and the Furious Collection", "Harry Potter Collection"). Only return the corrected/confirmed title, nothing else.`,
       });
-      const suggested = (res || "").trim().replace(/^["']|["']$/g, "");
+      const suggested = (typeof res === "string" ? res : "").trim().replace(/^["']|["']$/g, "");
       if (suggested && suggested !== form.title) {
         update("title", suggested);
         toast.success(`Title corrected to: ${suggested}`);
@@ -172,13 +171,13 @@ export default function EditFranchiseModal({ franchise, franchises = [], open, o
             <Label>Genres</Label>
             <GenreSelect value={form.genres} onChange={(arr) => update("genres", arr)} label="" />
           </div>
-          
+
           {parentOptions.length > 0 && (
             <div className="space-y-1">
               <FranchiseSearchSelect franchises={parentOptions} value={form.parent_id} onChange={(id) => update("parent_id", id)} label="Parent Franchise (Optional)" />
             </div>
           )}
-          
+
           <div className="space-y-1">
             <Label>Cover Image</Label>
             <div className="flex gap-2">

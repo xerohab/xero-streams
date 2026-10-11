@@ -42,7 +42,11 @@
     "status"
   ],
   "rls": {
-    "create": {},
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
     "read": {
       "user_condition": {
         "role": "admin"
@@ -50,12 +54,12 @@
     },
     "update": {
       "user_condition": {
-        "role": "admin"
+        "role": "service_only"
       }
     },
     "delete": {
       "user_condition": {
-        "role": "admin"
+        "role": "service_only"
       }
     }
   }

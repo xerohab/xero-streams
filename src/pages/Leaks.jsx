@@ -154,7 +154,7 @@ export default function Leaks() {
           </div>
         ) : (
           <>
-            <ContinueWatchingRow isAdult={true} />
+            <ContinueWatchingRow />
 
             {/* Franchises / Collections */}
             {(activeTab === "all" || activeTab === "videos") && adultFranchises.length > 0 && (
@@ -209,7 +209,7 @@ export default function Leaks() {
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                        {movies.map((v) => (
-                         <VideoCard key={v.id} video={v} from="/leaks" isAdult={true} />
+                         <VideoCard key={v.id} video={v} />
                        ))}
                      </div>
                   </div>
@@ -224,7 +224,7 @@ export default function Leaks() {
                     </Link>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                        {(activeTab === "all" ? videoSeries.slice(0, 8) : videoSeries).map((s) => (
-                         <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
+                         <SeriesCard key={s.id} series={s} />
                        ))}
                      </div>
                   </div>

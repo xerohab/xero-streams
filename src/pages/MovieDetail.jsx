@@ -26,7 +26,7 @@ export default function MovieDetail() {
   const videoId = searchParams.get("id");
   const from = searchParams.get("from") || "/";
   const [castInfo] = useState(null);
-  
+
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -63,7 +63,7 @@ export default function MovieDetail() {
     queryKey: ["movies_more_like_this"],
     queryFn: () => base44.entities.Video.filter({ content_type: "movie", is_adult: false }, "-updated_date", 120),
   });
-  
+
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   // More Like This: same collection first, then same category, then newest
@@ -82,13 +82,13 @@ export default function MovieDetail() {
     base44.analytics.track({ eventName: "video_purchase_initiated_from_detail", properties: { video_id: video.id, price: video.price } });
     setPurchasing(true);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: video.price,
+      const res = await base44.functions.invoke("createPaypalOrder", {
+        product_type: "video", product_id: video.id,
         return_url: window.location.origin + "/callback?success=true",
         cancel_url: window.location.origin + "/callback?cancelled=true"
       });
       if (res.data?.approvalUrl) {
-        localStorage.setItem("pending_video_purchase", JSON.stringify({ video_id: video.id }));
+        sessionStorage.setItem("paypal_receipt_" + res.data.orderId, JSON.stringify({ receiptId: res.data.receiptId, captureToken: res.data.captureToken }));
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to checkout");
@@ -209,7 +209,7 @@ export default function MovieDetail() {
               }
             }}
           >
-            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />} 
+            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <DownloadIcon className="w-4 h-4" />}
             {isDownloading ? (downloadProgress !== null ? `Downloading ${downloadProgress}%` : "Starting...") : "Download"}
           </Button>
         )}

@@ -77,7 +77,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       toast.error("Select a series for this episode first.");
       return;
     }
-    
+
     let finalQuality = form.quality;
     if (finalQuality === "Unknown" && form.video_url) {
       const toastId = toast.loading("Auto-detecting video quality...");
@@ -95,7 +95,6 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       franchise_id: form.franchise_id || undefined,
       // Auto-correct content_type based on series assignment
       content_type: seriesId ? "episode" : "movie",
-      quality: form.quality,
       is_for_sale: form.is_for_sale,
       price: form.price ? Number(form.price) : undefined,
       download_url: form.download_url || undefined,
@@ -190,9 +189,9 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
         const res = await base44.functions.invoke("startAssemblyTranscription", { videoUrl: form.video_url });
         if (res.data?.error) throw new Error(res.data.error);
         const transcriptId = res.data.id;
-        
+
         toast.loading("Transcribing video audio (this may take a few minutes)...", { id: toastId });
-        
+
         const checkStatus = async () => {
             const checkRes = await base44.functions.invoke("checkAssemblyTranscription", { transcriptId });
             if (checkRes.data?.status === 'completed') {
@@ -208,7 +207,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
                 setTimeout(checkStatus, 5000);
             }
         };
-        
+
         setTimeout(checkStatus, 5000);
     } catch (e) {
         toast.error(e.message || "Failed to start transcription", { id: toastId });

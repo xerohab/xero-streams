@@ -6,7 +6,7 @@ import StatusBadge from "@/components/browse/StatusBadge";
 import WatchlistButton from "@/components/browse/WatchlistButton";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
-export default function HeroContent({ slide, active, reducedMotion }) {
+export default function HeroContent({ slide, active = undefined, reducedMotion }) {
   const { type, data, items: itemCount } = slide;
   const collection = type === "franchise";
   const series = type === "series";

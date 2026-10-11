@@ -4,7 +4,7 @@ import { Play, X } from "lucide-react";
 import StatusBadge from "@/components/browse/StatusBadge";
 
 /** Same 2:3 poster as movie/series cards, with 16:9 reserved for Continue Watching. */
-export default function EpisodeArtwork({ video, state, active, onRemove, landscape = false }) {
+export default function EpisodeArtwork({ video, state, active = undefined, onRemove = undefined, landscape = false }) {
   return (
     <div className={`relative shrink-0 overflow-hidden bg-secondary ${landscape ? "aspect-video w-[132px] rounded-md sm:w-full sm:rounded-none" : "aspect-[2/3] w-full"}`}>
       <Link to={state.href} onClick={state.handleClick} aria-label={`Play ${video.title}`} className="absolute inset-0 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">

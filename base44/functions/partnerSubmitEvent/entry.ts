@@ -25,6 +25,8 @@ export default async function (req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Arbitrary browser evidence must never be signed as trusted partner activity.
+    if (user.role !== "admin") return Response.json({ ok: false, code: "VERIFIED_WORKFLOW_REQUIRED", error: "Activity must be submitted by a verified server workflow." }, { status: 403 });
     const creds = getCredentials();
     if (!creds) {
       return Response.json(
@@ -54,7 +56,7 @@ export default async function (req) {
     const connections = pageItems(
       await base44.entities.PerkSphereConnection.filter(
         { user_id: user.id, status: "linked" },
-        { limit: 1 }
+        undefined, 1
       )
     );
     if (connections.length === 0) {

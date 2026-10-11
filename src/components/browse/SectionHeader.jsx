@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
  * Xero Cinema section / page header: uppercase, tracked, with the gold marker.
  * level 1 = page title, level 2 = section title.
  */
-export default function SectionHeader({ title, subtitle, action, level = 2, className }) {
+export default function SectionHeader({ title, subtitle = undefined, action = undefined, level = 2, className  = undefined}) {
   const Heading = level === 1 ? "h1" : "h2";
   return (
     <div className={cn("mb-4 flex items-end justify-between gap-4", className)}>

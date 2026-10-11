@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, Plus, FolderPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -32,7 +31,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
     const currentImages = selectedSeries
       ? adultVideos.filter(v => v.series_id === selectedSeries)
       : adultVideos;
-    
+
     if (selectedImages.size === currentImages.length) {
       setSelectedImages(new Set());
     } else {
@@ -43,7 +42,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
   const massDelete = async () => {
     if (selectedImages.size === 0) return;
     if (!confirm(`Delete ${selectedImages.size} image(s)? This cannot be undone.`)) return;
-    
+
     setDeleting(true);
     for (const id of selectedImages) {
       await base44.entities.Video.delete(id);
@@ -79,7 +78,7 @@ export default function ImprovedAdultManageSection({ videos, seriesList, loading
       toast.error("Category name is required");
       return;
     }
-    
+
     await base44.entities.Series.create({
       title: newCategoryName,
       is_adult: true,

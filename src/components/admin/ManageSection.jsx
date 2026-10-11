@@ -39,6 +39,7 @@ export default function ManageSection({
       { limit: 100, fields: ["id"] }
     );
     const seriesIds = (seriesPage.items || []).map(s => s.id);
+    /** @type {Array<Record<string, unknown>>} */
     const conditions = [{ title: { $regex: q, $options: "i" } }];
     if (seriesIds.length) conditions.push({ series_id: { $in: seriesIds } });
     return { $or: conditions };
@@ -60,7 +61,7 @@ export default function ManageSection({
       videosHook.refresh();
       seriesHook.refresh();
     }
-  }, [refreshSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
 
   const handleDeleteVideo = async (id) => {
     await onDeleteVideo(id);

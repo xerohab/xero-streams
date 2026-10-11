@@ -53,7 +53,7 @@ export default async function (req) {
       );
     }
     if (new Date(challenge.expires_at).getTime() < Date.now()) {
-      await base44.entities.PerkSphereChallenge.update(challenge.id, {
+      await base44.asServiceRole.entities.PerkSphereChallenge.update(challenge.id, {
         status: "expired",
       });
       return Response.json(
@@ -78,7 +78,7 @@ export default async function (req) {
     const existing = pageItems(
       await base44.entities.PerkSphereConnection.filter(
         { user_id: user.id, status: "linked" },
-        { limit: 1 }
+        undefined, 1
       )
     );
     if (existing.length > 0) {
@@ -120,7 +120,7 @@ export default async function (req) {
       psData = {};
     }
 
-    if (!psRes.ok) {
+    if (!psRes.ok || psData.ok !== true || typeof psData.link_uuid !== "string" || !psData.link_uuid) {
       return Response.json(
         {
           error: "Perk Sphere rejected the connection.",
@@ -133,16 +133,9 @@ export default async function (req) {
     }
 
     // Perk Sphere confirmed — persist the connection locally.
-    const connectionId =
-      (psData && psData.data && psData.data.connection_id) ||
-      (psData && psData.connection_id) ||
-      crypto.randomUUID();
-    const psUserId =
-      (psData && psData.data && psData.data.perksphere_user_id) ||
-      (psData && psData.perksphere_user_id) ||
-      "";
-
-    const connection = await base44.entities.PerkSphereConnection.create({
+    const connectionId = psData.link_uuid;
+    const psUserId = typeof psData.perksphere_user_id === "string" ? psData.perksphere_user_id : "";
+    const connection = await base44.asServiceRole.entities.PerkSphereConnection.create({
       user_id: user.id,
       partner_id: PARTNER_ID,
       perksphere_connection_id: connectionId,
@@ -152,7 +145,7 @@ export default async function (req) {
     });
 
     // Mark the consent session as consumed (single-use).
-    await base44.entities.PerkSphereChallenge.update(challenge.id, {
+    await base44.asServiceRole.entities.PerkSphereChallenge.update(challenge.id, {
       status: "confirmed",
     });
 

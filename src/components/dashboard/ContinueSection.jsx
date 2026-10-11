@@ -5,7 +5,7 @@ import EpisodeGrid from "@/components/browse/EpisodeGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 import EmptyState from "@/components/dashboard/EmptyState";
 
-export default function ContinueSection({ items, isPremium }) {
+export default function ContinueSection({ items, isPremium  = undefined}) {
   return (
     <section>
       <SectionHeader title="Continue Watching" />

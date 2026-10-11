@@ -1,11 +1,11 @@
 import React from "react";
-import { getGenreList, genreString } from "@/lib/genreDisplay";
+import { getGenreList } from "@/lib/genreDisplay";
 
 /**
  * Compact multi-genre display for card footers.
  * Shows up to 2 genres with +N indicator for more.
  */
-export default function CardGenres({ record, legacyField, max = 2 }) {
+export default function CardGenres({ record, legacyField = undefined, max = 2 }) {
   const genres = getGenreList(record, legacyField);
   if (!genres.length) return null;
   const shown = genres.slice(0, max);

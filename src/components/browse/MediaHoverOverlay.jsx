@@ -5,6 +5,7 @@ import MediaPreview from "@/components/browse/MediaPreview";
 import HomeHoverPreview from "@/components/browse/HomeHoverPreview";
 
 /** Portalled information above each card: hover/focus, or an information button on touch. */
+/** @param {React.PropsWithChildren<{cinema?: boolean, item: Record<string, any>, type: string, isUpdated?: boolean, itemCount?: number, isPremium?: boolean, onDownload?: Function, playHref?: string, playable?: boolean, progressLabel?: string, downloading?: boolean, progress?: number}>} options */
 export default function MediaHoverOverlay({ children, cinema = false, ...props }) {
   const [open, setOpen] = useState(false);
   const [desktop, setDesktop] = useState(false);

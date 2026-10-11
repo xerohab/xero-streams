@@ -47,7 +47,7 @@ export default function Books() {
       base44.auth.redirectToLogin(window.location.pathname);
       return;
     }
-    
+
     let price = book.price || 0;
     if (format === "word" && book.price_word) price = book.price_word;
     if (format === "ebook" && book.price_ebook) price = book.price_ebook;
@@ -55,13 +55,13 @@ export default function Books() {
     base44.analytics.track({ eventName: "book_purchase_initiated", properties: { book_id: book.id, price, format } });
     setPurchasing(book.id + format);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: price,
+      const res = await base44.functions.invoke("createPaypalOrder", {
+        product_type: "book", product_id: book.id, format,
         return_url: window.location.origin + "/callback?success=true",
         cancel_url: window.location.origin + "/callback?cancelled=true"
       });
       if (res.data?.approvalUrl) {
-        localStorage.setItem("pending_book_purchase", JSON.stringify({ book_id: book.id, format }));
+        sessionStorage.setItem("paypal_receipt_" + res.data.orderId, JSON.stringify({ receiptId: res.data.receiptId, captureToken: res.data.captureToken }));
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to start checkout");
@@ -92,14 +92,14 @@ export default function Books() {
   const exclusiveBooks = books.filter((b) => isExclusiveAuthor(authorOf(b)));
   const exclusiveAuthorNames = [...new Set(exclusiveBooks.map((b) => authorOf(b).name))];
   const recentBooks = [...books]
-    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+    .sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
     .slice(0, 7);
   const allBooks = selectedAuthor === "all" ? books : books.filter((b) => b.author_id === selectedAuthor);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      
+
       <BooksHero books={books} authors={authors} />
 
       <main className="xero-container flex-1 pb-16 pt-6">

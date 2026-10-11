@@ -7,7 +7,7 @@ import VideoCard from "@/components/browse/VideoCard";
 import SeriesCard from "@/components/browse/SeriesCard";
 import EpisodeCard from "@/components/browse/EpisodeCard";
 
-export default function WatchlistPanel({ watchlist, items, videos, allSeries, isPremium, onDelete }) {
+export default function WatchlistPanel({ watchlist, items, videos, allSeries, isPremium = undefined, onDelete }) {
   const media = items.map((item) => item.series_id ? { type: "series", data: allSeries.find((s) => s.id === item.series_id) } : { type: "video", data: videos.find((v) => v.id === item.video_id) }).filter((item) => item.data);
   const posters = media.filter((item) => item.type === "series" || !item.data.series_id);
   const episodes = media.filter((item) => item.type === "video" && item.data.series_id);

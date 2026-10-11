@@ -12,7 +12,7 @@ const NEUTRAL = "border border-border bg-secondary/95 text-foreground";
  * Single source of truth for every semantic label in the Xero Cinema system:
  * UPDATED, NEW, COLLECTION, EXCLUSIVE, OWNED, PREMIUM, COMING SOON, EP n, 18+.
  */
-export default function StatusBadge({ status, className }) {
+export default function StatusBadge({ status, className  = undefined}) {
   if (!status) return null;
   const s = String(status).toUpperCase();
 

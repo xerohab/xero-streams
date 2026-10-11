@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Users, Mail } from "lucide-react";
+import { Loader2, Send, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function EmailManager() {
@@ -22,7 +22,7 @@ export default function EmailManager() {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!subject || !body) return toast.error("Subject and body are required");
-    
+
     setSending(true);
     try {
       let targetEmails = [];

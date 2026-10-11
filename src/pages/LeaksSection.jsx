@@ -6,7 +6,6 @@ import { ArrowLeft, Film, Tv, Image as ImageIcon, ShieldAlert, Loader2, Lock } f
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/browse/Navbar";
 import SeriesCard from "@/components/browse/SeriesCard";
-import VideoCard from "@/components/browse/VideoCard";
 
 export default function LeaksSection() {
   const [searchParams] = useSearchParams();
@@ -94,7 +93,7 @@ export default function LeaksSection() {
     content = (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {videoSeries.map(s => (
-          <SeriesCard key={s.id} series={s} episodeCount={episodeCount(s.id)} from="/leaks" />
+          <SeriesCard key={s.id} series={s} />
         ))}
       </div>
     );

@@ -50,12 +50,12 @@ export default function PremiumModal() {
     setSubscribingTo(plan.id);
     try {
       const res = await base44.functions.invoke("createPaypalOrder", {
-        amount: plan.price,
+        product_type: "subscription", product_id: plan.id,
         return_url: window.location.origin + "/callback?success=true",
         cancel_url: window.location.origin + "/callback?cancelled=true",
       });
       if (res.data?.approvalUrl) {
-        localStorage.setItem("pending_plan_purchase", JSON.stringify({ plan_id: plan.id }));
+        sessionStorage.setItem("paypal_receipt_" + res.data.orderId, JSON.stringify({ receiptId: res.data.receiptId, captureToken: res.data.captureToken }));
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to start checkout");

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import DetailHero from "@/components/browse/DetailHero";
 import StatusBadge from "@/components/browse/StatusBadge";
 
-export default function CollectionHero({ franchise, titleCount, isUpdated, isFavourited, onToggleFavourite }) {
+export default function CollectionHero({ franchise, titleCount, isUpdated = undefined, isFavourited, onToggleFavourite }) {
   return (
     <DetailHero image={franchise.cover_image} backdrop={franchise.backdrop_url} title={franchise.title} FallbackIcon={Layers} backTo="/" description={franchise.description}
       eyebrow={<><StatusBadge status="COLLECTION" />{isUpdated && <StatusBadge status="UPDATED" />}</>}

@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2, Sparkles, Wand2, ImageIcon } from "lucide-react";
+import { Upload, Loader2, Sparkles, Wand2 } from "lucide-react";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 import toast from "react-hot-toast";
@@ -68,7 +67,7 @@ export default function FranchiseForm({ onSuccess }) {
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `The user is adding a movie franchise / collection called "${form.title}". Identify the official or most common name for this franchise (e.g. "The Fast and the Furious Collection", "Harry Potter Collection"). Only return the corrected/confirmed title, nothing else.`,
       });
-      const suggested = (res || "").trim().replace(/^["']|["']$/g, "");
+      const suggested = (typeof res === "string" ? res : "").trim().replace(/^["']|["']$/g, "");
       if (suggested && suggested !== form.title) {
         setForm((prev) => ({ ...prev, title: suggested }));
         toast.success(`Title corrected to: ${suggested}`);

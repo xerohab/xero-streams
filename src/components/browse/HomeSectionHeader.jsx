@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
-export default function HomeSectionHeader({ title, to }) {
+export default function HomeSectionHeader({ title, to  = undefined}) {
   return (
     <div className="home-section-heading">
       <h2><span aria-hidden="true" />{title}</h2>

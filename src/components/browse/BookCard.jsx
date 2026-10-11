@@ -15,7 +15,7 @@ const OWNED = `${BTN} border border-primary/40 bg-black/60 text-primary hover:bg
  * - otherwise: hover (or always-on for touch) overlay with valid buy / download actions.
  * - `onPurchase`: omit to hide Buy actions (e.g. in My Books, where only owned titles show).
  */
-export default function BookCard({ book, author, purchases = [], purchasing, onPurchase, to }) {
+export default function BookCard({ book, author, purchases = [], purchasing = undefined, onPurchase = undefined, to  = undefined}) {
   const bought = (format) =>
     purchases.some((p) => p.book_id === book.id && p.status === "completed" && p.format === format);
   const purchasedDefault = bought("default");

@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
   ShieldCheck,
-  ShieldAlert,
   KeyRound,
   Link2,
   Activity,
@@ -12,7 +11,6 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
-  Send,
   FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

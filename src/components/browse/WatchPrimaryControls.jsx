@@ -5,7 +5,7 @@ import WatchlistButton from "@/components/browse/WatchlistButton";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import toast from "react-hot-toast";
 
-export default function WatchPrimaryControls({ video, series, isComingSoon, isPremium, isPurchased, isFavourited, onFavourite, prevVideo, nextVideo, prevLabel, nextLabel, onNavigate, onPurchase, purchasing }) {
+export default function WatchPrimaryControls({ video, series, isComingSoon, isPremium = undefined, isPurchased, isFavourited, onFavourite, prevVideo, nextVideo, prevLabel, nextLabel, onNavigate, onPurchase = undefined, purchasing  = undefined}) {
   const [progress, setProgress] = useState(null);
   const download = async () => {
     setProgress(0);

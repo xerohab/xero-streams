@@ -6,7 +6,7 @@ import WatchlistButton from "@/components/browse/WatchlistButton";
 import { genreString } from "@/lib/genreDisplay";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
-export default function HomeHoverPreview({ item, type, isUpdated, itemCount }) {
+export default function HomeHoverPreview({ item, type, isUpdated = undefined, itemCount = undefined }) {
   const collection = type === "franchise";
   const series = type === "series";
   const episode = !collection && !series && (type === "episode" || item.content_type === "episode" || !!item.series_id);

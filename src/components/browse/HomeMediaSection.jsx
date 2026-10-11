@@ -2,7 +2,7 @@ import React from "react";
 import HomeSectionHeader from "@/components/browse/HomeSectionHeader";
 import HomeMediaCard from "@/components/browse/HomeMediaCard";
 
-export default function HomeMediaSection({ title, items, to, id }) {
+export default function HomeMediaSection({ title, items, to = undefined, id }) {
   const visible = items.slice(0, 14);
   if (!visible.length) return null;
   return (

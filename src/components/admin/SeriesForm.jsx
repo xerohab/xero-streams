@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Loader2, Layers, Sparkles, ImageIcon, Wand2 } from "lucide-react";
+import { Upload, Loader2, Layers, Sparkles, Wand2 } from "lucide-react";
 import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
@@ -67,7 +66,7 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `The user is adding a TV series called "${form.title}". If this is part of an anthology series (like American Horror Story, True Detective, American Crime Story, etc.), identify the correct subtitle for this season/entry. For example "American Horror Story Season 5" should return "American Horror Story: Hotel". If it already has the correct subtitle, return it as-is. If it's not an anthology, return the title as-is. Only return the corrected/confirmed title, nothing else.`,
       });
-      const suggested = (res || "").trim().replace(/^["']|["']$/g, "");
+      const suggested = (typeof res === "string" ? res : "").trim().replace(/^["']|["']$/g, "");
       if (suggested && suggested !== form.title) {
         setForm((prev) => ({ ...prev, title: suggested }));
         toast.success(`Title corrected to: ${suggested}`);

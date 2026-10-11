@@ -5,7 +5,7 @@ import { getGenreList } from "@/lib/genreDisplay";
  * Compact genre chips for detail pages.
  * Displays all applicable genres as small pills.
  */
-export default function GenreChips({ record, legacyField, className = "" }) {
+export default function GenreChips({ record, legacyField = undefined, className = "" }) {
   const genres = getGenreList(record, legacyField);
   if (!genres.length) return null;
   return (

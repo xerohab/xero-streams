@@ -6,7 +6,7 @@ import StatusBadge from "@/components/browse/StatusBadge";
 import CardGenres from "@/components/browse/CardGenres";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
-export default function VideoCard({ video, isUpdated }) {
+export default function VideoCard({ video, isUpdated  = undefined}) {
   const navigate = useNavigate();
 
   if (!video) return null;

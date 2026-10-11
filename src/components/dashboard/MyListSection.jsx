@@ -15,7 +15,7 @@ const SubHeading = ({ children }) => (
 );
 
 export default function MyListSection({
-  favouriteVideos, favouriteSeries, favouriteFranchises, watchlists, watchlistItems, videos, allSeries, isPremium, onDeleteWatchlist,
+  favouriteVideos, favouriteSeries, favouriteFranchises, watchlists, watchlistItems, videos, allSeries, isPremium = undefined, onDeleteWatchlist,
 }) {
   const movies = favouriteVideos.filter((v) => !v.series_id);
   const episodes = favouriteVideos.filter((v) => v.series_id);

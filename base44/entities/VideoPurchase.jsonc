@@ -25,19 +25,27 @@
   ],
   "rls": {
     "read": {
-      "user_condition": {
-        "$or": [
-          {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
             "role": "admin"
-          },
-          {
-            "id": "user_id"
           }
-        ]
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
       }
     },
-    "create": null,
-    "update": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "delete": {
       "user_condition": {
         "role": "admin"

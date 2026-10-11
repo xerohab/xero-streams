@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
@@ -24,60 +23,13 @@ export default function PurchaseCallback() {
         const user = await base44.auth.me();
         if (!user) throw new Error("Not authenticated");
 
-        // Capture order
-        const res = await base44.functions.invoke("capturePaypalOrder", { orderId: token });
+        const raw = sessionStorage.getItem("paypal_receipt_" + token);
+        if (!raw) throw new Error("Payment receipt unavailable");
+        const receipt = JSON.parse(raw);
+        const res = await base44.functions.invoke("capturePaypalOrder", { orderId: token, ...receipt });
         if (res.data?.success) {
-          // Check what we were buying
-          const pendingBook = localStorage.getItem("pending_book_purchase");
-          const pendingPlan = localStorage.getItem("pending_plan_purchase");
-          const pendingVideo = localStorage.getItem("pending_video_purchase");
-
-          if (pendingBook) {
-            const { book_id, format } = JSON.parse(pendingBook);
-            await base44.entities.BookPurchase.create({
-              user_id: user.id,
-              book_id,
-              format: format || "default",
-              status: "completed",
-              paypal_order_id: token
-            });
-            localStorage.removeItem("pending_book_purchase");
-            setStatus("completed");
-            setTimeout(() => navigate("/books"), 2000);
-          } else if (pendingVideo) {
-            const { video_id } = JSON.parse(pendingVideo);
-            await base44.entities.VideoPurchase.create({
-              user_id: user.id,
-              video_id,
-              status: "completed",
-              paypal_order_id: token
-            });
-            localStorage.removeItem("pending_video_purchase");
-            setStatus("completed");
-            setTimeout(() => navigate("/dashboard"), 2000);
-          } else if (pendingPlan) {
-            const { plan_id } = JSON.parse(pendingPlan);
-            
-            // Cancel existing sub if any
-            const existing = await base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" });
-            for (const sub of existing) {
-              await base44.entities.UserSubscription.update(sub.id, { status: "cancelled" });
-            }
-
-            await base44.entities.UserSubscription.create({
-              user_id: user.id,
-              plan_id,
-              status: "active",
-              paypal_order_id: token
-            });
-            localStorage.removeItem("pending_plan_purchase");
-            setStatus("completed");
-            setTimeout(() => navigate("/dashboard"), 2000);
-          } else {
-            // Probably a donation
-            setStatus("completed");
-            setTimeout(() => navigate("/"), 2000);
-          }
+          setStatus("completed");
+          setTimeout(() => navigate("/dashboard"), 2000);
         } else {
           throw new Error("Capture failed");
         }

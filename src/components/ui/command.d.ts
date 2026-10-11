@@ -1,0 +1,12 @@
+import * as React from 'react';
+import { Command as Primitive } from 'cmdk';
+import type { DialogProps } from '@radix-ui/react-dialog';
+export const Command: typeof Primitive;
+export const CommandDialog: React.ComponentType<DialogProps>;
+export const CommandInput: typeof Primitive.Input;
+export const CommandList: typeof Primitive.List;
+export const CommandEmpty: typeof Primitive.Empty;
+export const CommandGroup: typeof Primitive.Group;
+export const CommandItem: typeof Primitive.Item;
+export const CommandSeparator: typeof Primitive.Separator;
+export const CommandShortcut: React.ComponentType<React.HTMLAttributes<HTMLSpanElement>>;

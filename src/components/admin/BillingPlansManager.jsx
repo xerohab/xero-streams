@@ -17,18 +17,18 @@ export default function BillingPlansManager() {
   });
 
   const createPlan = useMutation({
-    mutationFn: (data) => base44.entities.SubscriptionPlan.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["subscription_plans"]); setEditing(null); }
+    mutationFn: /** @param {Record<string, unknown>} data */ (data) => base44.entities.SubscriptionPlan.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["subscription_plans"] }); setEditing(null); }
   });
 
   const updatePlan = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SubscriptionPlan.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["subscription_plans"]); setEditing(null); }
+    mutationFn: /** @param {{id: string, data: Record<string, unknown>}} variables */ ({ id, data }) => base44.entities.SubscriptionPlan.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["subscription_plans"] }); setEditing(null); }
   });
 
   const deletePlan = useMutation({
-    mutationFn: (id) => base44.entities.SubscriptionPlan.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["subscription_plans"])
+    mutationFn: /** @param {string} id */ (id) => base44.entities.SubscriptionPlan.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subscription_plans"] })
   });
 
   const handleSave = (e) => {
@@ -37,7 +37,7 @@ export default function BillingPlansManager() {
     const data = {
       name: formData.get("name"),
       description: formData.get("description"),
-      price: parseFloat(formData.get("price")),
+      price: parseFloat(String(formData.get("price"))),
       interval: formData.get("interval"),
       is_active: formData.get("is_active") === "on"
     };

@@ -118,8 +118,7 @@ export default function CastOverlay({ src, title, queue = [], startTime = 0, onC
         controls
         autoPlay
         playsInline
-        webkit-playsinline="true"
-        x-webkit-airplay="allow"
+
         controlsList="nodownload"
         preload="metadata"
         style={{ width: "100%", height: "100%", background: "#000", display: "block" }}

@@ -6,7 +6,7 @@ import WatchlistButton from "@/components/browse/WatchlistButton";
 import { genreString } from "@/lib/genreDisplay";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
-export default function MediaPreview({ item, type, isUpdated, isPremium, onDownload, playHref, playable: canPlay, progressLabel, downloading, progress }) {
+export default function MediaPreview({ item, type, isUpdated = undefined, isPremium = undefined, onDownload = undefined, playHref = undefined, playable: canPlay = undefined, progressLabel = undefined, downloading = undefined, progress = undefined }) {
   const collection = type === "franchise";
   const series = type === "series";
   const episode = !collection && !series && (type === "episode" || item.content_type === "episode" || !!item.series_id);

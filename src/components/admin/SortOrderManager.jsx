@@ -32,7 +32,7 @@ export default function SortOrderManager({ franchises, videos, seriesList, onSuc
         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
       setItems(sorted);
     }
-  }, [selectedId, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedId, mode]);
 
   const onDragEnd = (result) => {
     if (!result.destination) return;

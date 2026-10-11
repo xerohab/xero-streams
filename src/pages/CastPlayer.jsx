@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Cast } from "lucide-react";
 import useHls from "@/hooks/useHls";
 
 export default function CastPlayer() {
@@ -134,7 +133,7 @@ export default function CastPlayer() {
         controls
         autoPlay
         playsInline
-        x-webkit-airplay="allow"
+
         controlsList="nodownload"
         preload="auto"
         style={{ width: "100%", height: "100%", background: "#000", display: "block" }}

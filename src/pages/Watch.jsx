@@ -95,13 +95,13 @@ export default function Watch() {
     base44.analytics.track({ eventName: "video_purchase_initiated", properties: { video_id: video.id, price: video.price } });
     setPurchasing(true);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: video.price,
+      const res = await base44.functions.invoke("createPaypalOrder", {
+        product_type: "video", product_id: video.id,
         return_url: window.location.origin + "/callback?success=true",
         cancel_url: window.location.origin + "/callback?cancelled=true"
       });
       if (res.data?.approvalUrl) {
-        localStorage.setItem("pending_video_purchase", JSON.stringify({ video_id: video.id }));
+        sessionStorage.setItem("paypal_receipt_" + res.data.orderId, JSON.stringify({ receiptId: res.data.receiptId, captureToken: res.data.captureToken }));
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to checkout");
@@ -151,7 +151,7 @@ export default function Watch() {
         eventName: "video_viewed",
         properties: { video_id: video.id, title: video.title, series_id: video.series_id || null, franchise_id: video.franchise_id || null }
       });
-      
+
       base44.functions.invoke("incrementViews", {
         video_id: video.id,
         series_id: video.series_id || null,
@@ -297,13 +297,13 @@ export default function Watch() {
     const now = Date.now();
     const t = videoRef.current.currentTime;
     const duration = videoRef.current.duration;
-    
+
     if (video.intro_start != null && video.intro_end != null && t >= video.intro_start && t < video.intro_end) {
       setShowSkipIntro(true);
     } else {
       setShowSkipIntro(false);
     }
-    
+
     if (video.recap_start != null && video.recap_end != null && t >= video.recap_start && t < video.recap_end) {
       setShowSkipRecap(true);
     } else {
@@ -443,11 +443,11 @@ export default function Watch() {
                   onEnded={handleEnded}
                   onTimeUpdate={handleTimeUpdate}
                   onError={(e) => {
-                    const err = e.target.error;
+                    const err = e.currentTarget.error;
                     console.error("[Watch] Video element error", {
                       code: err?.code,
                       message: err?.message,
-                      src: e.target.src,
+                      src: e.currentTarget.src,
                       meaning: ["", "ABORTED", "NETWORK_ERROR", "DECODE_ERROR", "SRC_NOT_SUPPORTED"][err?.code] || "UNKNOWN",
                     });
                   }}
@@ -542,7 +542,7 @@ export default function Watch() {
           <MediaGrid>{moreVideos.slice(0, 14).map((item) => <VideoCard key={item.id} video={item} />)}</MediaGrid>
         </section>}
       </div>
-      
+
       <div className="xero-container pb-20">
         <ReviewSection contentId={videoId} contentType="video" />
       </div>

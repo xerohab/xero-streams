@@ -4,8 +4,8 @@ import MediaCard from "@/components/browse/MediaCard";
 import StatusBadge from "@/components/browse/StatusBadge";
 import CardGenres from "@/components/browse/CardGenres";
 
-export default function FranchiseCard({ franchise, itemCount, isUpdated }) {
-  const countLabel = itemCount != null ? `${itemCount} ${itemCount === 1 ? "Title" : "Titles"}` : "Collection";
+export default function FranchiseCard({ franchise, itemCount = undefined, itemLabel = undefined, isUpdated  = undefined}) {
+  const countLabel = itemCount != null ? `${itemCount} ${itemLabel || (itemCount === 1 ? "Title" : "Titles")}` : "Collection";
 
   return (
     <MediaCard

@@ -5,7 +5,7 @@ import StatusBadge from "@/components/browse/StatusBadge";
 import CardGenres from "@/components/browse/CardGenres";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 
-export default function SeriesCard({ series, isUpdated }) {
+export default function SeriesCard({ series, isUpdated  = undefined}) {
   if (!series) return null;
 
   return (

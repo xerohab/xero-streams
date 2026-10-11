@@ -32,7 +32,7 @@ export default async function (req) {
     } catch (e) {
       /* workflow call */
     }
-    if (caller && caller.role !== "admin") {
+    if (!caller || caller.role !== "admin") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -73,7 +73,7 @@ export default async function (req) {
     const connections = pageItems(
       await base44.asServiceRole.entities.PerkSphereConnection.filter(
         { user_id: userId, status: "linked" },
-        { limit: 1 }
+        undefined, 1
       )
     );
 

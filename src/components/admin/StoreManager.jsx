@@ -3,10 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Pencil, Trash, Download, Link as LinkIcon, Film, Book, Search } from "lucide-react";
+import { Loader2, Pencil, Download, Film, Book, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import toast from "react-hot-toast";
 
 export default function StoreManager() {
@@ -44,7 +42,7 @@ export default function StoreManager() {
           paypal_order_id: "admin_granted"
         });
       }
-      
+
       try {
         let downloadLinks = editing._download_url || "Log in to your dashboard to view the download link.";
         if (editingType === "book") {
@@ -84,13 +82,13 @@ export default function StoreManager() {
   });
 
   const updateVideo = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Video.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["videos"]); setEditing(null); toast.success("Updated!"); }
+    mutationFn: /** @param {{id: string, data: Record<string, unknown>}} variables */ ({ id, data }) => base44.entities.Video.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["videos"] }); setEditing(null); toast.success("Updated!"); }
   });
 
   const updateBook = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Book.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["books"]); setEditing(null); toast.success("Updated!"); }
+    mutationFn: /** @param {{id: string, data: Record<string, unknown>}} variables */ ({ id, data }) => base44.entities.Book.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["books"] }); setEditing(null); toast.success("Updated!"); }
   });
 
   const handleSave = (e) => {
@@ -98,46 +96,49 @@ export default function StoreManager() {
     const formData = new FormData(e.target);
     const data = {
       title: formData.get("title"),
-      price: parseFloat(formData.get("price") || 0),
+      price: parseFloat(String(formData.get("price") || 0)),
       is_for_sale: formData.get("is_for_sale") === "on",
       download_url: formData.get("download_url") || ""
     };
-    
+
     // Check "part of subscription" (we can use is_active on book, or just free for subs)
     // Here we're mainly updating purchase settings.
 
     if (editingType === "video") {
       updateVideo.mutate({ id: editing.id, data });
     } else {
-      updateBook.mutate({ 
-        id: editing.id, 
-        data: { 
+      updateBook.mutate({
+        id: editing.id,
+        data: {
           title: data.title,
           price: data.price,
-          price_word: parseFloat(formData.get("price_word") || 0),
-          price_ebook: parseFloat(formData.get("price_ebook") || 0),
+          price_word: parseFloat(String(formData.get("price_word") || 0)),
+          price_ebook: parseFloat(String(formData.get("price_ebook") || 0)),
           is_active: data.is_for_sale, // for books, is_active represents available for purchase
           file_url: data.download_url,
           file_url_word: formData.get("file_url_word") || "",
           file_url_ebook: formData.get("file_url_ebook") || ""
-        } 
+        }
       });
     }
   };
 
   if (loadingVideos || loadingBooks) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
 
-  const storeItems = [
+  /** @typedef {{id: string, title: string, created_date: string, price?: number, is_for_sale?: boolean, is_active?: boolean, download_url?: string, file_url?: string, _type?: string, _download_url?: string}} StoreItem */
+  /** @type {StoreItem[]} */
+  const storeItems = /** @type {StoreItem[]} */ ([
     ...videos.filter(v => v.is_for_sale).map(v => ({ ...v, _type: 'video', _download_url: v.download_url })),
     ...books.filter(b => b.is_active).map(b => ({ ...b, _type: 'book', is_for_sale: b.is_active, _download_url: b.file_url }))
-  ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  ]).sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
 
-  const allItems = [
+  /** @type {StoreItem[]} */
+  const allItems = /** @type {StoreItem[]} */ ([
     ...videos.map(v => ({ ...v, _type: 'video', _download_url: v.download_url })),
     ...books.map(b => ({ ...b, _type: 'book', is_for_sale: b.is_active, _download_url: b.file_url }))
-  ];
+  ]);
 
-  const searchResults = searchQuery.trim() 
+  const searchResults = searchQuery.trim()
     ? allItems.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 10)
     : [];
 
@@ -151,10 +152,10 @@ export default function StoreManager() {
         <h4 className="font-medium mb-3">Add Content to Store</h4>
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
+          <Input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search for a movie, episode, or book to sell..." 
+            placeholder="Search for a movie, episode, or book to sell..."
             className="pl-9 bg-secondary border-border"
           />
           {searchResults.length > 0 && (
@@ -180,7 +181,7 @@ export default function StoreManager() {
             {editingType === 'video' ? <Film className="w-5 h-5 text-primary" /> : <Book className="w-5 h-5 text-primary" />}
             <h4 className="font-bold text-lg">Edit Store Options: {editing.title}</h4>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Content Title</label>
@@ -191,7 +192,7 @@ export default function StoreManager() {
               <Input name="price" type="number" step="0.01" defaultValue={editing.price || 0} required className="bg-background border-border" />
             </div>
           </div>
-          
+
           {editingType === 'book' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -223,7 +224,7 @@ export default function StoreManager() {
               </div>
             </>
           )}
-          
+
           <div className="flex items-center gap-3 p-3 bg-background border border-border rounded-lg">
             <Switch name="is_for_sale" defaultChecked={editing.is_for_sale} />
             <div>
@@ -244,11 +245,11 @@ export default function StoreManager() {
             Grant a specific user access to download this item without making it publicly available. They will receive an email with the link and it will appear in their dashboard downloads.
           </p>
           <div className="flex gap-2 items-center">
-            <Input 
-              placeholder="User Email Address" 
-              value={grantEmail} 
-              onChange={e => setGrantEmail(e.target.value)} 
-              className="bg-background border-border max-w-sm" 
+            <Input
+              placeholder="User Email Address"
+              value={grantEmail}
+              onChange={e => setGrantEmail(e.target.value)}
+              className="bg-background border-border max-w-sm"
             />
             <Button onClick={handleGrantAccess} disabled={granting || !grantEmail}>
               {granting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -270,7 +271,7 @@ export default function StoreManager() {
                 </div>
                 <div>
                   <p className="font-bold flex items-center gap-2">
-                    {item.title} 
+                    {item.title}
                     <span className="text-primary bg-primary/10 px-2 py-0.5 rounded text-xs">${item.price}</span>
                   </p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1 truncate max-w-md">

@@ -41,12 +41,12 @@ export default async function (req) {
     const body = await req.json().catch(() => ({}));
     const videoId = String(body.video_id || "").trim();
     const sessionId = String(body.session_id || "").trim();
-    const currentTime = Number(body.current_time) || 0;
-    const duration = Number(body.duration) || 0;
+    const currentTime = Number(body.current_time);
+    const duration = Number(body.duration || 0);
     const isPaused = !!body.is_paused;
     const isEnded = !!body.is_ended;
 
-    if (!videoId || !sessionId) {
+    if (!videoId || !/^[A-Za-z0-9_-]{1,128}$/.test(sessionId) || !Number.isFinite(currentTime) || currentTime < 0 || !Number.isFinite(duration) || duration < 0) {
       return Response.json(
         { error: "video_id and session_id are required.", code: "INVALID_REQUEST" },
         { status: 400 }
@@ -56,7 +56,7 @@ export default async function (req) {
     // Look up the video server-side for reliable evidence.
     const videoPage = await base44.entities.Video.filter(
       { id: videoId },
-      { limit: 1 }
+      undefined, 1
     );
     const video = pageItems(videoPage)[0];
     if (!video) {
@@ -79,14 +79,14 @@ export default async function (req) {
     // Find or create the viewing session.
     const sessionPage = await base44.entities.ViewingSession.filter(
       { user_id: user.id, video_id: videoId, session_id: sessionId },
-      { limit: 1 }
+      undefined, 1
     );
     let session = pageItems(sessionPage)[0];
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
 
     if (!session) {
-      session = await base44.entities.ViewingSession.create({
+      session = await base44.asServiceRole.entities.ViewingSession.create({
         user_id: user.id,
         video_id: videoId,
         session_id: sessionId,
@@ -104,7 +104,7 @@ export default async function (req) {
 
     // Calculate actual watch delta from real elapsed time vs position change.
     let delta = 0;
-    if (!isPaused && session.last_update) {
+    if (!isPaused && !session.is_paused && session.last_update) {
       const elapsedReal =
         (now - new Date(session.last_update).getTime()) / 1000;
       const positionDelta = currentTime - (session.last_position || 0);
@@ -114,12 +114,12 @@ export default async function (req) {
       } else if (positionDelta > elapsedReal + SEEK_TOLERANCE_SECONDS) {
         delta = 0;
       } else {
-        delta = Math.min(positionDelta, elapsedReal);
+        delta = Math.min(positionDelta, elapsedReal, 30);
         if (delta < 0) delta = 0;
       }
     }
 
-    const newAccumulated = (session.accumulated_watch_seconds || 0) + delta;
+    const newAccumulated = Math.min(MAX_ELIGIBLE_SECONDS, (session.accumulated_watch_seconds || 0) + delta);
     const newMilestones = [...(session.progress_milestones || [])];
     const eventsSubmitted = [];
 
@@ -127,24 +127,23 @@ export default async function (req) {
     const connections = pageItems(
       await base44.entities.PerkSphereConnection.filter(
         { user_id: user.id, status: "linked" },
-        { limit: 1 }
+        undefined, 1
       )
     );
     const connection = connections[0] || null;
 
     // Submit stream_watch_progress at milestones (only if connected).
     if (connection && !isPaused) {
-      const lastMilestone = Math.floor(
-        (session.accumulated_watch_seconds || 0) / PROGRESS_INTERVAL_SECONDS
-      );
       const currentMilestone = Math.floor(
         newAccumulated / PROGRESS_INTERVAL_SECONDS
       );
 
-      for (let m = lastMilestone + 1; m <= currentMilestone; m++) {
+      let deliveryAttempts = 0;
+      for (let m = 1; m <= currentMilestone; m++) {
         const milestoneSeconds = m * PROGRESS_INTERVAL_SECONDS;
         if (!newMilestones.includes(milestoneSeconds)) {
-          const partnerEventId = `ps_evt_${sessionId}_${milestoneSeconds}`;
+          if (deliveryAttempts++ >= 3) break; // Bound retry work; later heartbeats resume pending milestones.
+          const partnerEventId = `ps_evt_${user.id}_${videoId}_${sessionId}_${milestoneSeconds}`;
           // eligible_seconds: safe integer between 0 and 86400.
           const eligibleSeconds = Math.min(
             PROGRESS_INTERVAL_SECONDS,
@@ -199,7 +198,7 @@ export default async function (req) {
     // XeroStreams is a VOD platform; stream_ended is an admin content-removal action.
 
     // Update the session.
-    await base44.entities.ViewingSession.update(session.id, {
+    await base44.asServiceRole.entities.ViewingSession.update(session.id, {
       last_update: nowIso,
       accumulated_watch_seconds: newAccumulated,
       last_position: currentTime,

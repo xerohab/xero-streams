@@ -5,7 +5,7 @@ import EpisodeGrid from "@/components/browse/EpisodeGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
 import EmptyState from "@/components/dashboard/EmptyState";
 
-export default function HistorySection({ completedVideos, isPremium }) {
+export default function HistorySection({ completedVideos, isPremium  = undefined}) {
   return (
     <section>
       <SectionHeader title="Viewing History" subtitle="Titles you've finished watching." />

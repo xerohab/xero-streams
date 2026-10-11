@@ -46,7 +46,7 @@ export default function ReviewSection({ contentId, contentType }) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["reviews", contentId]);
+      queryClient.invalidateQueries({ queryKey: ["reviews", contentId] });
       setComment("");
       setRating(5);
       toast.success("Review submitted!");
@@ -55,9 +55,9 @@ export default function ReviewSection({ contentId, contentType }) {
   });
 
   const deleteReview = useMutation({
-    mutationFn: (id) => base44.entities.Review.delete(id),
+    mutationFn: /** @param {string} id */ (id) => base44.entities.Review.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(["reviews", contentId]);
+      queryClient.invalidateQueries({ queryKey: ["reviews", contentId] });
       toast.success("Review deleted");
     }
   });
@@ -79,7 +79,7 @@ export default function ReviewSection({ contentId, contentType }) {
   return (
     <div className="mt-12">
       <SectionHeader title="User Reviews" className="mb-6" />
-      
+
       {user ? (
         <div className="bg-card border border-border rounded-xl p-6 mb-8">
           <h4 className="font-semibold mb-4">Write a Review</h4>
@@ -87,14 +87,14 @@ export default function ReviewSection({ contentId, contentType }) {
             <span className="text-sm text-muted-foreground block mb-2">Rating</span>
             {renderStars(rating, true)}
           </div>
-          <Textarea 
-            value={comment} 
-            onChange={e => setComment(e.target.value)} 
-            placeholder="Share your thoughts..." 
-            className="mb-4 bg-secondary border-border" 
+          <Textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="Share your thoughts..."
+            className="mb-4 bg-secondary border-border"
           />
-          <Button 
-            onClick={() => submitReview.mutate()} 
+          <Button
+            onClick={() => submitReview.mutate()}
             disabled={submitReview.isPending || !comment.trim()}
           >
             {submitReview.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}

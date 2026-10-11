@@ -1,7 +1,7 @@
 import React from "react";
 import { Play } from "lucide-react";
 
-export default function MediaPoster({ image, alt, FallbackIcon, HoverIcon, badges, topRight, posterOverlay }) {
+export default function MediaPoster({ image, alt = undefined, FallbackIcon, HoverIcon, badges, topRight = undefined, posterOverlay  = undefined}) {
   return (
     <div className="relative aspect-[2/3] w-full overflow-hidden bg-secondary">
       {image ? <img src={image} alt={alt} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-muted-foreground">{FallbackIcon && <FallbackIcon className="h-10 w-10 opacity-30" />}</div>}

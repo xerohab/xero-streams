@@ -5,8 +5,8 @@ import { base44 } from "@/api/base44Client";
  * Server-side search + cursor pagination for any entity.
  * @param {Object} opts
  * @param {string} opts.entity - Entity name (e.g. "Video", "Series")
- * @param {number} opts.limit - Page size (default 200)
- * @param {string} opts.sort - Sort field (default "-created_date")
+ * @param {number} [opts.limit] - Page size (default 200)
+ * @param {string} [opts.sort] - Sort field (default "-created_date")
  * @param {string[]} [opts.searchFields] - Fields to $regex search (e.g. ["title"])
  * @param {Function} [opts.buildQuery] - Async function(searchQuery) returning a custom filter
  */

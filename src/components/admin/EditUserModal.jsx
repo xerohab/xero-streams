@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, ShieldCheck, ShieldAlert, KeyRound, Trash2, Ban } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -200,9 +199,9 @@ export default function EditUserModal({ user, open, onClose, onSaved }) {
                   ))}
                 </SelectContent>
               </Select>
-              <Button 
-                variant="secondary" 
-                onClick={handleAssignPlan} 
+              <Button
+                variant="secondary"
+                onClick={handleAssignPlan}
                 disabled={!selectedPlanId || assigningPlan}
               >
                 {assigningPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : "Grant Access"}

@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export default function WatchlistButton({ videoId, seriesId, variant = "outline", className = "", label = "Add to Watchlist" }) {
+export default function WatchlistButton({ videoId = undefined, seriesId = undefined, variant = /** @type {import("../ui/button").ButtonVariant} */ ("outline"), className = "", label = "Add to Watchlist" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const queryClient = useQueryClient();
@@ -35,9 +35,9 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
   });
 
   const createWatchlistMutation = useMutation({
-    mutationFn: (name) => base44.entities.Watchlist.create({ user_id: user.id, name }),
+    mutationFn: /** @param {string} name */ (name) => base44.entities.Watchlist.create({ user_id: user.id, name }),
     onSuccess: (newWatchlist) => {
-      queryClient.invalidateQueries(["watchlists"]);
+      queryClient.invalidateQueries({ queryKey: ["watchlists"] });
       setNewWatchlistName("");
       // Add current video to the new watchlist automatically
       toggleItemMutation.mutate({ watchlistId: newWatchlist.id, action: "add" });
@@ -45,7 +45,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
   });
 
   const toggleItemMutation = useMutation({
-    mutationFn: async ({ watchlistId, action, itemId }) => {
+    mutationFn: /** @param {{watchlistId?: string, action: string, itemId?: string}} variables */ async ({ watchlistId, action, itemId }) => {
       if (action === "add") {
         return base44.entities.WatchlistItem.create({
           watchlist_id: watchlistId,
@@ -57,7 +57,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["watchlistItems"]);
+      queryClient.invalidateQueries({ queryKey: ["watchlistItems"] });
     },
   });
 

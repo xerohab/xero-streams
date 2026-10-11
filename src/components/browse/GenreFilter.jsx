@@ -27,7 +27,7 @@ const PRIMARY_GENRES = [
  * Only genres that have at least one published title are shown — the `genres`
  * prop is already filtered by the catalogue hook.
  */
-export default function GenreFilter({ genres, active, onChange }) {
+export default function GenreFilter({ genres, active = undefined, onChange }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const containerRef = useRef(null);

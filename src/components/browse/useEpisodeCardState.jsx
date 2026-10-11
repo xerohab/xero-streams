@@ -4,7 +4,7 @@ import { downloadSingleVideo } from "@/lib/downloadUtils";
 import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 import toast from "react-hot-toast";
 
-export default function useEpisodeCardState(video, { watched, playable, hrefProp }) {
+export default function useEpisodeCardState(video, { watched, playable = undefined, hrefProp }) {
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [playback, setPlayback] = useState(() => ({ saved: getProgress(video?.id), finished: getWatched().includes(video?.id) }));
