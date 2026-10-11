@@ -44,7 +44,7 @@ export default async function (req) {
     const existing = pageItems(
       await base44.entities.PerkSphereConnection.filter(
         { user_id: user.id, status: "linked" },
-        { limit: 1 }
+        undefined, 1
       )
     );
     if (existing.length > 0) {
@@ -58,7 +58,7 @@ export default async function (req) {
     // The raw code is never stored — only its SHA-256 hash.
     const codeHash = await sha256Hex(code);
     const expiresAt = new Date(Date.now() + CHALLENGE_TTL_MS).toISOString();
-    const challenge = await base44.entities.PerkSphereChallenge.create({
+    const challenge = await base44.asServiceRole.entities.PerkSphereChallenge.create({
       user_id: user.id,
       code_hash: codeHash,
       status: "pending",

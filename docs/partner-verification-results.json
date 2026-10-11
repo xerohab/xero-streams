@@ -1,0 +1,19 @@
+{
+  "validated_at": "2026-10-11",
+  "offline_partner_tests": 6,
+  "backend_syntax": "pass",
+  "build": "pass",
+  "production_build_configured": false,
+  "frontend_lint": "inherited failures",
+  "frontend_typecheck": "inherited failures",
+  "audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 2,
+    "high": 5,
+    "critical": 0,
+    "total": 7
+  },
+  "payment_source_changes": false,
+  "production_published": false
+}

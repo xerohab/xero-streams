@@ -29,7 +29,7 @@ export default async function (req) {
     const connections = pageItems(
       await base44.entities.PerkSphereConnection.filter(
         { user_id: user.id, status: "linked" },
-        { limit: 1 }
+        undefined, 1
       )
     );
     if (connections.length === 0) {

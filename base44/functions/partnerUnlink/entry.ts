@@ -44,17 +44,12 @@ export default async function (req) {
     // Local state is updated so the UI reflects the user's intent; the local
     // disconnect is NOT treated as complete server-side revocation.
 
-    await base44.entities.PerkSphereConnection.update(connection.id, {
-      status: "unlinked",
-      unlinked_at: new Date().toISOString(),
-    });
-
     return Response.json({
-      ok: true,
-      status: "unlinked",
-      warning:
-        "Local connection disconnected. Server-side revocation requires a Perk Sphere service-side unlink function (POST /partners/account-link/unlink with service auth). This is a pending dependency.",
-    });
+      ok: false,
+      code: "REVOCATION_REQUIRED",
+      serverConfirmed: false,
+      message: "Disconnect this partner from your Perk Sphere account at https://perksphere.org. The existing connection remains linked until Perk Sphere confirms revocation."
+    }, { status: 409 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

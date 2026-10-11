@@ -108,6 +108,11 @@ function generateNonce() {
 export async function signedFetch(path, init) {
   const creds = getCredentials();
   if (!creds) throw new Error("PERKSPHERE_NOT_CONFIGURED");
+  if (!validateKeyForPartner(PARTNER_ID).valid) throw new Error("PERKSPHERE_KEY_MISMATCH");
+  const allowed = new Set(["/v1/partner-links/confirm", "/v1/partners/events"]);
+  if (!allowed.has(path) || ((init && init.method) || "POST").toUpperCase() !== "POST") {
+    throw new Error("PERKSPHERE_INVALID_SIGNED_ENDPOINT");
+  }
 
   const method = ((init && init.method) || "POST").toUpperCase();
   const rawBody = init && init.body;
@@ -272,7 +277,7 @@ export async function submitPartnerEvent(connection, event) {
   } catch {
     data = {};
   }
-  return { ok: res.ok, status: res.status, data };
+  return { ok: res.ok && data?.ok === true, status: res.status, data };
 }
 
 // Check if a video URL is YouTube content (ineligible for rewards).
@@ -280,14 +285,16 @@ export async function submitPartnerEvent(connection, event) {
 // or reward_eligible:false is sent to Linux.
 export function isYouTubeContent(url) {
   if (!url) return false;
-  const lower = url.toLowerCase();
-  return lower.includes("youtube.com") || lower.includes("youtu.be");
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return ["youtube.com", "youtu.be", "youtube-nocookie.com"].some(domain => hostname === domain || hostname.endsWith("." + domain));
+  } catch { return false; }
 }
 
 // Best-effort integration logging for admin diagnostics. Never throws.
 export async function logIntegration(base44, entry) {
   try {
-    await base44.entities.IntegrationLog.create({
+    await base44.asServiceRole.entities.IntegrationLog.create({
       event_type: entry.event_type,
       status: entry.status || "success",
       error_code: entry.error_code || null,
