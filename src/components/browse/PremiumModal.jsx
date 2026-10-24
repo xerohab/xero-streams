@@ -49,11 +49,7 @@ export default function PremiumModal() {
     }
     setSubscribingTo(plan.id);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", {
-        amount: plan.price,
-        return_url: window.location.origin + "/callback?success=true",
-        cancel_url: window.location.origin + "/callback?cancelled=true",
-      });
+      const res = await base44.functions.invoke("premiumCheckout", { action: "create", plan_id: plan.id });
       if (res.data?.approvalUrl) {
         localStorage.setItem("pending_plan_purchase", JSON.stringify({ plan_id: plan.id }));
         window.location.href = res.data.approvalUrl;
@@ -122,7 +118,7 @@ export default function PremiumModal() {
                       <p className="text-sm text-muted-foreground mb-2">{plan.description}</p>
                     )}
                     <p className="text-2xl font-black text-primary">
-                      ${plan.price}
+                      £{plan.price}
                       <span className="text-sm text-muted-foreground font-normal">/{plan.interval}</span>
                     </p>
                   </div>
