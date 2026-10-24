@@ -14,6 +14,7 @@ import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 import { detectVideoQuality } from "@/lib/qualityDetection";
+import { announceNewRelease } from "@/lib/discordAnnouncements";
 
 export default function VideoUploadForm({ seriesList, franchises = [], onSuccess }) {
   const [uploading, setUploading] = useState(false);
@@ -111,7 +112,8 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       runtime_or_episodes: form.runtime_or_episodes || undefined,
       genres: form.genres || [],
     };
-    await base44.entities.Video.create(payload);
+    const createdVideo = await base44.entities.Video.create(payload);
+    await announceNewRelease(payload.content_type || 'movie', createdVideo);
     toast.success("Video added successfully!");
     setForm({
       title: "",
