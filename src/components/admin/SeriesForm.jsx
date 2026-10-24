@@ -122,7 +122,10 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
         title: `${form.title} Season ${i + 1}`,
         sort_order: i + 1,
       }));
-      await base44.entities.Series.bulkCreate(seriesArray);
+      for (const record of seriesArray) {
+        const created = await base44.entities.Series.create(record);
+        await announceNewRelease('series', created);
+      }
       toast.success(`Created ${bulkCount} series for "${form.title}"!`);
     } else {
       const createdSeries = await base44.entities.Series.create({ ...base, title: form.title });
