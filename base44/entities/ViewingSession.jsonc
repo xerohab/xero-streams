@@ -2,6 +2,28 @@
   "name": "ViewingSession",
   "type": "object",
   "properties": {
+    "credited_ranges": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "evidence_version": {
+      "type": "string"
+    },
+    "media_url_sha256": {
+      "type": "string"
+    },
+    "content_duration_seconds": {
+      "type": "number"
+    },
+    "completed_full_content": {
+      "type": "boolean",
+      "default": false
+    },
     "user_id": {
       "type": "string",
       "description": "ID of the user watching"
