@@ -1,5 +1,6 @@
 import {secrets} from 'base44:runtime';
 import {currentPerkSphereLink} from './perkSphereClient.ts';
+import {emitPremiumTaskEvent} from './partnerTaskEvents.ts';
 const API=()=>secrets.get('PAYPAL_ENVIRONMENT')==='sandbox'?'https://api-m.sandbox.paypal.com':'https://api-m.paypal.com';
 const validId=value=>typeof value==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(value);
 function fail(){throw Error('PREMIUM_PAYMENT_NOT_VERIFIED');}
@@ -73,7 +74,8 @@ export async function capturePremiumOrder(admin,userId,orderId){
  if(subscription.status!=='active')fail();
  const active=await admin.entities.UserSubscription.filter({user_id:userId,status:'active'});
  for(const row of active)if(row.id!==subscription.id&&row.paypal_order_id!==orderId)await admin.entities.UserSubscription.update(row.id,{status:'cancelled'});
- return {success:true,premium_activated:true,status:'COMPLETED',reward_issued:false};
+ let notification={submitted:false};try{notification=await emitPremiumTaskEvent(admin,proof);}catch{/* Retry notification without undoing a captured purchase. */}
+ return {success:true,premium_activated:true,status:'COMPLETED',reward_issued:false,reward_event_submitted:notification.submitted};
 }
 export async function verifyPremiumPayment(admin,userId,orderId){
  const binding=await bindingFor(admin,userId,orderId);if(binding.status!=='completed')fail();
