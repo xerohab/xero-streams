@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { detectVideoQuality } from "@/lib/qualityDetection";
+import { announceNewRelease } from "@/lib/discordAnnouncements";
 import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
 export default function WebScraper({ seriesList, franchises, onSuccess }) {
@@ -196,7 +197,10 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       }
     }
 
-    await base44.entities.Video.bulkCreate(records);
+    for (const record of records) {
+      const created = await base44.entities.Video.create(record);
+      await announceNewRelease(record.content_type || (contentMode === 'tv' ? 'episode' : 'movie'), created);
+    }
     toast.success(`Imported ${records.length} ${contentMode === "tv" ? "episode" : "movie"}${records.length !== 1 ? "s" : ""}!`, { id: toastId });
     setItems([]);
     setUrl("");
