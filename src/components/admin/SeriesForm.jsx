@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { normaliseToGenres } from "@/lib/genreAdmin";
-import { announceNewRelease } from "@/lib/discordAnnouncements";
+import { announceNewRelease, resolveCreatedRelease } from "@/lib/discordAnnouncements";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -123,13 +123,18 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
         sort_order: i + 1,
       }));
       for (const record of seriesArray) {
+        const startedAt = Date.now();
         const created = await base44.entities.Series.create(record);
-        await announceNewRelease('series', created);
+        const saved = await resolveCreatedRelease("Series", created, record, startedAt);
+        await announceNewRelease("series", saved);
       }
       toast.success(`Created ${bulkCount} series for "${form.title}"!`);
     } else {
-      const createdSeries = await base44.entities.Series.create({ ...base, title: form.title });
-      await announceNewRelease("series", createdSeries);
+      const record = { ...base, title: form.title };
+      const startedAt = Date.now();
+      const createdSeries = await base44.entities.Series.create(record);
+      const saved = await resolveCreatedRelease("Series", createdSeries, record, startedAt);
+      await announceNewRelease("series", saved);
       toast.success("Series created!");
     }
 
