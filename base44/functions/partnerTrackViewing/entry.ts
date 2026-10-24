@@ -110,7 +110,7 @@ async function handleRequest(req) {
         user_id: user.id,
         video_id: videoId,
         session_id: sessionId,
-        perksphere_link_uuid: connection?.perksphere_connection_id || null,
+        ...(connection ? {perksphere_link_uuid:connection.perksphere_connection_id} : {}),
         started_at: nowIso,
         last_update: nowIso,
         accumulated_watch_seconds: 0,
