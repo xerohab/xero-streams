@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import SeriesSearchSelect from "@/components/admin/SeriesSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { detectVideoQuality } from "@/lib/qualityDetection";
-import { announceNewRelease } from "@/lib/discordAnnouncements";
+import { announceNewRelease, resolveCreatedRelease } from "@/lib/discordAnnouncements";
 import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
 export default function WebScraper({ seriesList, franchises, onSuccess }) {
@@ -197,10 +197,18 @@ export default function WebScraper({ seriesList, franchises, onSuccess }) {
       }
     }
 
+    let announcedCount = 0;
+    let failedAnnouncements = 0;
     for (const record of records) {
+      const startedAt = Date.now();
       const created = await base44.entities.Video.create(record);
-      await announceNewRelease(record.content_type || (contentMode === 'tv' ? 'episode' : 'movie'), created);
+      const saved = await resolveCreatedRelease("Video", created, record, startedAt);
+      const ok = await announceNewRelease(record.content_type || "movie", saved);
+      if (ok) announcedCount++;
+      else failedAnnouncements++;
     }
+    if (failedAnnouncements === 0) toast.success(`Discord confirmed ${announcedCount} announcement(s)`);
+    else toast.error(`Discord: ${announcedCount} confirmed, ${failedAnnouncements} not confirmed. Retry in Manage.`);
     toast.success(`Imported ${records.length} ${contentMode === "tv" ? "episode" : "movie"}${records.length !== 1 ? "s" : ""}!`, { id: toastId });
     setItems([]);
     setUrl("");
