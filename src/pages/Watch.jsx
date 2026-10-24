@@ -53,6 +53,7 @@ export default function Watch() {
   const countdownStartedRef = useRef(false);
   const psSessionIdRef = useRef(null);
   const lastPsTrackRef = useRef(0);
+  const psTrackQueueRef = useRef(Promise.resolve());
   // Track current video id being played (for seamless next-episode without navigate)
   const [currentVideoId, setCurrentVideoId] = useState(videoId);
   const nextVideoRef = useRef(null);
@@ -292,17 +293,23 @@ export default function Watch() {
   // No auto-resume logic — let the native video controls handle play/pause normally
 
   // Save progress every 10 seconds
+  const sendPlaybackReport = useCallback((payload) => {
+    const next = psTrackQueueRef.current.catch(() => {}).then(() => base44.functions.invoke("partnerTrackViewing", payload));
+    psTrackQueueRef.current = next.catch(() => {});
+    return next;
+  }, []);
+
   const trackPlaybackBoundary = useCallback(() => {
     const player = videoRef.current;
     if (!user || !video?.id || !player) return;
     if (!psSessionIdRef.current) psSessionIdRef.current = crypto.randomUUID();
     lastPsTrackRef.current = Date.now();
-    base44.functions.invoke("partnerTrackViewing", {
+    sendPlaybackReport({
       video_id: video.id, session_id: psSessionIdRef.current,
       current_time: player.currentTime, duration: Number.isFinite(player.duration) ? player.duration : 0,
       is_paused: player.paused, is_ended: player.ended
     }).catch(() => {});
-  }, [user, video?.id]);
+  }, [user, video?.id, sendPlaybackReport]);
 
   const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current || !video) return;
@@ -334,7 +341,7 @@ export default function Watch() {
     // Perk Sphere viewing tracking (every 30 seconds)
     if (user && videoRef.current && now - lastPsTrackRef.current >= 30000) {
       lastPsTrackRef.current = now;
-      base44.functions.invoke("partnerTrackViewing", {
+      sendPlaybackReport({
         video_id: video.id,
         session_id: psSessionIdRef.current,
         current_time: videoRef.current.currentTime,
@@ -343,7 +350,7 @@ export default function Watch() {
         is_ended: false,
       }).catch(() => {});
     }
-  }, [video, startCountdown, user]);
+  }, [video, startCountdown, user, sendPlaybackReport]);
 
   const handleEnded = useCallback(() => {
     if (video?.id) {
@@ -352,7 +359,7 @@ export default function Watch() {
     }
     // Perk Sphere viewing ended signal
     if (user && video?.id && psSessionIdRef.current) {
-      base44.functions.invoke("partnerTrackViewing", {
+      sendPlaybackReport({
         video_id: video.id,
         session_id: psSessionIdRef.current,
         current_time: videoRef.current?.duration || 0,
@@ -364,7 +371,7 @@ export default function Watch() {
     if (!countdownStartedRef.current) {
       startCountdown(0);
     }
-  }, [video, startCountdown, user]);
+  }, [video, startCountdown, user, sendPlaybackReport]);
 
   // Picture-in-Picture
   const handlePiP = async () => {
