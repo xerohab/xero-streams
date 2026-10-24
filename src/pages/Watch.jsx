@@ -292,6 +292,18 @@ export default function Watch() {
   // No auto-resume logic — let the native video controls handle play/pause normally
 
   // Save progress every 10 seconds
+  const trackPlaybackBoundary = useCallback(() => {
+    const player = videoRef.current;
+    if (!user || !video?.id || !player) return;
+    if (!psSessionIdRef.current) psSessionIdRef.current = crypto.randomUUID();
+    lastPsTrackRef.current = Date.now();
+    base44.functions.invoke("partnerTrackViewing", {
+      video_id: video.id, session_id: psSessionIdRef.current,
+      current_time: player.currentTime, duration: Number.isFinite(player.duration) ? player.duration : 0,
+      is_paused: player.paused, is_ended: player.ended
+    }).catch(() => {});
+  }, [user, video?.id]);
+
   const handleTimeUpdate = useCallback(() => {
     if (!videoRef.current || !video) return;
     const now = Date.now();
@@ -442,6 +454,10 @@ export default function Watch() {
                   poster={video.thumbnail_url}
                   onEnded={handleEnded}
                   onTimeUpdate={handleTimeUpdate}
+                  onPlay={trackPlaybackBoundary}
+                  onPause={trackPlaybackBoundary}
+                  onSeeking={trackPlaybackBoundary}
+                  onSeeked={trackPlaybackBoundary}
                   onError={(e) => {
                     const err = e.target.error;
                     console.error("[Watch] Video element error", {
