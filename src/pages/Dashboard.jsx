@@ -180,11 +180,7 @@ export default function Dashboard() {
     if (!user) return;
     setSubscribingTo(plan.id);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: plan.price,
-        return_url: window.location.origin + "/callback?success=true",
-        cancel_url: window.location.origin + "/callback?cancelled=true"
-      });
+      const res = await base44.functions.invoke("premiumCheckout", { action: "create", plan_id: plan.id });
       if (res.data?.approvalUrl) {
         localStorage.setItem("pending_plan_purchase", JSON.stringify({ plan_id: plan.id }));
         window.location.href = res.data.approvalUrl;
