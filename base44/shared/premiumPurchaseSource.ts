@@ -22,7 +22,7 @@ export function createPremiumPurchaseSource({partnerUuid,getCredentials,enabled,
    if(!body||Object.keys(body).sort().join(',')!=='account_reference,action,transaction_reference'||body.action!=='premium_purchase_lookup'||! /^[A-Za-z0-9_-]{1,100}$/.test(body.account_reference||'')||! /^[A-Za-z0-9_-]{1,100}$/.test(body.transaction_reference||''))return fail(400);
    const proof=await loadProof(body.account_reference,body.transaction_reference,req);
    if(proof?.partner_account_reference!==body.account_reference||proof.order_reference!==body.transaction_reference||proof.provider!=='paypal')return fail(409);
-   const response=JSON.stringify({ok:true,data:{partner_uuid:partnerUuid,account_reference:body.account_reference,transaction_reference:body.transaction_reference,purchase_type:'premium',provider:'paypal',capture_reference:proof.capture_reference,plan_reference:proof.plan_reference,currency:proof.currency,amount_minor:proof.amount_minor,captured_at:proof.captured_at,verified_at:new Date(clock()).toISOString()}});
+   const response=JSON.stringify({ok:true,data:{partner_uuid:partnerUuid,account_reference:body.account_reference,transaction_reference:body.transaction_reference,purchase_type:'premium',provider:'paypal',link_reference:proof.link_reference||null,capture_reference:proof.capture_reference,plan_reference:proof.plan_reference,currency:proof.currency,amount_minor:proof.amount_minor,captured_at:proof.captured_at,verified_at:new Date(clock()).toISOString()}});
    const signed=hex(await crypto.subtle.sign('HMAC',key,enc.encode(await canonical('RESPONSE',response))));
    return new Response(response,{headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-PS-Source-Signature':signed}});
   }catch{return fail(503);}
