@@ -1,4 +1,5 @@
 import {secrets} from 'base44:runtime';
+import {currentPerkSphereLink} from './perkSphereClient.ts';
 const API=()=>secrets.get('PAYPAL_ENVIRONMENT')==='sandbox'?'https://api-m.sandbox.paypal.com':'https://api-m.paypal.com';
 const validId=value=>typeof value==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(value);
 function fail(){throw Error('PREMIUM_PAYMENT_NOT_VERIFIED');}
@@ -30,7 +31,7 @@ export function premiumProof(order,binding){
  const capture=captures[0];
  if(capture.status!=='COMPLETED'||!validId(capture.id)||capture.amount?.currency_code!==binding.currency||capture.amount?.value!==binding.expected_amount||
   !Number.isFinite(Date.parse(capture.create_time))||Date.parse(capture.create_time)>Date.now()+300000)fail();
- return {provider:'paypal',order_reference:binding.order_id,capture_reference:capture.id,partner_account_reference:binding.user_id,plan_reference:binding.plan_id,currency:binding.currency,amount_minor:Math.round(Number(binding.expected_amount)*100),captured_at:capture.create_time};
+ return {provider:'paypal',order_reference:binding.order_id,capture_reference:capture.id,partner_account_reference:binding.user_id,plan_reference:binding.plan_id,currency:binding.currency,amount_minor:Math.round(Number(binding.expected_amount)*100),captured_at:capture.create_time,link_reference:binding.perksphere_link_uuid||null};
 }
 async function bindingFor(admin,userId,orderId){
  if(!validId(orderId))fail();
@@ -42,7 +43,8 @@ export async function createPremiumOrder(admin,userId,planId){
  if(!validId(userId)||!validId(planId))fail();
  const plan=await admin.entities.SubscriptionPlan.get(planId);if(plan?.id!==planId||plan.is_active!==true)fail();
  const amount=planPrice(plan.price),request=crypto.randomUUID();
- const binding=await admin.entities.PremiumPayment.create({user_id:userId,plan_id:planId,expected_amount:amount,currency:'GBP',request_reference:request,status:'pending'});
+ const link=await currentPerkSphereLink(admin,userId).catch(()=>null);
+ const binding=await admin.entities.PremiumPayment.create({user_id:userId,plan_id:planId,expected_amount:amount,currency:'GBP',request_reference:request,status:'pending',perksphere_link_uuid:link?.perksphere_connection_id||null});
  if(!validId(binding.id))fail();
  const token=await accessToken();
  const order=await provider('/v2/checkout/orders',{method:'POST',token,requestId:request,body:{intent:'CAPTURE',purchase_units:[{custom_id:'PSPREMIUM:'+binding.id,amount:{currency_code:'GBP',value:amount},description:'Xero Streams Premium'}],application_context:{brand_name:'Xero Streams',user_action:'PAY_NOW',return_url:'https://xerostreams.com/callback?success=true&premium=true',cancel_url:'https://xerostreams.com/callback?cancelled=true&premium=true'}}});
@@ -50,7 +52,7 @@ export async function createPremiumOrder(admin,userId,planId){
  const approval=order.links?.find(x=>x.rel==='approve')?.href;
  const target=new URL(approval);if(target.protocol!=='https:'||!['www.paypal.com','www.sandbox.paypal.com'].includes(target.hostname)||target.username||target.password)fail();
  await admin.entities.PremiumPayment.update(binding.id,{order_id:order.id,status:'created'});
- return {orderId:order.id,approvalUrl:approval,currency:'GBP',amount};
+ return {orderId:order.id,approvalUrl:approval,currency:'GBP',amount,perksphere_reward_link_bound:!!link};
 }
 export async function capturePremiumOrder(admin,userId,orderId){
  const binding=await bindingFor(admin,userId,orderId),token=await accessToken();
