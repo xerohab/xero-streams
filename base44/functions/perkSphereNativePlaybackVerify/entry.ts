@@ -1,0 +1,17 @@
+import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
+import {secrets} from 'base44:runtime';
+import {getCredentials,validateKeyForPartner} from '../../shared/perkSphereClient.ts';
+import {readNativePlaybackProof} from '../../shared/nativePlaybackProof.ts';
+import {createNativePlaybackSource} from '../../shared/nativePlaybackSource.ts';
+const handler=createNativePlaybackSource({
+ partnerUuid:'630feee8-2649-4c4f-b2a0-c26746a696fd',
+ enabled:()=>secrets.get('PERKSPHERE_VIDEO_SOURCE_ENABLED')==='true'&&validateKeyForPartner('xero-streams').valid,
+ getCredentials,
+ loadProof:async(account,sessionReference,req,content)=>{
+  const admin=createClientFromRequest(req).asServiceRole,user=await admin.entities.User.get(account);
+  if(user?.id!==account||['suspended','banned','disabled'].includes(user.account_status))throw Error('ACCOUNT_UNAVAILABLE');
+  return readNativePlaybackProof(admin,{account,content,sessionReference});
+ }
+});
+export default handler;
+if(typeof Deno!=='undefined')Deno.serve(handler);
