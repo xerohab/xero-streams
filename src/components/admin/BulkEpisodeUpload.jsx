@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import { detectVideoQuality } from "@/lib/qualityDetection";
+import { announceNewRelease } from "@/lib/discordAnnouncements";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
@@ -174,7 +175,10 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
       }
     }
     
-    await base44.entities.Video.bulkCreate(records);
+    for (const record of records) {
+      const created = await base44.entities.Video.create(record);
+      await announceNewRelease(record.content_type || 'episode', created);
+    }
     toast.success(`${records.length} ${isMovieMode ? "movie" : "episode"}${records.length > 1 ? "s" : ""} added!`, { id: toastId });
     setEpisodes([emptyEpisode()]);
     setSelectedSeries("");
