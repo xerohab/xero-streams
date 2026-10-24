@@ -3,6 +3,7 @@ import {secrets} from "base44:runtime";
 import {accrueNativePlayback} from "../../shared/nativePlayback.ts";
 import {
   sha256Hex,
+  currentPerkSphereLink,
   submitPartnerEvent,
   isYouTubeContent,
   logIntegration,
@@ -91,6 +92,8 @@ async function handleRequest(req) {
         p.media_url_sha256 === await sha256Hex(video.video_url)) playbackPolicy = p;
     }
 
+    const connection = await currentPerkSphereLink(base44.asServiceRole,user.id);
+
     // Find or create the viewing session.
     const sessionPage = await base44.entities.ViewingSession.filter(
       { user_id: user.id, video_id: videoId, session_id: sessionId },
@@ -107,6 +110,7 @@ async function handleRequest(req) {
         user_id: user.id,
         video_id: videoId,
         session_id: sessionId,
+        perksphere_link_uuid: connection?.perksphere_connection_id || null,
         started_at: nowIso,
         last_update: nowIso,
         accumulated_watch_seconds: 0,
@@ -153,17 +157,8 @@ async function handleRequest(req) {
       is_paused: isPaused, status: isEnded ? "ended" : "active", ...(playbackEvidence || {})
     });
 
-    // Check if user has a Perk Sphere connection.
-    const connections = pageItems(
-      await base44.entities.PerkSphereConnection.filter(
-        { user_id: user.id, status: "linked" },
-        undefined, 1
-      )
-    );
-    const connection = connections[0] || null;
-
     // Submit video_watch_progress at milestones (only if connected).
-    if (connection && !isPaused && playbackPolicy && secrets.get("PERKSPHERE_VIDEO_EVENTS_ENABLED") === "true") {
+    if (connection && session.perksphere_link_uuid === connection.perksphere_connection_id && !isPaused && playbackPolicy && secrets.get("PERKSPHERE_VIDEO_EVENTS_ENABLED") === "true") {
       const currentMilestone = Math.floor(
         newAccumulated / PROGRESS_INTERVAL_SECONDS
       );
