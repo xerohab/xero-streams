@@ -44,7 +44,7 @@ export async function createPremiumOrder(admin,userId,planId){
  const plan=await admin.entities.SubscriptionPlan.get(planId);if(plan?.id!==planId||plan.is_active!==true)fail();
  const amount=planPrice(plan.price),request=crypto.randomUUID();
  const link=await currentPerkSphereLink(admin,userId).catch(()=>null);
- const binding=await admin.entities.PremiumPayment.create({user_id:userId,plan_id:planId,expected_amount:amount,currency:'GBP',request_reference:request,status:'pending',perksphere_link_uuid:link?.perksphere_connection_id||null});
+ const binding=await admin.entities.PremiumPayment.create({user_id:userId,plan_id:planId,expected_amount:amount,currency:'GBP',request_reference:request,status:'pending',...(link?{perksphere_link_uuid:link.perksphere_connection_id}:{})});
  if(!validId(binding.id))fail();
  const token=await accessToken();
  const order=await provider('/v2/checkout/orders',{method:'POST',token,requestId:request,body:{intent:'CAPTURE',purchase_units:[{custom_id:'PSPREMIUM:'+binding.id,amount:{currency_code:'GBP',value:amount},description:'Xero Streams Premium'}],application_context:{brand_name:'Xero Streams',user_action:'PAY_NOW',return_url:'https://xerostreams.com/callback?success=true&premium=true',cancel_url:'https://xerostreams.com/callback?cancelled=true&premium=true'}}});
