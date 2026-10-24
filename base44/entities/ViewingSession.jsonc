@@ -2,6 +2,9 @@
   "name": "ViewingSession",
   "type": "object",
   "properties": {
+    "perksphere_link_uuid": {
+      "type": "string"
+    },
     "credited_ranges": {
       "type": "array",
       "items": {
