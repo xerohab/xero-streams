@@ -30,7 +30,7 @@ export default function SubscriptionSection({ activeSub, activePlan, plans, subs
                 <div key={plan.id} className="flex flex-col rounded-lg border border-border bg-background/40 p-5">
                   <h4 className="text-lg font-bold">{plan.name}</h4>
                   <p className="my-2 text-2xl font-black text-primary">
-                    ${plan.price}
+                    £{plan.price}
                     <span className="text-sm font-normal text-muted-foreground">/{plan.interval}</span>
                   </p>
                   <p className="mb-4 flex-1 text-sm text-muted-foreground">{plan.description}</p>
