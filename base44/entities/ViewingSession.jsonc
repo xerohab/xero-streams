@@ -2,6 +2,12 @@
   "name": "ViewingSession",
   "type": "object",
   "properties": {
+    "task_submissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "perksphere_link_uuid": {
       "type": "string"
     },
