@@ -24,7 +24,16 @@ export default function PurchaseCallback() {
         const user = await base44.auth.me();
         if (!user) throw new Error("Not authenticated");
 
-        // Capture order
+        // Bound premium orders are captured and activated only on the server.
+        if (searchParams.get("premium") === "true") {
+          const premium = await base44.functions.invoke("premiumCheckout", { action: "capture", orderId: token });
+          if (!premium.data?.success || !premium.data?.premium_activated) throw new Error("Premium activation could not complete");
+          localStorage.removeItem("pending_plan_purchase");
+          setStatus("completed");
+          setTimeout(() => navigate("/dashboard"), 2000);
+          return;
+        }
+        // Existing book, video, donation and in-flight legacy orders retain their flow.
         const res = await base44.functions.invoke("capturePaypalOrder", { orderId: token });
         if (res.data?.success) {
           // Check what we were buying
