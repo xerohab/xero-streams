@@ -32,7 +32,7 @@ export function accrueNativePlayback(session,report,{now,duration,mediaHash}){
  let eligible=Math.floor(Math.min(covered,realElapsed));
  // Runtime metadata is rounded up to seconds. At most one second of rounding
  // is accepted only after continuous start-to-end coverage and matching time.
- const full=ranges.length===1&&ranges[0][0]<=0.25&&ranges[0][1]>=duration-1&&realElapsed>=duration-1&&report.is_ended===true;
+ const full=ranges.length===1&&ranges[0][0]<=0.25&&ranges[0][1]>=duration-1&&realElapsed>=duration-1&&(report.is_ended===true||sameEvidence&&session.completed_full_content===true);
  if(full)eligible=duration;
- return {credited_ranges:ranges,accumulated_watch_seconds:Math.min(duration,eligible),evidence_version:'native-playback-v1',media_url_sha256:mediaHash,content_duration_seconds:duration,completed_full_content:full||sameEvidence&&session.completed_full_content===true};
+ return {credited_ranges:ranges,accumulated_watch_seconds:Math.min(duration,eligible),evidence_version:'native-playback-v1',media_url_sha256:mediaHash,content_duration_seconds:duration,completed_full_content:full};
 }
