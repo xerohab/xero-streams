@@ -1,6 +1,23 @@
 import { base44 } from "@/api/base44Client";
 import toast from "react-hot-toast";
 
+// Resolve IDs returned by different Base44 SDK response shapes.
+export async function resolveCreatedRelease(entityName, created, payload, startedAt) {
+  const direct = [created, created?.data, created?.record, created?.data?.record]
+    .find(item => item && typeof item.id === "string" && item.id);
+  if (direct) return direct;
+  const entity = base44.entities[entityName];
+  const matches = await entity.filter({ title: payload.title }, "-created_date", 10);
+  const recent = (matches || []).filter(item =>
+    item.id &&
+    (!payload.content_type || item.content_type === payload.content_type) &&
+    (!payload.series_id || item.series_id === payload.series_id) &&
+    Number.isFinite(new Date(item.created_date).getTime()) &&
+    Math.abs(new Date(item.created_date).getTime() - startedAt) < 120000
+  );
+  return recent.length === 1 ? recent[0] : null;
+}
+
 // Announcement errors must never undo an already successful upload.
 export async function announceNewRelease(type, record) {
   if (record?.is_adult || record?.coming_soon) return false;
