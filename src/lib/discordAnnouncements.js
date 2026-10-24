@@ -7,7 +7,13 @@ export async function resolveCreatedRelease(entityName, created, payload, starte
     .find(item => item && typeof item.id === "string" && item.id);
   if (direct) return direct;
   const entity = base44.entities[entityName];
-  const matches = await entity.filter({ title: payload.title }, "-created_date", 10);
+  let matches;
+  try {
+    matches = await entity.filter({ title: payload.title }, "-created_date", 10);
+  } catch (error) {
+    console.warn("Could not resolve Discord announcement ID:", error?.message);
+    return null;
+  }
   const recent = (matches || []).filter(item =>
     item.id &&
     (!payload.content_type || item.content_type === payload.content_type) &&
