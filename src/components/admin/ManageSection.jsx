@@ -6,6 +6,8 @@ import { Film, Video, ChevronDown, ChevronRight, Pencil, Trash2, ImageIcon, Load
 import { base44 } from "@/api/base44Client";
 import { normaliseToGenres, resolveVideoGenres } from "@/lib/genreAdmin";
 import { usePaginatedSearch } from "@/hooks/usePaginatedSearch";
+import { announceNewRelease } from "@/lib/discordAnnouncements";
+import toast from "react-hot-toast";
 
 import { Layers } from "lucide-react";
 
@@ -400,6 +402,7 @@ export default function ManageSection({
                         </div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
+                        {!v.is_adult && !v.coming_soon && <Button variant="outline" size="sm" title="Send or retry Discord announcement" onClick={async () => { const ok = await announceNewRelease(v.content_type === "episode" ? "episode" : "movie", v); if (ok) toast.success("Discord announcement confirmed"); }}>Discord</Button>}
                         <Button
                           variant="ghost"
                           size="icon"
