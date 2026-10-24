@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Upload, Link as LinkIcon, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 import { detectVideoQuality } from "@/lib/qualityDetection";
-import { announceNewRelease } from "@/lib/discordAnnouncements";
+import { announceNewRelease, resolveCreatedRelease } from "@/lib/discordAnnouncements";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { fetchMediaAutoFill, mediaInfoUpdates } from "@/lib/mediaAutoFill";
 
@@ -175,10 +175,18 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
       }
     }
     
+    let announcedCount = 0;
+    let failedAnnouncements = 0;
     for (const record of records) {
+      const startedAt = Date.now();
       const created = await base44.entities.Video.create(record);
-      await announceNewRelease(record.content_type || 'episode', created);
+      const saved = await resolveCreatedRelease("Video", created, record, startedAt);
+      const ok = await announceNewRelease(record.content_type || "episode", saved);
+      if (ok) announcedCount++;
+      else failedAnnouncements++;
     }
+    if (failedAnnouncements === 0) toast.success(`Discord confirmed ${announcedCount} announcement(s)`);
+    else toast.error(`Discord: ${announcedCount} confirmed, ${failedAnnouncements} not confirmed. Retry in Manage.`);
     toast.success(`${records.length} ${isMovieMode ? "movie" : "episode"}${records.length > 1 ? "s" : ""} added!`, { id: toastId });
     setEpisodes([emptyEpisode()]);
     setSelectedSeries("");
