@@ -112,9 +112,26 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       runtime_or_episodes: form.runtime_or_episodes || undefined,
       genres: form.genres || [],
     };
+    const startedAt = Date.now();
     const createdVideo = await base44.entities.Video.create(payload);
-    await announceNewRelease(payload.content_type || 'movie', createdVideo);
-    toast.success("Video added successfully!");
+    // Some SDK responses wrap the created record. Resolve the saved ID before notifying Discord.
+    let saved = createdVideo?.id ? createdVideo : (createdVideo?.data?.id ? createdVideo.data : createdVideo?.record?.id ? createdVideo.record : null);
+    if (!saved) {
+      const matches = await base44.entities.Video.filter({ title: payload.title }, "-created_date", 5);
+      const recent = (matches || []).filter(v =>
+        v.content_type === payload.content_type &&
+        v.id &&
+        Math.abs(new Date(v.created_date).getTime() - startedAt) < 120000
+      );
+      if (recent.length === 1) saved = recent[0];
+    }
+    if (payload.is_adult || payload.coming_soon) {
+      toast.success("Video added successfully (Discord announcement not applicable)");
+    } else {
+      const announced = await announceNewRelease(payload.content_type || "movie", saved);
+      if (announced) toast.success("Video added and Discord announcement confirmed!");
+      else toast.success("Video added; check the Discord error above or use Manage → Discord");
+    }
     setForm({
       title: "",
       description: "",
