@@ -14,7 +14,7 @@ export default async function(req) {
   const item = type === "series" ? await base44.asServiceRole.entities.Series.get(id) : await base44.asServiceRole.entities.Video.get(id);
   if (!item?.title || item.is_adult || item.coming_soon) return Response.json({error:"not_eligible"},{status:422});
   if (type !== "series" && item.content_type !== type) return Response.json({error:"type_mismatch"},{status:422});
-  const payload = {type,id,title:item.title,description:item.description || "",poster_url:item.cover_image || item.thumbnail_url || "",url:"https://xerostreams.com/" + (type==="series"?"SeriesDetail":type==="movie"?"MovieDetail":"Watch") + "?id=" + encodeURIComponent(id)};
+  const payload = {type,id,title:item.title,description:item.description || "",poster_url:item.cover_image || item.thumbnail_url || "",url:"https://xerostreams.com/" + (type==="series"?"series":type==="movie"?"movie":"watch") + "?id=" + encodeURIComponent(id)};
   if(type==="episode") {
     const series = item.series_id ? await base44.asServiceRole.entities.Series.get(item.series_id) : null;
     if(series?.is_adult) return Response.json({error:"not_eligible"},{status:422});
