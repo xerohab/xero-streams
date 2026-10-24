@@ -1,12 +1,10 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
-import {secrets} from "base44:runtime";
+import {emitNativeTaskEvents} from "../../shared/partnerTaskEvents.ts";
 import {accrueNativePlayback} from "../../shared/nativePlayback.ts";
 import {
   sha256Hex,
   currentPerkSphereLink,
-  submitPartnerEvent,
   isYouTubeContent,
-  logIntegration,
   pageItems,
 } from "../../shared/perkSphereClient.ts";
 
@@ -32,7 +30,6 @@ import {
 // - Multiple tabs are isolated by client-generated session_id.
 // - eligible_seconds is a safe integer between 0 and 86400.
 
-const PROGRESS_INTERVAL_SECONDS = 300; // 5-minute milestones
 const SEEK_TOLERANCE_SECONDS = 5;
 const MAX_ELIGIBLE_SECONDS = 86400;
 
@@ -146,8 +143,7 @@ async function handleRequest(req) {
       playbackEvidence = accrueNativePlayback(session,{current_time:currentTime,is_paused:isPaused,is_ended:isEnded},{now,duration:playbackPolicy.duration_seconds,mediaHash:playbackPolicy.media_url_sha256});
       newAccumulated = playbackEvidence.accumulated_watch_seconds;
     }
-    const newMilestones = [...(session.progress_milestones || [])];
-    const eventsSubmitted = [];
+
 
     // Persist metering before notifying the independent consumer. A delivery
     // failure must not discard progress or leave a claim ahead of its evidence.
@@ -157,73 +153,7 @@ async function handleRequest(req) {
       is_paused: isPaused, status: isEnded ? "ended" : "active", ...(playbackEvidence || {})
     });
 
-    // Submit video_watch_progress at milestones (only if connected).
-    if (connection && session.perksphere_link_uuid === connection.perksphere_connection_id && !isPaused && playbackPolicy && secrets.get("PERKSPHERE_VIDEO_EVENTS_ENABLED") === "true") {
-      const currentMilestone = Math.floor(
-        newAccumulated / PROGRESS_INTERVAL_SECONDS
-      );
-
-      let deliveryAttempts = 0;
-      for (let m = 1; m <= currentMilestone; m++) {
-        const milestoneSeconds = m * PROGRESS_INTERVAL_SECONDS;
-        if (!newMilestones.includes(milestoneSeconds)) {
-          if (deliveryAttempts++ >= 3) break; // Bound retry work; later heartbeats resume pending milestones.
-          const partnerEventId = `ps_evt_${user.id}_${videoId}_${sessionId}_${milestoneSeconds}`;
-          // eligible_seconds: safe integer between 0 and 86400.
-          const eligibleSeconds = Math.min(
-            PROGRESS_INTERVAL_SECONDS,
-            MAX_ELIGIBLE_SECONDS
-          );
-          try {
-            const result = await submitPartnerEvent(connection, {
-              event_type: "video_watch_progress",
-              partner_event_id: partnerEventId,
-              occurred_at: nowIso,
-              evidence: {
-                content_id: videoId,
-                playback_session_id: sessionId,
-                eligible_seconds: eligibleSeconds,
-              },
-            });
-            await logIntegration(base44, {
-              event_type: "event_submit",
-              status: result.ok ? "success" : "error",
-              error_code: result.ok
-                ? null
-                : result.data?.error?.code || "unknown",
-              http_status: result.status,
-              user_id: user.id,
-              activity: "video_watch_progress",
-              event_id: partnerEventId,
-            });
-            if (result.ok) {
-              newMilestones.push(milestoneSeconds);
-              eventsSubmitted.push({
-                event_type: "video_watch_progress",
-                milestone: milestoneSeconds,
-              });
-            }
-          } catch (e) {
-            await logIntegration(base44, {
-              event_type: "event_submit",
-              status: "error",
-              error_code: "PS_UNREACHABLE",
-              details: e.message,
-              user_id: user.id,
-              activity: "video_watch_progress",
-              event_id: partnerEventId,
-            });
-          }
-        }
-      }
-    }
-
-    // stream_ended is NOT submitted here — it represents the end of the stream
-    // itself (content going offline), not an individual viewer finishing playback.
-    // XeroStreams is a VOD platform; stream_ended is an admin content-removal action.
-
-    // Transport replay is safe; only delivered milestone markers change here.
-    if(newMilestones.length !== (session.progress_milestones || []).length) await base44.asServiceRole.entities.ViewingSession.update(session.id,{progress_milestones:newMilestones});
+    const eventsSubmitted = playbackPolicy ? await emitNativeTaskEvents(base44.asServiceRole,{connection,session,policy:playbackPolicy,videoId,eligibleSeconds:newAccumulated,fullContent:playbackEvidence?.completed_full_content===true,occurredAt:nowIso}) : [];
 
     return Response.json({
       ok: true,
