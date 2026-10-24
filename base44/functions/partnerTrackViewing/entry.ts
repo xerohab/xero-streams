@@ -40,7 +40,7 @@ async function handleRequest(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me().catch(() => null);
-    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const videoId = String(body.video_id || "").trim();
@@ -94,9 +94,11 @@ async function handleRequest(req) {
     // Find or create the viewing session.
     const sessionPage = await base44.entities.ViewingSession.filter(
       { user_id: user.id, video_id: videoId, session_id: sessionId },
-      undefined, 1
+      undefined, 2
     );
-    let session = pageItems(sessionPage)[0];
+    const matchingSessions = pageItems(sessionPage);
+    if(matchingSessions.length > 1) return Response.json({error:"Viewing session requires reconciliation."},{status:409});
+    let session = matchingSessions[0];
     const now = Date.now();
     const nowIso = new Date(now).toISOString();
 
