@@ -2,6 +2,23 @@
   "name": "PlaybackRewardContent",
   "type": "object",
   "properties": {
+    "task_bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_reference": {
+            "type": "string"
+          },
+          "required_seconds": {
+            "type": "number"
+          },
+          "full_content": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "video_id": {
       "type": "string"
     },
