@@ -9,9 +9,10 @@ import {
   pageItems,
 } from "../../shared/perkSphereClient.ts";
 
-// Server-side viewing evidence tracking and signed event submission.
+// Client-assisted native playback metering with server time/content bounds.
 //
-// Tracks actual accumulated watch time (not browser-reported position alone),
+// Bounds unique reported content coverage by server elapsed time; it does not
+// prove human attention or make a browser report independently authoritative.
 // detects seeking/skipping/pausing/rewinding, and submits video_watch_progress
 // at 5-minute milestones. Only submits when the user has a linked Perk Sphere
 // connection and the content is not YouTube (YouTube content is suppressed
