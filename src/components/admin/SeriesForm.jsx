@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import FranchiseSearchSelect from "@/components/admin/FranchiseSearchSelect";
 import GenreSelect from "@/components/admin/GenreSelect";
 import { normaliseToGenres } from "@/lib/genreAdmin";
+import { announceNewRelease } from "@/lib/discordAnnouncements";
 
 const CATEGORIES = ["action", "comedy", "drama", "documentary", "horror", "sci-fi", "thriller", "education", "music", "crime", "mystery", "fantasy", "romance", "animation", "adventure", "other"];
 
@@ -124,7 +125,8 @@ export default function SeriesForm({ franchises = [], onSuccess }) {
       await base44.entities.Series.bulkCreate(seriesArray);
       toast.success(`Created ${bulkCount} series for "${form.title}"!`);
     } else {
-      await base44.entities.Series.create({ ...base, title: form.title });
+      const createdSeries = await base44.entities.Series.create({ ...base, title: form.title });
+      await announceNewRelease("series", createdSeries);
       toast.success("Series created!");
     }
 
