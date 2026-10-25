@@ -2,7 +2,8 @@ import {premiumReversalProof} from './premiumReversals.ts';
 import {secrets} from 'base44:runtime';
 import {currentPerkSphereLink} from './perkSphereClient.ts';
 import {emitPremiumTaskEvent} from './partnerTaskEvents.ts';
-const API=()=>secrets.get('PAYPAL_ENVIRONMENT')==='sandbox'?'https://api-m.sandbox.paypal.com':'https://api-m.paypal.com';
+const providerEnvironment=()=>secrets.get('PAYPAL_ENVIRONMENT')==='sandbox'?'sandbox':'live';
+const API=environment=>environment==='sandbox'?'https://api-m.sandbox.paypal.com':'https://api-m.paypal.com';
 const validId=value=>typeof value==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(value);
 function fail(){throw Error('PREMIUM_PAYMENT_NOT_VERIFIED');}
 export function planPrice(value){
@@ -10,15 +11,15 @@ export function planPrice(value){
  const minor=Math.round(value*100);if(minor<1||Math.abs(value*100-minor)>0.000001)fail();
  return (minor/100).toFixed(2);
 }
-async function provider(path,{token,method='GET',body,requestId}={}){
+async function provider(path,{token,method='GET',body,requestId,environment=providerEnvironment()}={}){
  const headers={'Content-Type':'application/json',Authorization:token?'Bearer '+token:''};
  if(requestId)headers['PayPal-Request-Id']=requestId;
- const response=await fetch(API()+path,{method,headers,body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(12000)});
+ const response=await fetch(API(environment)+path,{method,headers,body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(12000)});
  if(!response.ok)fail();return response.json();
 }
-async function accessToken(){
+async function accessToken(environment=providerEnvironment()){
  const id=secrets.get('PAYPAL_CLIENT_ID'),secret=secrets.get('PAYPAL_CLIENT_SECRET');if(!id||!secret)fail();
- const r=await fetch(API()+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+btoa(id+':'+secret),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials',redirect:'error',signal:AbortSignal.timeout(12000)});
+ const r=await fetch(API(environment)+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+btoa(id+':'+secret),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials',redirect:'error',signal:AbortSignal.timeout(12000)});
  if(!r.ok)fail();const data=await r.json();if(typeof data.access_token!=='string'||!data.access_token)fail();return data.access_token;
 }
 function validateOrder(order,binding){
@@ -27,13 +28,13 @@ function validateOrder(order,binding){
  if(unit.custom_id!=='PSPREMIUM:'+binding.id||unit.amount?.currency_code!==binding.currency||unit.amount?.value!==binding.expected_amount)fail();
  return unit;
 }
-export function premiumProof(order,binding){
+export function premiumProof(order,binding,environment=providerEnvironment()){
  const unit=validateOrder(order,binding),captures=unit.payments?.captures;
  if(order.status!=='COMPLETED'||!Array.isArray(captures)||captures.length!==1)fail();
  const capture=captures[0];
  if(capture.status!=='COMPLETED'||!validId(capture.id)||capture.amount?.currency_code!==binding.currency||capture.amount?.value!==binding.expected_amount||
   !Number.isFinite(Date.parse(capture.create_time))||Date.parse(capture.create_time)>Date.now()+300000)fail();
- return {provider:'paypal',order_reference:binding.order_id,capture_reference:capture.id,partner_account_reference:binding.user_id,plan_reference:binding.plan_id,currency:binding.currency,amount_minor:Math.round(Number(binding.expected_amount)*100),captured_at:capture.create_time,link_reference:binding.perksphere_link_uuid||null};
+ return {provider:'paypal',environment,order_reference:binding.order_id,capture_reference:capture.id,partner_account_reference:binding.user_id,plan_reference:binding.plan_id,currency:binding.currency,amount_minor:Math.round(Number(binding.expected_amount)*100),captured_at:capture.create_time,link_reference:binding.perksphere_link_uuid||null};
 }
 async function bindingFor(admin,userId,orderId){
  if(!validId(orderId))fail();
@@ -44,12 +45,12 @@ async function bindingFor(admin,userId,orderId){
 export async function createPremiumOrder(admin,userId,planId){
  if(!validId(userId)||!validId(planId))fail();
  const plan=await admin.entities.SubscriptionPlan.get(planId);if(plan?.id!==planId||plan.is_active!==true)fail();
- const amount=planPrice(plan.price),request=crypto.randomUUID();
+ const amount=planPrice(plan.price),request=crypto.randomUUID(),environment=providerEnvironment();
  const link=await currentPerkSphereLink(admin,userId).catch(()=>null);
  const binding=await admin.entities.PremiumPayment.create({user_id:userId,plan_id:planId,expected_amount:amount,currency:'GBP',request_reference:request,status:'pending',...(link?{perksphere_link_uuid:link.perksphere_connection_id}:{})});
  if(!validId(binding.id))fail();
- const token=await accessToken();
- const order=await provider('/v2/checkout/orders',{method:'POST',token,requestId:request,body:{intent:'CAPTURE',purchase_units:[{custom_id:'PSPREMIUM:'+binding.id,amount:{currency_code:'GBP',value:amount},description:'Xero Streams Premium'}],application_context:{brand_name:'Xero Streams',user_action:'PAY_NOW',return_url:'https://xerostreams.com/callback?success=true&premium=true',cancel_url:'https://xerostreams.com/callback?cancelled=true&premium=true'}}});
+ const token=await accessToken(environment);
+ const order=await provider('/v2/checkout/orders',{method:'POST',token,environment,requestId:request,body:{intent:'CAPTURE',purchase_units:[{custom_id:'PSPREMIUM:'+binding.id,amount:{currency_code:'GBP',value:amount},description:'Xero Streams Premium'}],application_context:{brand_name:'Xero Streams',user_action:'PAY_NOW',return_url:'https://xerostreams.com/callback?success=true&premium=true',cancel_url:'https://xerostreams.com/callback?cancelled=true&premium=true'}}});
  if(!validId(order.id))fail();
  const approval=order.links?.find(x=>x.rel==='approve')?.href;
  const target=new URL(approval);if(target.protocol!=='https:'||!['www.paypal.com','www.sandbox.paypal.com'].includes(target.hostname)||target.username||target.password)fail();
@@ -57,14 +58,14 @@ export async function createPremiumOrder(admin,userId,planId){
  return {orderId:order.id,approvalUrl:approval,currency:'GBP',amount,perksphere_reward_link_bound:!!link};
 }
 export async function capturePremiumOrder(admin,userId,orderId){
- const binding=await bindingFor(admin,userId,orderId),token=await accessToken();
- let order=await provider('/v2/checkout/orders/'+orderId,{token});validateOrder(order,binding);
+ const binding=await bindingFor(admin,userId,orderId),environment=providerEnvironment(),token=await accessToken(environment);
+ let order=await provider('/v2/checkout/orders/'+orderId,{token,environment});validateOrder(order,binding);
  if(order.status!=='COMPLETED'){
   if(order.status!=='APPROVED')fail();
-  await provider('/v2/checkout/orders/'+orderId+'/capture',{method:'POST',token,body:{},requestId:'capture-'+binding.request_reference});
-  order=await provider('/v2/checkout/orders/'+orderId,{token});
+  await provider('/v2/checkout/orders/'+orderId+'/capture',{method:'POST',token,environment,body:{},requestId:'capture-'+binding.request_reference});
+  order=await provider('/v2/checkout/orders/'+orderId,{token,environment});
  }
- const proof=premiumProof(order,binding);
+ const proof=premiumProof(order,binding,environment);
  await admin.entities.PremiumPayment.update(binding.id,{status:'completed',capture_id:proof.capture_reference,captured_at:proof.captured_at});
  const existing=await admin.entities.UserSubscription.filter({user_id:userId,paypal_order_id:orderId});
  if(existing.length>1)fail();
@@ -82,7 +83,8 @@ export async function verifyPremiumPayment(admin,userId,orderId){
  const binding=await bindingFor(admin,userId,orderId);if(binding.status!=='completed')fail();
  const subscriptions=await admin.entities.UserSubscription.filter({user_id:userId,paypal_order_id:orderId});
  if(subscriptions.length!==1||subscriptions[0].status!=='active'||subscriptions[0].plan_id!==binding.plan_id)fail();
- const proof=premiumProof(await provider('/v2/checkout/orders/'+orderId,{token:await accessToken()}),binding);
+ const environment=providerEnvironment();
+ const proof=premiumProof(await provider('/v2/checkout/orders/'+orderId,{token:await accessToken(environment),environment}),binding,environment);
  if(binding.capture_id!==proof.capture_reference||binding.captured_at!==proof.captured_at)fail();
  return proof;
 }
@@ -90,6 +92,6 @@ export async function verifyPremiumPayment(admin,userId,orderId){
 export async function verifyPremiumReversal(admin,userId,orderId,eventType,reference){
  const binding=await bindingFor(admin,userId,orderId);
  if(binding.status!=='completed'||!validId(binding.capture_id)||!validId(reference)||!['purchase_refunded','chargeback_issued'].includes(eventType))fail();
- const token=await accessToken(),read=path=>provider(path,{token});
- return premiumReversalProof({binding,order:await read('/v2/checkout/orders/'+orderId),read,eventType,reference,environment:secrets.get('PAYPAL_ENVIRONMENT')==='sandbox'?'sandbox':'live'});
+ const environment=providerEnvironment(),token=await accessToken(environment),read=path=>provider(path,{token,environment});
+ return premiumReversalProof({binding,order:await read('/v2/checkout/orders/'+orderId),read,eventType,reference,environment});
 }

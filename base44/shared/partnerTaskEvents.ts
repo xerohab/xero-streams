@@ -22,6 +22,7 @@ export async function emitNativeTaskEvents(admin,{connection,session,policy,vide
 }
 export async function emitPremiumTaskEvent(admin,proof){
  if(secrets.get('PERKSPHERE_PREMIUM_EVENTS_ENABLED')!=='true')return {submitted:false,reason:'notifications_paused'};
+ if(proof.environment!=='live')return {submitted:false,reason:'live_provider_payment_required'};
  const connection=await currentPerkSphereLink(admin,proof.partner_account_reference);
  if(!connection||!proof.link_reference||proof.link_reference!==connection.perksphere_connection_id)return {submitted:false,reason:'original_partner_link_required'};
  const result=await submitPartnerEvent(connection,{event_type:'purchase_completed',partner_event_id:'ps_premium_'+proof.capture_reference,task_reference:PREMIUM_TASK,resource_reference:proof.plan_reference,occurred_at:proof.captured_at,evidence:{transaction_reference:proof.order_reference,payment_status:'captured',currency:proof.currency,amount_minor:proof.amount_minor}});

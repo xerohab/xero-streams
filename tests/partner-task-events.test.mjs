@@ -37,7 +37,7 @@ test('paused, transferred, partial and incomplete-full playback never emits',asy
 test('premium notification preserves capture identity, requires original link and never claims a reward was issued',async()=>{
  enable();const f=fixture(),old=globalThis.fetch,sent=[];
  globalThis.fetch=async(url,init)=>{sent.push(JSON.parse(init.body));return Response.json({ok:true});};
- const proof={partner_account_reference:'member',link_reference:link,capture_reference:'capture',plan_reference:'plan',captured_at:'2026-10-25T12:00:00.000Z',order_reference:'order',currency:'GBP',amount_minor:499};
+ const proof={environment:'live',partner_account_reference:'member',link_reference:link,capture_reference:'capture',plan_reference:'plan',captured_at:'2026-10-25T12:00:00.000Z',order_reference:'order',currency:'GBP',amount_minor:499};
  try{
   assert.deepEqual(await emitPremiumTaskEvent(f.admin,proof),{submitted:true,reward_issued:false});
   assert.equal(sent[0].partner_event_id,'ps_premium_capture');assert.equal(sent[0].evidence.amount_minor,499);

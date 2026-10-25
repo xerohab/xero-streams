@@ -16,7 +16,7 @@ test('reconciliation requires a real administrator and a separately enabled noti
 test('reconciliation derives owner from the private receipt and submits no browser reward amounts',async()=>{
  const previous=globalThis.fetch,sent=[];
  const binding={id:'receipt',user_id:'owner',plan_id:'plan',order_id:'ORDER',capture_id:'CAPTURE',captured_at:'2026-10-24T12:00:00Z',expected_amount:'4.99',currency:'GBP',status:'completed',request_reference:'request'};
- globalThis.__testSecrets={PERKSPHERE_REVERSAL_EVENTS_ENABLED:'true',PAYPAL_ENVIRONMENT:'sandbox',PAYPAL_CLIENT_ID:'test-client',PAYPAL_CLIENT_SECRET:'synthetic-paypal-secret',PERKSPHERE_PARTNER_KEY_ID:'psp_lg9D0rXbH__AJaPdKv4kxd_x',PERKSPHERE_PARTNER_HMAC_SECRET:'synthetic-partner-secret-only'};
+ globalThis.__testSecrets={PERKSPHERE_REVERSAL_EVENTS_ENABLED:'true',PAYPAL_ENVIRONMENT:'live',PAYPAL_CLIENT_ID:'test-client',PAYPAL_CLIENT_SECRET:'synthetic-paypal-secret',PERKSPHERE_PARTNER_KEY_ID:'psp_lg9D0rXbH__AJaPdKv4kxd_x',PERKSPHERE_PARTNER_HMAC_SECRET:'synthetic-partner-secret-only'};
  globalThis.__testClient={auth:{me:async()=>({id:'admin',role:'admin'})},asServiceRole:{entities:{PremiumPayment:{filter:async()=>[binding]},IntegrationLog:{create:async()=>{}}}}};
  globalThis.fetch=async(url,init)=>{
   if(url.endsWith('/token'))return Response.json({access_token:'test-token'});
@@ -24,7 +24,7 @@ test('reconciliation derives owner from the private receipt and submits no brows
   assert.equal(init.method,'GET');
   if(url.endsWith('/v2/checkout/orders/ORDER'))return Response.json({id:'ORDER',status:'COMPLETED',purchase_units:[{custom_id:'PSPREMIUM:receipt',amount:{currency_code:'GBP',value:'4.99'},payments:{captures:[{id:'CAPTURE',amount:{currency_code:'GBP',value:'4.99'},create_time:binding.captured_at}]}}]});
   if(url.endsWith('/v2/payments/captures/CAPTURE'))return Response.json({id:'CAPTURE',status:'REFUNDED',amount:{currency_code:'GBP',value:'4.99'}});
-  if(url.endsWith('/v2/payments/refunds/REFUND'))return Response.json({id:'REFUND',status:'COMPLETED',amount:{currency_code:'GBP',value:'4.99'},update_time:'2026-10-24T13:00:00Z',links:[{rel:'up',method:'GET',href:'https://api-m.sandbox.paypal.com/v2/payments/captures/CAPTURE'}]});
+  if(url.endsWith('/v2/payments/refunds/REFUND'))return Response.json({id:'REFUND',status:'COMPLETED',amount:{currency_code:'GBP',value:'4.99'},update_time:'2026-10-24T13:00:00Z',links:[{rel:'up',method:'GET',href:'https://api-m.paypal.com/v2/payments/captures/CAPTURE'}]});
   throw Error('unexpected network request');
  };
  try{

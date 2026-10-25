@@ -16,6 +16,7 @@ async function handler(req){
   const admin=client.asServiceRole,rows=await admin.entities.PremiumPayment.filter({order_id:body.orderId});
   if(rows.length!==1||!id(rows[0].user_id))throw Error('PAYMENT_NOT_BOUND');
   const proof=await verifyPremiumReversal(admin,rows[0].user_id,body.orderId,body.event_type,body.reference);
+  if(proof.environment!=='live')return Response.json({error:'Sandbox payments cannot reverse live rewards.'},{status:409,headers});
   const evidence={transaction_reference:proof.order_reference,currency:proof.currency,amount_minor:proof.amount_minor,[proof.event_type==='purchase_refunded'?'refund_reference':'chargeback_reference']:proof.reversal_reference};
   const eventId='ps_rev_'+proof.reversal_reference+'_'+proof.reversed_amount_minor;
   const result=await submitPartnerEvent({user_id:proof.partner_account_reference},{event_type:proof.event_type,partner_event_id:eventId,task_reference:'6add18607277b6ca86efab42',resource_reference:proof.capture_reference,occurred_at:proof.occurred_at,evidence});

@@ -13,7 +13,7 @@ function refundParent(refund,capture,environment){
  if(url.protocol!=='https:'||!expected.includes(url.hostname)||url.port||url.username||url.password||url.search||url.hash||url.pathname!=='/v2/payments/captures/'+capture)fail();
 }
 export async function premiumReversalProof({binding,order,read,eventType,reference,environment='live',now=Date.now()}){
- if(!['purchase_refunded','chargeback_issued'].includes(eventType)||!id(reference)||binding?.status!=='completed'||!id(binding.capture_id)||!id(binding.order_id)||binding.currency!=='GBP')fail();
+ if(!['live','sandbox'].includes(environment)||!['purchase_refunded','chargeback_issued'].includes(eventType)||!id(reference)||binding?.status!=='completed'||!id(binding.capture_id)||!id(binding.order_id)||binding.currency!=='GBP')fail();
  const original=paymentMinor({currency_code:binding.currency,value:binding.expected_amount});
  const units=order?.purchase_units,captures=units?.[0]?.payments?.captures;
  if(order.id!==binding.order_id||order.status!=='COMPLETED'||!Array.isArray(units)||units.length!==1||units[0].custom_id!=='PSPREMIUM:'+binding.id||paymentMinor(units[0].amount)!==original||!Array.isArray(captures)||captures.length!==1||captures[0].id!==binding.capture_id||paymentMinor(captures[0].amount)!==original||captures[0].create_time!==binding.captured_at)fail();
@@ -34,5 +34,5 @@ export async function premiumReversalProof({binding,order,read,eventType,referen
   individual=original;cumulative=original;occurred=dispute.update_time;
  }
  if(individual>original||cumulative<individual||cumulative>original||!Number.isFinite(Date.parse(occurred))||Date.parse(occurred)>now+5000||!Number.isFinite(Date.parse(binding.captured_at))||Date.parse(occurred)<Date.parse(binding.captured_at))fail();
- return {provider:'paypal',partner_account_reference:binding.user_id,order_reference:binding.order_id,capture_reference:binding.capture_id,plan_reference:binding.plan_id,link_reference:binding.perksphere_link_uuid||null,event_type:eventType,reversal_reference:reference,currency:'GBP',original_amount_minor:original,amount_minor:individual,reversed_amount_minor:cumulative,occurred_at:new Date(occurred).toISOString()};
+ return {provider:'paypal',environment,partner_account_reference:binding.user_id,order_reference:binding.order_id,capture_reference:binding.capture_id,plan_reference:binding.plan_id,link_reference:binding.perksphere_link_uuid||null,event_type:eventType,reversal_reference:reference,currency:'GBP',original_amount_minor:original,amount_minor:individual,reversed_amount_minor:cumulative,occurred_at:new Date(occurred).toISOString()};
 }
