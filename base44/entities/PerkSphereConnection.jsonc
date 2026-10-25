@@ -34,6 +34,17 @@
     "unlinked_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "legacy_link_reference": {
+      "type": "string",
+      "description": "Original legacy reference retained by an audited consent-correlated repair."
+    },
+    "link_reference_repaired_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "link_reference_repair_audit_id": {
+      "type": "string"
     }
   },
   "required": [
