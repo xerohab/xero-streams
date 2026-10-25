@@ -101,3 +101,36 @@ test('payment evidence pins provider environment across token and order reads',a
   const proof=await verifyPremiumPayment(f.admin,binding.user_id,binding.order_id);assert.equal(proof.environment,'sandbox');
  }finally{globalThis.fetch=original;}
 });
+
+test('captured premium payment recovers entitlement write failure without another charge',async()=>{
+ const original=globalThis.fetch,f=fixture();let captures=0,created=false,failEntitlement=true;
+ const create=f.admin.entities.UserSubscription.create;
+ f.admin.entities.UserSubscription.create=async data=>{if(failEntitlement){failEntitlement=false;throw Error('INJECTED_ENTITLEMENT_WRITE_FAILURE');}return create(data);};
+ try{
+  globalThis.fetch=async(url,init)=>{
+   if(url.endsWith('/token'))return Response.json({access_token:'test-token'});
+   if(url.endsWith('/capture')){captures++;created=true;assert.equal(init.headers['PayPal-Request-Id'],'capture-request-fixed');return Response.json({status:'COMPLETED'});}
+   return Response.json(order(created?'COMPLETED':'APPROVED'));
+  };
+  await assert.rejects(capturePremiumOrder(f.admin,binding.user_id,binding.order_id),/INJECTED_ENTITLEMENT_WRITE_FAILURE/);
+  assert.equal(captures,1);assert.equal(f.receipt.status,'completed');assert.equal(f.subscriptions.length,0);
+  await assert.rejects(verifyPremiumPayment(f.admin,binding.user_id,binding.order_id));
+  assert.equal((await capturePremiumOrder(f.admin,binding.user_id,binding.order_id)).premium_activated,true);
+  assert.equal(captures,1);assert.equal(f.subscriptions.length,1);
+  assert.equal((await verifyPremiumPayment(f.admin,binding.user_id,binding.order_id)).capture_reference,'CAPTURE123');
+ }finally{globalThis.fetch=original;}
+});
+test('capture network ambiguity is resolved by reading the completed order before retrying capture',async()=>{
+ const original=globalThis.fetch,f=fixture();let captured=false,captures=0;
+ try{
+  globalThis.fetch=async(url,init)=>{
+   if(url.endsWith('/token'))return Response.json({access_token:'test-token'});
+   if(url.endsWith('/capture')){captures++;captured=true;throw Error('INJECTED_RESPONSE_LOST_AFTER_CAPTURE');}
+   return Response.json(order(captured?'COMPLETED':'APPROVED'));
+  };
+  await assert.rejects(capturePremiumOrder(f.admin,binding.user_id,binding.order_id),/INJECTED_RESPONSE_LOST_AFTER_CAPTURE/);
+  assert.equal(captures,1);assert.equal(f.subscriptions.length,0);
+  assert.equal((await capturePremiumOrder(f.admin,binding.user_id,binding.order_id)).premium_activated,true);
+  assert.equal(captures,1);assert.equal(f.subscriptions.length,1);
+ }finally{globalThis.fetch=original;}
+});
