@@ -6,7 +6,7 @@ function fixture(){
  const writes=[],connection={user_id:'member',status:'linked',perksphere_connection_id:link};
  const session={id:'stored',session_id:'session',perksphere_link_uuid:link,task_submissions:[]};
  const admin={entities:{ViewingSession:{update:async(id,value)=>{writes.push(value);Object.assign(session,value);}},PerkSphereConnection:{filter:async()=>[connection]}}};
- return {writes,connection,session,admin,policy:{duration_seconds:60,task_bindings:[{task_reference:task,required_seconds:60,full_content:true}]},videoId:'video',eligibleSeconds:60,fullContent:true,occurredAt:'2026-10-25T12:00:00.000Z'};
+ return {writes,connection,session,admin,policy:{duration_seconds:60,task_bindings:[{enabled:true,task_reference:task,required_seconds:60,full_content:true}]},videoId:'video',eligibleSeconds:60,fullContent:true,occurredAt:'2026-10-25T12:00:00.000Z'};
 }
 function enable(){globalThis.__testSecrets={PERKSPHERE_VIDEO_EVENTS_ENABLED:'true',PERKSPHERE_PREMIUM_EVENTS_ENABLED:'true',PERKSPHERE_PARTNER_KEY_ID:'psp_lg9D0rXbH__AJaPdKv4kxd_x',PERKSPHERE_PARTNER_HMAC_SECRET:'synthetic-test-only'};}
 test('native task notification retries the same identity after transport failure and never supplies reward amounts',async()=>{
@@ -31,7 +31,7 @@ test('paused, transferred, partial and incomplete-full playback never emits',asy
    if(change==='full')f.fullContent=false;
    assert.deepEqual(await emitNativeTaskEvents(f.admin,f),[]);
   }
-  assert.throws(()=>playbackTaskBindings({duration_seconds:60,task_bindings:[{task_reference:task,required_seconds:61,full_content:true}]}));
+  assert.throws(()=>playbackTaskBindings({duration_seconds:60,task_bindings:[{enabled:true,task_reference:task,required_seconds:61,full_content:true}]}));
  }finally{globalThis.fetch=old;globalThis.__testSecrets={};}
 });
 test('premium notification preserves capture identity, requires original link and never claims a reward was issued',async()=>{

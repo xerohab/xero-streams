@@ -19,7 +19,7 @@ test('transport replay succeeds only with a matching accepted payload receipt',a
 test('lost accepted response retries persisted notification time and completes local submission',async()=>{
  enable();const old=globalThis.fetch,session={id:'stored',session_id:'session',perksphere_link_uuid:link},sent=[];let calls=0;
  const admin={entities:{ViewingSession:{update:async(_id,patch)=>Object.assign(session,patch)}}};
- const args={connection,session,policy:{duration_seconds:600,task_bindings:[{task_reference:task,required_seconds:300,full_content:false}]},videoId:'video',eligibleSeconds:300,fullContent:false,occurredAt:'2026-10-25T12:00:00.000Z'};
+ const args={connection,session,policy:{duration_seconds:600,task_bindings:[{enabled:true,task_reference:task,required_seconds:300,full_content:false}]},videoId:'video',eligibleSeconds:300,fullContent:false,occurredAt:'2026-10-25T12:00:00.000Z'};
  globalThis.fetch=async(_url,options)=>{sent.push(options.body);if(++calls===1)throw Error('lost after server commit');return Response.json({ok:false,error:{code:'duplicate_partner_event'},data:{accepted:true,event_id:'existing',status:'pending_verification',payload_hash:createHash('sha256').update(options.body).digest('hex'),rewards_issued:false}},{status:409});};
  try{
   assert.deepEqual(await emitNativeTaskEvents(admin,args),[]);assert.equal(session.task_notifications.length,1);
@@ -32,7 +32,14 @@ test('notification persistence failure prevents a network claim',async()=>{
  enable();const old=globalThis.fetch;globalThis.fetch=()=>{throw Error('must not send');};
  const session={id:'stored',session_id:'session',perksphere_link_uuid:link};
  try{
-  const events=await emitNativeTaskEvents({entities:{ViewingSession:{update:async()=>{throw Error('storage unavailable');}}}},{connection,session,policy:{duration_seconds:300,task_bindings:[{task_reference:task,required_seconds:300,full_content:false}]},videoId:'video',eligibleSeconds:300,fullContent:false,occurredAt:'2026-10-25T12:00:00.000Z'});
+  const events=await emitNativeTaskEvents({entities:{ViewingSession:{update:async()=>{throw Error('storage unavailable');}}}},{connection,session,policy:{duration_seconds:300,task_bindings:[{enabled:true,task_reference:task,required_seconds:300,full_content:false}]},videoId:'video',eligibleSeconds:300,fullContent:false,occurredAt:'2026-10-25T12:00:00.000Z'});
   assert.deepEqual(events,[]);assert.equal(session.task_notifications,undefined);
  }finally{globalThis.fetch=old;globalThis.__testSecrets={};}
+});
+
+test('disabled and unspecified task bindings never notify even with enough watch time',async()=>{
+ enable();const old=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;throw Error('must not send');};
+ const session={id:'stored',session_id:'session',perksphere_link_uuid:link};
+ try{for(const enabled of [undefined,false]){const events=await emitNativeTaskEvents({entities:{ViewingSession:{update:async()=>{throw Error('no writes');}}}},{connection,session,policy:{duration_seconds:300,task_bindings:[{task_reference:task,required_seconds:300,full_content:false,...(enabled===undefined?{}:{enabled})}]},videoId:'video',eligibleSeconds:300,fullContent:false,occurredAt:'2026-10-25T12:00:00.000Z'});assert.deepEqual(events,[]);}assert.equal(calls,0);}
+ finally{globalThis.fetch=old;globalThis.__testSecrets={};}
 });
