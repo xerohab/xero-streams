@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {submitPartnerEvent} from '../base44/shared/perkSphereClient.ts';
 import {emitNativeTaskEvents} from '../base44/shared/partnerTaskEvents.ts';
 const task='abcdef012345abcdef012345',link='11111111-1111-4111-8111-111111111111';
-function enable(){globalThis.__testSecrets={PERKSPHERE_VIDEO_EVENTS_ENABLED:'true',PERKSPHERE_PARTNER_KEY_ID:'test-key',PERKSPHERE_PARTNER_HMAC_SECRET:'synthetic-test-only'};}
+function enable(){globalThis.__testSecrets={PERKSPHERE_VIDEO_EVENTS_ENABLED:'true',PERKSPHERE_PARTNER_KEY_ID:'psp_lg9D0rXbH__AJaPdKv4kxd_x',PERKSPHERE_PARTNER_HMAC_SECRET:'synthetic-test-only'};}
 const connection={user_id:'member',perksphere_connection_id:link};
 const event={event_type:'video_watch_progress',partner_event_id:'event-1',occurred_at:'2026-10-25T12:00:00.000Z',task_reference:task,evidence:{content_id:'video',playback_session_id:'session',eligible_seconds:300}};
 test('transport replay succeeds only with a matching accepted payload receipt',async()=>{
