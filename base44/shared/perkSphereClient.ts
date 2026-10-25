@@ -267,9 +267,10 @@ export async function submitPartnerEvent(connection, event) {
   if (event.task_reference) payload.task_reference = event.task_reference;
   if (event.resource_reference) payload.resource_reference = event.resource_reference;
 
+  const raw = JSON.stringify(payload);
   const res = await signedFetch("/v1/partners/events", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: raw,
   });
   let data;
   try {
@@ -277,7 +278,11 @@ export async function submitPartnerEvent(connection, event) {
   } catch {
     data = {};
   }
-  return { ok: res.ok && data?.ok === true, status: res.status, data };
+  const exactReplay = res.status === 409 && data?.error?.code === "duplicate_partner_event" &&
+    data?.data?.accepted === true && typeof data.data.event_id === "string" &&
+    ["received", "pending_verification", "verified"].includes(data.data.status) &&
+    data.data.payload_hash === await sha256Hex(raw);
+  return { ok: (res.ok && data?.ok === true) || exactReplay, duplicate: exactReplay, status: res.status, data };
 }
 
 // Check if a video URL is YouTube content (ineligible for rewards).
