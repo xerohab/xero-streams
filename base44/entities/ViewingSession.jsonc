@@ -2,6 +2,26 @@
   "name": "ViewingSession",
   "type": "object",
   "properties": {
+    "task_notifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_reference": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "task_reference",
+          "occurred_at"
+        ]
+      },
+      "description": "Service-owned original notification times for exact transport retries; never reward proof."
+    },
     "task_submissions": {
       "type": "array",
       "items": {
