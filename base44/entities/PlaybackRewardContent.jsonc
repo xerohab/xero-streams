@@ -7,6 +7,10 @@
       "items": {
         "type": "object",
         "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
           "task_reference": {
             "type": "string"
           },
