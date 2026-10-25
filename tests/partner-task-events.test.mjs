@@ -13,7 +13,7 @@ test('native task notification retries the same identity after transport failure
  enable();const f=fixture(),sent=[],old=globalThis.fetch;let calls=0;
  globalThis.fetch=async(url,init)=>{sent.push(JSON.parse(init.body));calls++;return Response.json({ok:calls>1},{status:calls>1?200:503});};
  try{
-  assert.deepEqual(await emitNativeTaskEvents(f.admin,f),[]);assert.equal(f.writes.length,0);
+  assert.deepEqual(await emitNativeTaskEvents(f.admin,f),[]);assert.equal(f.writes.length,1);assert.ok(f.writes[0].task_notifications);f.occurredAt='2026-10-25T12:00:30.000Z';
   assert.equal((await emitNativeTaskEvents(f.admin,f)).length,1);
   assert.deepEqual(sent[0],sent[1]);assert.equal(sent[0].points,undefined);assert.equal(sent[0].xp,undefined);
   assert.equal(sent[0].task_reference,task);assert.equal(sent[0].evidence.eligible_seconds,60);
