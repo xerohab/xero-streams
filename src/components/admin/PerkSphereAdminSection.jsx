@@ -1,3 +1,4 @@
+import PremiumRewardReconciliation from "./PremiumRewardReconciliation";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -71,6 +72,7 @@ export default function PerkSphereAdminSection() {
 
   return (
     <div className="space-y-4">
+      <PremiumRewardReconciliation />
       {/* Credential Configuration */}
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
         <div className="flex items-center gap-2 mb-3">
