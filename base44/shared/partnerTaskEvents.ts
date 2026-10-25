@@ -8,12 +8,23 @@ export function playbackTaskBindings(policy){
 }
 export async function emitNativeTaskEvents(admin,{connection,session,policy,videoId,eligibleSeconds,fullContent,occurredAt}){
  if(secrets.get('PERKSPHERE_VIDEO_EVENTS_ENABLED')!=='true'||!connection||!policy||connection.perksphere_connection_id!==session.perksphere_link_uuid)return [];
+ const notifications=session.task_notifications||[];
+ if(!Array.isArray(notifications)||notifications.length>20||notifications.some(row=>!row||Object.keys(row).sort().join(",")!=="occurred_at,task_reference"||! /^[a-f0-9]{24}$/.test(row.task_reference||"")||typeof row.occurred_at!=="string"||!Number.isFinite(Date.parse(row.occurred_at)))||new Set(notifications.map(row=>row.task_reference)).size!==notifications.length)throw Error("INVALID_TASK_NOTIFICATION_HISTORY");
  const submitted=new Set(session.task_submissions||[]),events=[];let attempts=0;
  for(const binding of playbackTaskBindings(policy)){
   if(submitted.has(binding.task_reference)||eligibleSeconds<binding.required_seconds||binding.full_content&&!fullContent)continue;
   if(attempts++>=3)break;
   try{
-   const result=await submitPartnerEvent(connection,{event_type:'video_watch_progress',partner_event_id:'ps_task_'+binding.task_reference+'_'+session.session_id,task_reference:binding.task_reference,resource_reference:videoId,occurred_at:occurredAt,evidence:{content_id:videoId,playback_session_id:session.session_id,eligible_seconds:binding.required_seconds}});
+   let notification=notifications.find(row=>row.task_reference===binding.task_reference);
+   if(!notification){
+    if(notifications.length>=20)throw Error("TASK_NOTIFICATION_HISTORY_FULL");
+    if(typeof occurredAt!=="string"||!Number.isFinite(Date.parse(occurredAt)))throw Error("INVALID_NOTIFICATION_TIME");
+    notification={task_reference:binding.task_reference,occurred_at:occurredAt};
+    notifications.push(notification);
+    await admin.entities.ViewingSession.update(session.id,{task_notifications:[...notifications]});
+    session.task_notifications=[...notifications];
+   }
+   const result=await submitPartnerEvent(connection,{event_type:'video_watch_progress',partner_event_id:'ps_task_'+binding.task_reference+'_'+session.session_id,task_reference:binding.task_reference,resource_reference:videoId,occurred_at:notification.occurred_at,evidence:{content_id:videoId,playback_session_id:session.session_id,eligible_seconds:binding.required_seconds}});
    if(result.ok){submitted.add(binding.task_reference);events.push({task_reference:binding.task_reference,event_type:'video_watch_progress'});}
   }catch{/* A delivery failure does not undo metering; later reports retry. */}
  }
