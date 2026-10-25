@@ -15,7 +15,7 @@ test('native source recomputes coverage and time from protected records and retu
  const f=fixture(),proof=await readNativePlaybackProof(f.admin,args);assert.equal(proof.eligible_seconds,60);assert.equal(proof.full_content,true);assert.equal(proof.link_reference,link);assert.equal(proof.verification_mode,'client_assisted_native');assert.equal(proof.credited_ranges,undefined);assert.equal(JSON.stringify(proof).includes(url),false);
 });
 test('native source refuses transferred links, duplicate sessions, stale/legacy or forged coverage',async()=>{
- for(const change of ['link','duplicates','version','ranges','counter','media','clock']){
+ for(const change of ['link','duplicates','version','ranges','counter','media','clock','catalog_date','foreign_owner','unlinked']){
   const f=fixture();
   if(change==='link')f.connection.perksphere_connection_id='22222222-2222-4222-8222-222222222222';
   if(change==='duplicates')f.setDuplicates();
@@ -23,6 +23,9 @@ test('native source refuses transferred links, duplicate sessions, stale/legacy 
   if(change==='ranges')f.session.credited_ranges=[[50,60]];
   if(change==='counter')f.session.accumulated_watch_seconds=600;
   if(change==='media')f.catalog.media_url_sha256='a'.repeat(64);
+  if(change==='catalog_date')f.catalog.verified_at='invalid';
+  if(change==='foreign_owner')f.connection.user_id='other';
+  if(change==='unlinked')f.connection.status='unlinked';
   if(change==='clock')f.session.started_at=new Date(now+1000).toISOString();
   await assert.rejects(readNativePlaybackProof(f.admin,args),undefined,change);
  }

@@ -312,7 +312,7 @@ export async function logIntegration(base44, entry) {
 // Normalise a filter() result to an items array (array or page-object form).
 export async function currentPerkSphereLink(admin,userId) {
   const rows=pageItems(await admin.entities.PerkSphereConnection.filter({user_id:userId,status:"linked"},undefined,2));
-  return rows.length===1 && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(rows[0].perksphere_connection_id||"") ? rows[0] : null;
+  return rows.length===1 && rows[0].user_id===userId && rows[0].status==="linked" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(rows[0].perksphere_connection_id||"") ? rows[0] : null;
 }
 
 export function pageItems(res) {

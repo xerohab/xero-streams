@@ -12,7 +12,7 @@ export async function readNativePlaybackProof(admin,{account,content,sessionRefe
  const catalog=pageItems(policies),records=pageItems(sessions);
  if(video?.id!==content||isYouTubeContent(video.video_url)||catalog.length!==1||records.length!==1||!connection)fail();
  const p=catalog[0],s=records[0],duration=p.duration_seconds;
- if(p.enabled!==true||!['operator_media_probe','provider_api'].includes(p.source)||!Number.isSafeInteger(duration)||duration<1||duration>86400||
+ if(!Number.isFinite(Date.parse(p.verified_at))||Date.parse(p.verified_at)>now+5000||p.enabled!==true||!['operator_media_probe','provider_api'].includes(p.source)||!Number.isSafeInteger(duration)||duration<1||duration>86400||
   p.media_url_sha256!==await sha256Hex(video.video_url)||s.user_id!==account||s.video_id!==content||s.session_id!==sessionReference||
   s.evidence_version!=='native-playback-v1'||s.media_url_sha256!==p.media_url_sha256||s.content_duration_seconds!==duration||
   s.perksphere_link_uuid!==connection.perksphere_connection_id||!['active','ended'].includes(s.status))fail();
