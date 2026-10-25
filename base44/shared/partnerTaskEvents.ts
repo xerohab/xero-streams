@@ -8,7 +8,7 @@ export function playbackTaskBindings(policy){
 }
 export async function emitNativeTaskEvents(admin,{connection,session,policy,videoId,eligibleSeconds,fullContent,occurredAt}){
  if(secrets.get('PERKSPHERE_VIDEO_EVENTS_ENABLED')!=='true'||!connection||!policy||connection.perksphere_connection_id!==session.perksphere_link_uuid)return [];
- const notifications=session.task_notifications||[];
+ const notifications=[...(session.task_notifications||[])];
  if(!Array.isArray(notifications)||notifications.length>20||notifications.some(row=>!row||Object.keys(row).sort().join(",")!=="occurred_at,task_reference"||! /^[a-f0-9]{24}$/.test(row.task_reference||"")||typeof row.occurred_at!=="string"||!Number.isFinite(Date.parse(row.occurred_at)))||new Set(notifications.map(row=>row.task_reference)).size!==notifications.length)throw Error("INVALID_TASK_NOTIFICATION_HISTORY");
  const submitted=new Set(session.task_submissions||[]),events=[];let attempts=0;
  for(const binding of playbackTaskBindings(policy)){
