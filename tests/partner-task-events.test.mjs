@@ -42,5 +42,6 @@ test('premium notification preserves capture identity, requires original link an
   assert.deepEqual(await emitPremiumTaskEvent(f.admin,proof),{submitted:true,reward_issued:false});
   assert.equal(sent[0].partner_event_id,'ps_premium_capture');assert.equal(sent[0].evidence.amount_minor,499);
   assert.equal((await emitPremiumTaskEvent(f.admin,{...proof,link_reference:'other'})).submitted,false);assert.equal(sent.length,1);
+  assert.equal((await emitPremiumTaskEvent(f.admin,{...proof,environment:'sandbox'})).reason,'live_provider_payment_required');assert.equal(sent.length,1);
  }finally{globalThis.fetch=old;globalThis.__testSecrets={};}
 });

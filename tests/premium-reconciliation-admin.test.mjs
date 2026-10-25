@@ -24,11 +24,12 @@ test('reconciliation derives owner from the private receipt and submits no brows
   assert.equal(init.method,'GET');
   if(url.endsWith('/v2/checkout/orders/ORDER'))return Response.json({id:'ORDER',status:'COMPLETED',purchase_units:[{custom_id:'PSPREMIUM:receipt',amount:{currency_code:'GBP',value:'4.99'},payments:{captures:[{id:'CAPTURE',amount:{currency_code:'GBP',value:'4.99'},create_time:binding.captured_at}]}}]});
   if(url.endsWith('/v2/payments/captures/CAPTURE'))return Response.json({id:'CAPTURE',status:'REFUNDED',amount:{currency_code:'GBP',value:'4.99'}});
-  if(url.endsWith('/v2/payments/refunds/REFUND'))return Response.json({id:'REFUND',status:'COMPLETED',amount:{currency_code:'GBP',value:'4.99'},update_time:'2026-10-24T13:00:00Z',links:[{rel:'up',method:'GET',href:'https://api-m.paypal.com/v2/payments/captures/CAPTURE'}]});
+  if(url.endsWith('/v2/payments/refunds/REFUND'))return Response.json({id:'REFUND',status:'COMPLETED',amount:{currency_code:'GBP',value:'4.99'},update_time:'2026-10-24T13:00:00Z',links:[{rel:'up',method:'GET',href:globalThis.__testSecrets.PAYPAL_ENVIRONMENT==='sandbox'?'https://api-m.sandbox.paypal.com/v2/payments/captures/CAPTURE':'https://api-m.paypal.com/v2/payments/captures/CAPTURE'}]});
   throw Error('unexpected network request');
  };
  try{
   const r=await handler(request({event_type:'purchase_refunded',orderId:'ORDER',reference:'REFUND'})),body=await r.json();assert.equal(r.status,200);assert.equal(body.event_submitted,true);assert.equal(body.reward_reversal_applied,false);assert.equal(body.payment_refund_initiated,false);
   assert.equal(sent.length,1);assert.equal(sent[0].partner_account_reference,'owner');assert.equal(sent[0].evidence.amount_minor,499);assert.equal(sent[0].points,undefined);assert.equal(sent[0].xp,undefined);
+  globalThis.__testSecrets.PAYPAL_ENVIRONMENT='sandbox';const sandbox=await handler(request({event_type:'purchase_refunded',orderId:'ORDER',reference:'REFUND'}));assert.equal(sandbox.status,409);assert.match((await sandbox.json()).error,/Sandbox/);assert.equal(sent.length,1);
  }finally{globalThis.fetch=previous;globalThis.__testSecrets={};}
 });

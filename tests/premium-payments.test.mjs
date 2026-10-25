@@ -94,3 +94,10 @@ test('premium payment records never permit browser writes or reads',async()=>{
  const {readFile}=await import('node:fs/promises');const schema=JSON.parse(await readFile(new URL('../base44/entities/PremiumPayment.jsonc',import.meta.url),'utf8'));
  for(const action of ['create','update','delete','read'])assert.deepEqual(schema.rls[action],{user_condition:{role:'service_only'}});
 });
+test('payment evidence pins provider environment across token and order reads',async()=>{
+ const original=globalThis.fetch,f=fixture();f.receipt.status='completed';f.receipt.capture_id='CAPTURE123';f.receipt.captured_at='2026-10-24T10:00:00.000Z';f.subscriptions.push({user_id:binding.user_id,paypal_order_id:binding.order_id,plan_id:binding.plan_id,status:'active'});
+ try{
+  globalThis.fetch=async url=>{assert.ok(url.startsWith('https://api-m.sandbox.paypal.com/'));if(url.endsWith('/token')){globalThis.__testSecrets.PAYPAL_ENVIRONMENT='live';return Response.json({access_token:'test-token'});}return Response.json(order());};
+  const proof=await verifyPremiumPayment(f.admin,binding.user_id,binding.order_id);assert.equal(proof.environment,'sandbox');
+ }finally{globalThis.fetch=original;}
+});
