@@ -3,7 +3,7 @@ import {submitPartnerEvent,currentPerkSphereLink} from './perkSphereClient.ts';
 const PREMIUM_TASK='6add18607277b6ca86efab42';
 export function playbackTaskBindings(policy){
  const rows=policy.task_bindings||[];
- if(!Array.isArray(rows)||rows.length>20||rows.some(row=>!row||! /^[a-f0-9]{24}$/.test(row.task_reference||'')||!Number.isSafeInteger(row.required_seconds)||row.required_seconds<1||row.required_seconds>policy.duration_seconds||typeof row.full_content!=='boolean'||row.full_content&&row.required_seconds!==policy.duration_seconds)||new Set(rows.map(row=>row.task_reference)).size!==rows.length)throw Error('INVALID_PLAYBACK_TASK_BINDINGS');
+ if(!Array.isArray(rows)||rows.length>20||rows.some(row=>!row||! /^[a-f0-9]{24}$/.test(row.task_reference||'')||!Number.isSafeInteger(row.required_seconds)||row.required_seconds<1||row.required_seconds>policy.duration_seconds||typeof row.full_content!=='boolean'||row.enabled!==undefined&&typeof row.enabled!=='boolean'||row.full_content&&row.required_seconds!==policy.duration_seconds)||new Set(rows.map(row=>row.task_reference)).size!==rows.length)throw Error('INVALID_PLAYBACK_TASK_BINDINGS');
  return rows;
 }
 export async function emitNativeTaskEvents(admin,{connection,session,policy,videoId,eligibleSeconds,fullContent,occurredAt}){
@@ -12,7 +12,7 @@ export async function emitNativeTaskEvents(admin,{connection,session,policy,vide
  if(!Array.isArray(notifications)||notifications.length>20||notifications.some(row=>!row||Object.keys(row).sort().join(",")!=="occurred_at,task_reference"||! /^[a-f0-9]{24}$/.test(row.task_reference||"")||typeof row.occurred_at!=="string"||!Number.isFinite(Date.parse(row.occurred_at)))||new Set(notifications.map(row=>row.task_reference)).size!==notifications.length)throw Error("INVALID_TASK_NOTIFICATION_HISTORY");
  const submitted=new Set(session.task_submissions||[]),events=[];let attempts=0;
  for(const binding of playbackTaskBindings(policy)){
-  if(submitted.has(binding.task_reference)||eligibleSeconds<binding.required_seconds||binding.full_content&&!fullContent)continue;
+  if(binding.enabled!==true||submitted.has(binding.task_reference)||eligibleSeconds<binding.required_seconds||binding.full_content&&!fullContent)continue;
   if(attempts++>=3)break;
   try{
    let notification=notifications.find(row=>row.task_reference===binding.task_reference);
