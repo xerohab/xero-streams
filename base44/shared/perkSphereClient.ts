@@ -296,10 +296,10 @@ export async function logIntegration(base44, entry) {
   try {
     await base44.asServiceRole.entities.IntegrationLog.create({
       event_type: entry.event_type,
-      status: entry.status || "success",
+      status: ["success", "error", "pending"].includes(entry.status) ? entry.status : entry.status === "failed" ? "error" : entry.status ? "pending" : "success",
       error_code: entry.error_code || null,
       http_status: entry.http_status || null,
-      details: entry.details || null,
+      details: entry.details == null ? null : typeof entry.details === "string" ? entry.details : JSON.stringify(entry.details),
       user_id: entry.user_id || null,
       activity: entry.activity || null,
       event_id: entry.event_id || null,
