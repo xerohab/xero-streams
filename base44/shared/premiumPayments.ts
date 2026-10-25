@@ -1,3 +1,4 @@
+import {premiumReversalProof} from './premiumReversals.ts';
 import {secrets} from 'base44:runtime';
 import {currentPerkSphereLink} from './perkSphereClient.ts';
 import {emitPremiumTaskEvent} from './partnerTaskEvents.ts';
@@ -84,4 +85,11 @@ export async function verifyPremiumPayment(admin,userId,orderId){
  const proof=premiumProof(await provider('/v2/checkout/orders/'+orderId,{token:await accessToken()}),binding);
  if(binding.capture_id!==proof.capture_reference||binding.captured_at!==proof.captured_at)fail();
  return proof;
+}
+
+export async function verifyPremiumReversal(admin,userId,orderId,eventType,reference){
+ const binding=await bindingFor(admin,userId,orderId);
+ if(binding.status!=='completed'||!validId(binding.capture_id)||!validId(reference)||!['purchase_refunded','chargeback_issued'].includes(eventType))fail();
+ const token=await accessToken(),read=path=>provider(path,{token});
+ return premiumReversalProof({binding,order:await read('/v2/checkout/orders/'+orderId),read,eventType,reference,environment:secrets.get('PAYPAL_ENVIRONMENT')==='sandbox'?'sandbox':'live'});
 }
