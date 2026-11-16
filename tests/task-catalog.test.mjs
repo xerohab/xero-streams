@@ -1,0 +1,8 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {taskCatalogItem} from '../base44/shared/taskCatalog.ts';
+const now=Date.parse('2026-11-16T12:00:00Z'),digest='a'.repeat(64),hash=async()=>digest;
+const video={id:'a'.repeat(24),title:'Episode 1',content_type:'episode',series_id:'b'.repeat(24),video_url:'https://media.example/secret-token',created_date:'2026-11-15T12:00:00Z'};
+const policy={video_id:video.id,enabled:true,duration_seconds:2400,source:'operator_media_probe',verified_at:'2026-11-15T13:00:00Z',media_url_sha256:digest};
+const options={now,hash,series:{is_adult:false}};
+test('returns real duration and public page, never raw media or session data',async()=>{const item=await taskCatalogItem(video,[policy],options);assert.equal(item.duration.seconds,2400);assert.equal(item.content_url,`https://xerostreams.com/Watch?id=${video.id}`);assert.ok(!JSON.stringify(item).includes('secret-token'));});
+test('excludes unavailable, paid, adult, YouTube and stale content',async()=>{for(const patch of [{coming_soon:true},{is_adult:true},{is_for_sale:true},{video_url:'https://youtube.com/watch?v=1'},{video_url:'http://media.example/a'},{created_date:'2026-10-01T00:00:00Z'}])assert.equal(await taskCatalogItem({...video,...patch},[policy],options),null);assert.equal(await taskCatalogItem(video,[policy],{...options,series:{is_adult:true}}),null);});
+test('never trusts display runtime, duplicate or mismatched duration records',async()=>{for(const policies of [[],[policy,policy],[{...policy,media_url_sha256:'b'.repeat(64)}],[{...policy,enabled:false}],[{...policy,verified_at:'2027-01-01'}]])assert.equal((await taskCatalogItem({...video,duration:'40 minutes'},policies,options)).duration,null);});
