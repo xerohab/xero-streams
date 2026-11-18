@@ -1,0 +1,55 @@
+{
+  "name": "WatchParty",
+  "type": "object",
+  "properties": {
+    "host_id": {
+      "type": "string"
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "token": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "position": {
+      "type": "number"
+    },
+    "paused": {
+      "type": "boolean"
+    },
+    "synced_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "host_id",
+    "video_id",
+    "token",
+    "expires_at"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
