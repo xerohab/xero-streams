@@ -11,7 +11,12 @@ try{
  const b=await req.json(),db=base.asServiceRole.entities;
  if(typeof b.profile_id!=='string'||!(await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}))[0])return Response.json({error:'Invalid profile'},{status:403});
  const scope={profile_id:b.profile_id,user_id:u.id},row=(await db.ProfilePin.filter(scope))[0];
- if(b.action==='status')return Response.json({enabled:!!row});
+ const profiles=await db.ViewingProfile.filter({user_id:u.id});
+ const target=profiles.find(p=>p.id===b.profile_id);
+ const kidsExist=profiles.some(p=>p.is_kids);
+ if(b.action==='status')return Response.json({enabled:!!row,requires_setup:kidsExist&&!target?.is_kids&&!row});
+ if(b.action==='remove'&&kidsExist&&!target?.is_kids)return Response.json({error:'Adult profiles require a PIN while Kids profiles exist'},{status:403});
+ if(b.action==='verify'&&kidsExist&&!target?.is_kids&&!row)return Response.json({error:'Adult PIN required'},{status:403});
  if(!['verify','set','remove'].includes(b.action))return Response.json({error:'Unknown action'},{status:400});
  if(row){
  if(Number(row.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
