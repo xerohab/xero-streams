@@ -29,6 +29,9 @@ export default function Home() {
     setReminderBusy(true);setReminderError("");
     try{const rows=reminders.filter(r=>r.video_id===id);if(rows.length){await Promise.all(rows.map(r=>base44.entities.ReleaseReminder.delete(r.id)));setReminders(old=>old.filter(r=>r.video_id!==id));}else{const row=await base44.entities.ReleaseReminder.create({user_id:catalog.user.id,video_id:id});setReminders(old=>[...old,row]);}}catch{setReminderError("Unable to save reminder");}finally{setReminderBusy(false);}
   };
+  const [rankings,setRankings]=useState([]);
+  useEffect(()=>{let live=true;base44.functions.invoke("streamingCommunity",{action:"rankings"}).then(r=>{if(live)setRankings(r.data.rankings||[])}).catch(()=>{});return()=>{live=false};},[]);
+  const rankedItems=rankings.map(({key})=>[...catalog.movies,...catalog.tv].find(i=>key===(i.type==="series"?"series:":"video:")+i.data.id)).filter(Boolean).slice(0,10);
   const history = new Set([...getWatched(), ...getAll().map(v=>v.id)]);
   const genresOf = v => [...new Set([...(Array.isArray(v.genres)?v.genres:[]),v.category].filter(g=>typeof g==="string" && g.trim()))];
   const scores = new Map();
@@ -59,6 +62,7 @@ export default function Home() {
             <HomeMediaSection title="Latest TV Franchises" items={catalog.tvFranchises} to="/tv-series" id="home-tv-franchises" />
           </React.Fragment>}
         </section>}
+        <HomeMediaSection title="Top 10 This Week" items={rankedItems} id="home-top-ten" limit={10} />
         {comingSoon.length>0 && <details className="rounded-lg border border-border bg-card p-3"><summary className="cursor-pointer font-bold">Coming Soon · {comingSoon.length} upcoming releases</summary><HomeMediaSection title="Upcoming Releases" items={comingSoon} id="home-coming-soon" limit={8} /><div className="divide-y divide-border">{comingSoon.slice(0,8).map(({data:v})=><div key={v.id} className="flex items-center justify-between gap-3 py-2 text-sm"><span>{v.title} <small className="text-muted-foreground">{v.release_date||"Date TBA"}</small></span><button disabled={reminderBusy} className="rounded border border-primary px-3 py-1 text-xs text-primary" onClick={()=>toggleReminder(v.id)}>{reminders.some(r=>r.video_id===v.id)?"Reminder saved":"Remind Me"}</button></div>)}</div>{reminderError&&<p role="alert">{reminderError}</p>}</details>}
         {catalog.user && <HomeMediaSection title="Recommended For You" items={recommendations} id="home-recommendations" />}
         {genres.length>0 && <section className="home-section">
