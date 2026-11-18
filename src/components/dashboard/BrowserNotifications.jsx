@@ -15,14 +15,14 @@ export function BrowserNotificationMonitor({userId}){
  const seen=new Set(JSON.parse(localStorage.getItem(key(userId)+"_seen")||"[]"));
  for(const n of [...rows].reverse()){
  if(!active||seen.has(n.id)||localStorage.getItem(key(userId))!=="1")continue;
- await reg.showNotification("XeroStreams",{body:n.title,tag:"xero-"+n.id,data:{link:n.link?.startsWith("/watch?id=")?n.link:"/dashboard"},icon:"/icon.svg"});
+ await reg.showNotification("XeroStreams",{body:n.title,tag:"xero-"+n.id,data:{link:n.link?.startsWith("/watch?id=")?n.link:"/dashboard"},icon:"/xero-icon.svg"});
  seen.add(n.id);
  localStorage.setItem(key(userId)+"_seen",JSON.stringify([...seen].slice(-500)));
  }
  }catch{}finally{busy=false;}
  };
- poll();const timer=setInterval(poll,60000);
- return()=>{active=false;clearInterval(timer);};
+ poll();const timer=setInterval(poll,60000);window.addEventListener("focus",poll);window.addEventListener("xero-notifications-changed",poll);
+ return()=>{active=false;clearInterval(timer);window.removeEventListener("focus",poll);window.removeEventListener("xero-notifications-changed",poll);};
  },[userId]);
  return null;
 }
@@ -35,7 +35,7 @@ export default function BrowserNotifications({userId}){
  try{
  if(await Notification.requestPermission()!=="granted"){setStatus("Notification permission was not granted.");return;}
  if(!await navigator.serviceWorker.getRegistration()){setStatus("Notification service is not ready. Reload and try again.");return;}
- localStorage.setItem(key(userId),"1");setEnabled(true);setStatus("");
+ localStorage.setItem(key(userId),"1");setEnabled(true);setStatus("");window.dispatchEvent(new Event("xero-notifications-changed"));
  }catch{setStatus("Unable to enable notifications.");}
  };
  return <section className="space-y-2"><h2 className="text-xl font-bold">Browser notifications</h2><p className="text-sm text-muted-foreground">Receive release alerts while XeroStreams is open in this browser. Closed-browser push is not yet available.</p>{supported?<button className="border rounded px-4 py-2" onClick={toggle}>{enabled?"Disable":"Enable"} browser notifications</button>:<p>This browser does not support notifications.</p>}{status&&<p role="status">{status}</p>}</section>;
