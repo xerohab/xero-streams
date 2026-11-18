@@ -32,6 +32,24 @@
       "type": "string",
       "format": "date-time",
       "description": "Timestamp of last profile selection"
+    },
+    "favourites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "favourite_series": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "favourite_franchises": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [
