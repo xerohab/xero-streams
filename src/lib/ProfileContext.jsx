@@ -116,9 +116,10 @@ export function ProfileProvider({ children }) {
 
   // Switch active profile
   const switchProfile = useCallback(async (profile) => {
-    if(profile.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
-    const target=profiles.find(p=>p.id===profile.id);
-    if(!target||!(await authorizeProfile(target,false)))return false;
+    const target=profiles.find(p=>p.id===profile?.id);
+    if(!target)return false;
+    if(target.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
+    if(!(await authorizeProfile(target,false)))return false;
     profile=target;
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
@@ -134,6 +135,7 @@ export function ProfileProvider({ children }) {
   const createProfile = useCallback(async (data) => {
     if (!user || !activeProfile || activeProfile.is_kids) return null;
     if (profiles.length >= MAX_PROFILES) return null;
+    if(!data.is_kids&&profiles.some(p=>p.is_kids)){window.alert("Remove Kids profiles before adding an unprotected adult profile.");return null;}
     if(data.is_kids){for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before creating a Kids profile.");return null;}}}
     const profile = await base44.entities.ViewingProfile.create({
       user_id: user.id,
@@ -145,13 +147,13 @@ export function ProfileProvider({ children }) {
     });
     setProfiles((prev) => [...prev, profile]);
     return profile;
-  }, [user, profiles.length, activeProfile]);
+  }, [user, profiles, activeProfile]);
 
   // Update a profile
   const updateProfile = useCallback(async (id, data) => {
     const profile=profiles.find(p=>p.id===id);
     if(!profile||!activeProfile||(activeProfile.is_kids&&(id!==activeProfile.id||Object.keys(data).some(k=>!["favourites","favourite_series","favourite_franchises"].includes(k)))))return null;
-    if(Object.hasOwn(data,"is_kids")&&!(await authorizeProfile(profile)))return null;
+    if(Object.hasOwn(data,"is_kids")&&Boolean(data.is_kids)!==Boolean(profile.is_kids)){window.alert("Profile age mode cannot be changed. Create a new profile instead.");return null;}
     const updated = await base44.entities.ViewingProfile.update(id, data);
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
     if (activeProfile?.id === id) {
@@ -165,7 +167,7 @@ export function ProfileProvider({ children }) {
     // Don't allow deleting if it's the only profile
     if (profiles.length <= 1 || !activeProfile || activeProfile.is_kids) return false;
     const profile=profiles.find(p=>p.id===id);
-    if(!profile||!(await authorizeProfile(profile)))return false;
+    if(!profile||(!profile.is_kids&&profiles.filter(p=>!p.is_kids).length<=1)||!(await authorizeProfile(profile)))return false;
     // Clear profile-scoped localStorage data
     await base44.entities.ViewingProfile.delete(id);
     clearProfileStorage(id);
