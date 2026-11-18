@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, Outlet, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { CastProvider } from '@/lib/CastContext';
@@ -30,9 +30,17 @@ import { DownloadManagerProvider } from '@/lib/DownloadManagerContext';
 import DownloadManagerPopup from '@/components/browse/DownloadManagerPopup';
 import { PremiumModalProvider } from '@/lib/PremiumModalContext';
 import PremiumModal from '@/components/browse/PremiumModal';
-import { ProfileProvider } from '@/lib/ProfileContext';
+import { ProfileProvider, useProfile } from '@/lib/ProfileContext';
 import ProfileSelect from '@/pages/ProfileSelect';
 
+function ProfileRouteGate(){
+ const {user}=useAuth(),{activeProfile,loading}=useProfile()||{},location=useLocation();
+ if(user&&loading)return <div className="min-h-screen flex items-center justify-center">Loading profile…</div>;
+ if(user&&!activeProfile)return <Navigate to="/profiles" replace state={{from:location.pathname}}/>;
+ if(activeProfile?.is_kids&&["/admin","/leaks","/leaks/section","/cast","/books","/dashboard"].includes(location.pathname))return <Navigate to="/" replace/>;
+ if(activeProfile?.is_kids&&location.pathname.startsWith("/dl/"))return <Navigate to="/" replace/>;
+ return <Outlet/>;
+}
 const AuthenticatedApp = () => {
   const { user, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
@@ -79,8 +87,9 @@ const AuthenticatedApp = () => {
     <ProfileProvider>
     <DownloadManagerProvider>
     <Routes>
-      <Route path="/" element={<Home />} />
       <Route path="/profiles" element={<ProfileSelect />} />
+      <Route element={<ProfileRouteGate />}>
+      <Route path="/" element={<Home />} />
       <Route path="/watch" element={<Watch />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/series" element={<SeriesDetail />} />
@@ -100,6 +109,7 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="*" element={<PageNotFound />} />
+      </Route>
     </Routes>
     <DownloadManagerPopup />
     </DownloadManagerProvider>
