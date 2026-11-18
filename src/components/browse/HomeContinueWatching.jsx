@@ -12,7 +12,8 @@ export default function HomeContinueWatching({ videos, series }) {
     window.addEventListener("xero-progress-updated", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("focus", refresh);
-    return () => { window.removeEventListener("xero-progress-updated", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("focus", refresh); };
+    window.addEventListener("xero-profile-changed", refresh);
+    return () => { window.removeEventListener("xero-progress-updated", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("focus", refresh); window.removeEventListener("xero-profile-changed", refresh); };
   }, []);
   if (!items.length) return null;
   return (
