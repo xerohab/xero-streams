@@ -10,6 +10,7 @@ import MediaGrid from "@/components/browse/MediaGrid";
 import EpisodeCard from "@/components/browse/EpisodeCard";
 import EpisodeGrid from "@/components/browse/EpisodeGrid";
 import SectionHeader from "@/components/browse/SectionHeader";
+import WatchPartyControls from "@/components/browse/WatchPartyControls";
 import WatchPrimaryControls from "@/components/browse/WatchPrimaryControls";
 import WatchInfo from "@/components/browse/WatchInfo";
 import loadMediaRecords from "@/components/browse/loadMediaRecords";
@@ -544,6 +545,7 @@ export default function Watch() {
 
         </div>
         <div className="xero-container">
+          {user && !isComingSoon && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
           <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
           <WatchInfo video={video} series={series} />
         </div>
