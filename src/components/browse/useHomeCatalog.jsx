@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { getCatalogMedia } from "@/lib/activityUtils";
+import { getCatalogMedia, getItemActivityAt, toActivityTimestamp } from "@/lib/activityUtils";
 import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
 export default function useHomeCatalog() {
@@ -13,9 +13,12 @@ export default function useHomeCatalog() {
   const safeSeries = series.filter((s) => !s.is_adult);
   const populated = (items) => items.filter((item) => item.type !== "franchise" || item.items > 0).sort((a, b) => b.latestActivityAt - a.latestActivityAt);
   const latest = populated(getCatalogMedia(franchises, safeSeries, safeVideos));
-  const franchiseFirst = (a, b) => Number(b.type === "franchise") - Number(a.type === "franchise") || b.latestActivityAt - a.latestActivityAt;
-  const tv = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series")).sort(franchiseFirst);
-  const movies = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "video")).sort(franchiseFirst);
+  const byUpload = (a, b) => toActivityTimestamp(b.data.created_date) - toActivityTimestamp(a.data.created_date);
+  const movieVideos = safeVideos.filter(v => !v.series_id && !["episode", "book"].includes(v.content_type));
+  const movies = movieVideos.map(data => ({ type: "video", data, latestActivityAt: getItemActivityAt(data) })).sort(byUpload);
+  const tv = safeSeries.map(data => ({ type: "series", data, latestActivityAt: getItemActivityAt(data, franchises, safeSeries, safeVideos) })).sort(byUpload);
+  const movieFranchises = populated(getCatalogMedia(franchises, safeSeries, movieVideos, "video")).filter(item => item.type === "franchise").sort(byUpload);
+  const tvFranchises = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series")).filter(item => item.type === "franchise").sort(byUpload);
 
   // Rotating hero: top-level items from latest activity with suitable landscape artwork.
   // Eligible: standalone Movie, standalone Series, Franchise — never individual Episodes or Books.
@@ -28,5 +31,5 @@ export default function useHomeCatalog() {
     })
     .slice(0, 5);
 
-  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises, latest, tv, movies };
+  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises, latest, tv, movies, movieFranchises, tvFranchises };
 }
