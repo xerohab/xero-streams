@@ -1,3 +1,5 @@
+import {useProfile} from "@/lib/ProfileContext";
+import {allowsKidsContent} from "@/lib/parentalControls";
 import PlaybackReport from "@/components/browse/PlaybackReport";
 import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -144,7 +146,9 @@ export default function Watch() {
     gcTime: Infinity,
   });
 
-  const video = videoFromAll || fetchedVideo;
+  const kids=useProfile()?.activeProfile?.is_kids;
+  const candidateVideo = videoFromAll || fetchedVideo;
+  const video=kids&&!allowsKidsContent(candidateVideo)?null:candidateVideo;
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
   const isLoading = !video && (isFetchingVideo || isLoadingAll);
 
@@ -405,6 +409,7 @@ export default function Watch() {
     );
   }
 
+  if(kids&&candidateVideo&&!allowsKidsContent(candidateVideo))return <div className="min-h-screen flex items-center justify-center p-6 text-center">This title is unavailable on Kids profiles.</div>;
   if (!video) {
     return (
       <div className="min-h-screen bg-background">
