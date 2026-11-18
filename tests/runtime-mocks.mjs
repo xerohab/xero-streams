@@ -4,11 +4,13 @@ import { registerHooks } from 'node:module';
 registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier.startsWith('npm:@base44/sdk')) return { url: 'mock:sdk', shortCircuit: true };
+    if (specifier.startsWith('npm:web-push@')) return { url: 'mock:webpush', shortCircuit: true };
     if (specifier === 'base44:runtime') return { url: 'mock:runtime', shortCircuit: true };
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
     if (url === 'mock:sdk') return { format: 'module', source: 'export const createClientFromRequest = () => globalThis.__testClient;', shortCircuit: true };
+    if (url === 'mock:webpush') return { format: 'module', source: 'export default {sendNotification: (...args) => globalThis.__testPush(...args)};', shortCircuit: true };
     if (url === 'mock:runtime') return { format: 'module', source: 'export const secrets = { get: key => globalThis.__testSecrets?.[key] };', shortCircuit: true };
     return nextLoad(url, context);
   }
