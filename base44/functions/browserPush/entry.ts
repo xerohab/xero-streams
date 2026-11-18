@@ -18,7 +18,7 @@ if(typeof s?.endpoint!=='string'||s.endpoint.length>2048||!/^[-_A-Za-z0-9]{87}$/
 let url:URL;try{url=new URL(s.endpoint);}catch{return Response.json({error:'Invalid endpoint'},{status:400});}
 if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash||!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(url.hostname))return Response.json({error:'Unsupported push provider'},{status:400});
 const data={endpoint:s.endpoint,p256dh:s.keys.p256dh,auth:s.keys.auth};
-for(const other of await db.BrowserPushSubscription.filter({endpoint:s.endpoint})){if(other.user_id!==u.id||other.device_id!==b.device_id)await db.BrowserPushSubscription.delete(other.id);}
+for(const other of await db.BrowserPushSubscription.filter({endpoint:s.endpoint})){if(other.user_id!==u.id||other.device_id!==b.device_id)return Response.json({error:'Subscription already registered; remove it from the previous account first'},{status:409});}
 if(rows.length){await db.BrowserPushSubscription.update(rows[0].id,data);for(const row of rows.slice(1))await db.BrowserPushSubscription.delete(row.id);}else await db.BrowserPushSubscription.create({...scope,...data});
 return Response.json({ok:true});
 }catch{return Response.json({error:'Push registration unavailable'},{status:500});}
