@@ -1,3 +1,4 @@
+import CatalogAnalytics from "@/components/admin/CatalogAnalytics";
 import CatalogHealth from "@/components/admin/CatalogHealth";
 import CuratedCollections from "@/components/admin/CuratedCollections";
 import PlaybackReports from "@/components/admin/PlaybackReports";
@@ -200,6 +201,7 @@ export default function Admin() {
         <Tabs defaultValue="upload" className="space-y-6">
           <TabsList className="bg-secondary flex-wrap h-auto gap-1 justify-start">
             <TabsTrigger value="curated">Curated Collections</TabsTrigger>
+            <TabsTrigger value="catalog-analytics">Viewing Analytics</TabsTrigger>
             <TabsTrigger value="catalog-health">Catalog Health</TabsTrigger>
             <TabsTrigger value="playback-reports">Playback Reports</TabsTrigger>
             <TabsTrigger value="media-intelligence">Media Intelligence</TabsTrigger>
@@ -226,6 +228,7 @@ export default function Admin() {
           </TabsList>
 
           <TabsContent value="curated"><CuratedCollections /></TabsContent>
+          <TabsContent value="catalog-analytics"><CatalogAnalytics /></TabsContent>
           <TabsContent value="catalog-health"><CatalogHealth /></TabsContent>
           <TabsContent value="playback-reports"><PlaybackReports /></TabsContent>
           <TabsContent value="media-intelligence"><MediaIntelligence /></TabsContent>
