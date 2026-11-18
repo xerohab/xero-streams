@@ -1,3 +1,5 @@
+import {useProfile} from "@/lib/ProfileContext";
+import {allowsKidsContent} from "@/lib/parentalControls";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +23,7 @@ import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 const OUTLINE_BTN = "xero-action px-5";
 
 export default function MovieDetail() {
+  const kids=!!useProfile()?.activeProfile?.is_kids;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get("id");
@@ -68,7 +71,7 @@ export default function MovieDetail() {
 
   // More Like This: same collection first, then same category, then newest
   const moreLikeThis = movieCatalog
-    .filter((v) => v.id !== videoId && !v.series_id)
+    .filter((v) => v.id !== videoId && !v.series_id && (!kids||allowsKidsContent(v)))
     .map((v) => ({
       v,
       score: (video?.franchise_id && v.franchise_id === video.franchise_id ? 2 : 0) + (video?.category_id && v.category_id === video.category_id ? 1 : 0),
@@ -119,6 +122,7 @@ export default function MovieDetail() {
     );
   }
 
+  if (kids && video && !allowsKidsContent(video)) return <div className="p-12 text-center">This title is unavailable on Kids profiles.</div>;
   if (!video) {
     return (
       <div className="min-h-screen bg-background">
