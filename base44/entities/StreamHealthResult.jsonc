@@ -1,0 +1,55 @@
+{
+  "name": "StreamHealthResult",
+  "type": "object",
+  "properties": {
+    "video_id": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "reachable",
+        "review",
+        "missing",
+        "skipped",
+        "error"
+      ]
+    },
+    "http_status": {
+      "type": "number"
+    },
+    "checked_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "video_id",
+    "status",
+    "checked_at"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
