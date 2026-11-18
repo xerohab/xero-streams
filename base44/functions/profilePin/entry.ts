@@ -7,7 +7,7 @@ async function digest(pin:string,salt:string){
 export default async function(req:Request){
 try{
  const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
- if(!u)return Response.json({error:'Unauthorized'},{status:401});
+ if(!u||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
  const b=await req.json(),db=base.asServiceRole.entities;
  if(typeof b.profile_id!=='string'||!(await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}))[0])return Response.json({error:'Invalid profile'},{status:403});
  const scope={profile_id:b.profile_id,user_id:u.id},row=(await db.ProfilePin.filter(scope))[0];
@@ -16,8 +16,10 @@ try{
  const kidsExist=profiles.some(p=>p.is_kids);
  if(b.action==='status')return Response.json({enabled:!!row,requires_setup:kidsExist&&!target?.is_kids&&!row});
  if(b.action==='remove'&&kidsExist&&!target?.is_kids)return Response.json({error:'Adult profiles require a PIN while Kids profiles exist'},{status:403});
+ if(b.action==='set'&&kidsExist&&!target?.is_kids&&!row)return Response.json({error:'Account recovery required before setting a missing adult PIN'},{status:403});
  if(b.action==='verify'&&kidsExist&&!target?.is_kids&&!row)return Response.json({error:'Adult PIN required'},{status:403});
  if(!['verify','set','remove'].includes(b.action))return Response.json({error:'Unknown action'},{status:400});
+ if(b.action==='set'&&(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin)))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
  if(row){
  if(Number(row.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
  const valid=typeof b.pin==='string'&&/^\d{4,8}$/.test(b.pin)&&await digest(b.pin,row.salt)===row.digest;
