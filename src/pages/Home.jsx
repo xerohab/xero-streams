@@ -1,3 +1,4 @@
+import {useQuery} from "@tanstack/react-query";
 import { getAll, getWatched } from "@/hooks/useContinueWatching";
 import { base44 } from "@/api/base44Client";
 import React, { useState, useEffect } from "react";
@@ -13,6 +14,8 @@ import "@/components/browse/HomeCinema.css";
 
 export default function Home() {
   const catalog = useHomeCatalog();
+  const {data:curated=[]}=useQuery({queryKey:["curated-home"],queryFn:()=>base44.entities.CuratedCollection.filter({enabled:true},"sort_order",50),retry:false});
+  const lookup=new Map([...catalog.movies,...catalog.tv,...catalog.movieFranchises,...catalog.tvFranchises].map(i=>[i.type+":"+i.data.id,i]));
   const navigate = useNavigate();
   const [selected, setSelected] = useState("movies");
   const showMovies = catalog.rows.includes("movies");
@@ -61,6 +64,7 @@ export default function Home() {
         <HomeMediaSection title="Top 10 This Week" items={rankedItems} id="home-top-ten" limit={10} />
         {catalog.user && <HomeMediaSection title="Because You Watched" items={recommendations} id="home-recommendations" />}
         {collections.length>0&&<section className="home-section"><h2 className="font-bold uppercase tracking-widest text-sm mb-4">Explore Collections</h2><div className="flex flex-wrap gap-2">{collections.map(c=><button key={c.name} type="button" aria-pressed={collection===c.name} onClick={()=>setCollection(collection===c.name?"":c.name)} className="rounded-lg border border-border px-4 py-2 text-sm hover:border-primary">{c.name}</button>)}</div>{collections.filter(c=>c.name===collection).map(c=><HomeMediaSection key={c.name} title={c.name} items={c.items} id="home-curated"/>)}</section>}
+        {Array.isArray(curated)&&curated.map(c=><HomeMediaSection key={c.id} title={c.name} items={(c.titles||[]).map(k=>lookup.get(k)).filter(Boolean)} id={"curated-"+c.id}/>)}
         {genres.length>0 && <section className="home-section">
           <h2 className="font-bold uppercase tracking-widest text-sm mb-4">Browse by Genre</h2>
           <div className="flex flex-wrap gap-2">{genres.map(g=><button key={g} type="button" aria-pressed={genre===g} onClick={()=>setGenre(genre===g?"":g)} className={`rounded-lg border px-4 py-3 text-sm font-semibold capitalize ${genre===g?"bg-primary text-primary-foreground":"bg-card border-border hover:border-primary"}`}>{g}</button>)}</div>
