@@ -1,0 +1,46 @@
+{
+  "name": "PlaybackReport",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "default": "open"
+    }
+  },
+  "required": [
+    "user_id",
+    "video_id",
+    "reason"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
