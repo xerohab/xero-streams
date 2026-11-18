@@ -1,3 +1,4 @@
+import MediaIntelligence from "@/components/admin/MediaIntelligence";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -195,6 +196,7 @@ export default function Admin() {
 
         <Tabs defaultValue="upload" className="space-y-6">
           <TabsList className="bg-secondary flex-wrap h-auto gap-1 justify-start">
+            <TabsTrigger value="media-intelligence">Media Intelligence</TabsTrigger>
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
             <TabsTrigger value="bulkmovies">Bulk Add Movies</TabsTrigger>
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
@@ -217,6 +219,7 @@ export default function Admin() {
             <TabsTrigger value="perksphere">Perk Sphere</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="media-intelligence"><MediaIntelligence /></TabsContent>
           <TabsContent value="upload">
             <Card className="bg-card border-border">
               <CardHeader>
