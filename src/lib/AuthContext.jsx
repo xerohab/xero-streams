@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import {heartbeatDevice} from "@/lib/deviceSession";
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -17,6 +18,20 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     checkAppState();
   }, []);
+
+  useEffect(()=>{
+    if(!user?.id)return;
+    let active=true,busy=false;
+    const check=async()=>{
+      if(busy||!active)return;
+      busy=true;
+      try{if(await heartbeatDevice()&&active){setUser(null);setIsAuthenticated(false);localStorage.removeItem("xero_active_profile");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
+    };
+    check();
+    const timer=setInterval(check,60000);
+    window.addEventListener("focus",check);
+    return ()=>{active=false;clearInterval(timer);window.removeEventListener("focus",check);};
+  },[user?.id]);
 
   const checkAppState = async () => {
     try {
