@@ -1,3 +1,4 @@
+import { getWatched } from "@/hooks/useContinueWatching";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ export default function FranchiseDetail() {
   const urlParams = new URLSearchParams(location.search);
   const franchiseId = urlParams.get("id");
 
+  const [order, setOrder] = useState("collection");
   const [user, setUser] = useState(null);
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -97,6 +99,17 @@ export default function FranchiseDetail() {
     );
   }
 
+  const ids = new Set([franchiseId]);
+  for (let i = 0; i < allFranchises.length; i++) for (const f of allFranchises) if (ids.has(f.parent_id)) ids.add(f.id);
+  const seasons = allSeries.filter(s => ids.has(s.franchise_id) && !s.is_adult);
+  const seasonMap = new Map(seasons.map(s => [s.id,s]));
+  const playable = allVideos.filter(v => !v.is_adult && !v.coming_soon && v.video_url && (v.series_id ? seasonMap.has(v.series_id) : ids.has(v.franchise_id)));
+  const release = v => Date.parse(v.release_date || seasonMap.get(v.series_id)?.release_year || v.release_year || "") || Infinity;
+  const ordered = [...playable].sort((a,b) => order === "release" ? (release(a)-release(b) || a.title.localeCompare(b.title)) : ((seasonMap.get(a.series_id)?.sort_order ?? a.sort_order ?? 0) - (seasonMap.get(b.series_id)?.sort_order ?? b.sort_order ?? 0) || (a.episode_number || 0)-(b.episode_number || 0) || a.title.localeCompare(b.title)));
+  const watched = new Set(getWatched());
+  const completed = playable.filter(v => watched.has(v.id)).length;
+  const next = ordered.find(v => !watched.has(v.id));
+  const additions = [...playable].sort((a,b) => getItemActivityAt(b)-getItemActivityAt(a)).slice(0,5);
   const titleCount = subFranchises.length + franchiseSeries.length + franchiseMovies.length;
   const activityOf = (item) => getItemActivityAt(item, allFranchises, allSeries, allVideos);
 
@@ -147,6 +160,15 @@ export default function FranchiseDetail() {
       />
 
       <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
+        {playable.length > 0 && <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+          <SectionHeader title="Your Collection Progress" />
+          <p>{completed} of {playable.length} watched · {Math.round(completed/playable.length*100)}%</p>
+          <progress className="w-full accent-yellow-500" max={playable.length} value={completed} />
+          {next && <Button asChild><Link to={"/watch?id="+next.id}>Watch Next: {next.title}</Link></Button>}
+          <div className="flex gap-2"><Button variant={order==="collection"?"default":"outline"} onClick={()=>setOrder("collection")}>Collection Order</Button><Button variant={order==="release"?"default":"outline"} onClick={()=>setOrder("release")}>Release Order</Button></div>
+          <div className="max-h-80 overflow-auto divide-y divide-border">{ordered.map((v,i)=><Link className="flex gap-3 py-2 text-sm hover:text-primary" key={v.id} to={"/watch?id="+v.id}><span>{i+1}.</span><span>{seasonMap.get(v.series_id)?.title ? seasonMap.get(v.series_id).title+" · " : ""}{v.title}</span>{watched.has(v.id)&&<span className="ml-auto text-primary">Watched</span>}</Link>)}</div>
+          <h3 className="font-bold">Latest additions</h3><div className="flex flex-wrap gap-3">{additions.map(v=><Link className="text-sm text-primary" key={v.id} to={"/watch?id="+v.id}>{v.title}</Link>)}</div>
+        </section>}
         <GenreChips record={franchise} legacyField="category" />
         {groups.length > 0 ? (
           <section>
