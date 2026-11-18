@@ -178,9 +178,9 @@ export default function Dashboard() {
   });
 
   const { data: watchlistItems = [] } = useQuery({
-    queryKey: ["watchlistItems", user?.id],
-    queryFn: () => base44.entities.WatchlistItem.list(),
-    enabled: !!user
+    queryKey: ["watchlistItems", user?.id, activeProfile?.id, watchlists.map(w=>w.id).join(",")],
+    queryFn: async () => (await Promise.all(watchlists.map(w=>base44.entities.WatchlistItem.filter({watchlist_id:w.id})))).flat(),
+    enabled: !!user && !!activeProfile && watchlists.length>0
   });
 
   const inbox=useQuery({queryKey:["streaming-inbox",user?.id],enabled:!!user,queryFn:()=>base44.entities.StreamingNotification.filter({user_id:user.id},"-created_date",100)});
