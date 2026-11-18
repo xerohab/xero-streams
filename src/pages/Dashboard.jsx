@@ -1,4 +1,5 @@
 import { getAll, getWatched } from "@/hooks/useContinueWatching";
+import { useProfile } from "@/lib/ProfileContext";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -71,6 +72,7 @@ function useContinueWatching() {
 
 export default function Dashboard() {
   // "My Profile" is the user-facing name; the route stays /dashboard
+  const {activeProfile,loading:profileLoading}=useProfile();
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -169,9 +171,9 @@ export default function Dashboard() {
   });
 
   const { data: watchlists = [], refetch: refetchWatchlists } = useQuery({
-    queryKey: ["watchlists", user?.id],
-    queryFn: () => base44.entities.Watchlist.filter({ user_id: user.id }),
-    enabled: !!user
+    queryKey: ["watchlists", user?.id, activeProfile?.id],
+    queryFn: async () => (await base44.entities.Watchlist.filter({ user_id: user.id })).filter(w=>w.profile_id===activeProfile?.id || (!w.profile_id && activeProfile?.is_default)),
+    enabled: !!user && !!activeProfile && !profileLoading
   });
 
   const { data: watchlistItems = [] } = useQuery({
