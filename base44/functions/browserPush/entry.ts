@@ -4,7 +4,7 @@ try{
 const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
 if(!u||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
 const b=await req.json(),db=base.asServiceRole.entities;
-if(b.action==='config'){const key=Deno.env.get('XERO_VAPID_PUBLIC_KEY');return Response.json({enabled:!!key,public_key:key||null});}
+if(b.action==='config'){const key=Deno.env.get('XERO_VAPID_PUBLIC_KEY');const enabled=!!(key&&Deno.env.get('XERO_VAPID_PRIVATE_KEY')&&Deno.env.get('XERO_VAPID_SUBJECT'));return Response.json({enabled,public_key:enabled?key:null});}
 if(typeof b.device_id!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(b.device_id))return Response.json({error:'Invalid device'},{status:400});
 const scope={user_id:u.id,device_id:b.device_id};
 const rows=await db.BrowserPushSubscription.filter(scope);
@@ -12,7 +12,7 @@ if(b.action==='remove'){for(const row of rows)await db.BrowserPushSubscription.d
 if(b.action!=='register')return Response.json({error:'Invalid action'},{status:400});
 const device=(await db.StreamingDevice.filter(scope))[0];
 if(!device||device.revoked)return Response.json({error:'Device unavailable'},{status:403});
-if(!Deno.env.get('XERO_VAPID_PUBLIC_KEY'))return Response.json({error:'Push not configured'},{status:503});
+if(!Deno.env.get('XERO_VAPID_PUBLIC_KEY')||!Deno.env.get('XERO_VAPID_PRIVATE_KEY')||!Deno.env.get('XERO_VAPID_SUBJECT'))return Response.json({error:'Push not configured'},{status:503});
 const s=b.subscription;
 if(typeof s?.endpoint!=='string'||s.endpoint.length>2048||!/^[-_A-Za-z0-9]{87}$/.test(s.keys?.p256dh||'')||!/^[-_A-Za-z0-9]{22}$/.test(s.keys?.auth||''))return Response.json({error:'Invalid subscription'},{status:400});
 const url=new URL(s.endpoint);
