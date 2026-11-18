@@ -32,6 +32,20 @@ const AVATAR_OPTIONS = [
   { id: "crown", emoji: "👑", color: "#f39c12" },
 ];
 
+async function authorizeProfile(profile){
+ try{
+ const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:profile.id});
+ if(status.data?.enabled===false)return true;
+ if(status.data?.enabled!==true)throw new Error("Unavailable");
+ const pin=window.prompt("Enter PIN for "+profile.name);
+ if(pin===null)return false;
+ const result=await base44.functions.invoke("profilePin",{action:"verify",profile_id:profile.id,pin});
+ if(result.data?.ok===true)return true;
+ }catch{}
+ window.alert("Profile could not be unlocked. Check your PIN or try again later.");
+ return false;
+}
+
 export function ProfileProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -67,13 +81,14 @@ export function ProfileProvider({ children }) {
       const savedId = localStorage.getItem(ACTIVE_KEY);
       let active = list.find((p) => p.id === savedId);
       if (!active) active = list[0]; // fallback to first (default)
-      if (active) {
+      if (active && await authorizeProfile(active)) {
         setActiveProfileState(active);
         localStorage.setItem(ACTIVE_KEY, active.id);
         setPlaybackProfile(active.id); syncPlayback(active.id);
+        window.dispatchEvent(new Event("xero-profile-changed"));
         // Update last_used_date in background
         base44.entities.ViewingProfile.update(active.id, { last_used_date: new Date().toISOString() }).catch(() => {});
-      }
+      } else {localStorage.removeItem(ACTIVE_KEY);setPlaybackProfile(null);}
     } catch (err) {
       console.error("Profile load error:", err);
     } finally {
@@ -91,7 +106,8 @@ export function ProfileProvider({ children }) {
   }, [loadProfiles]);
 
   // Switch active profile
-  const switchProfile = useCallback((profile) => {
+  const switchProfile = useCallback(async (profile) => {
+    if(!profiles.some(p=>p.id===profile.id)||!(await authorizeProfile(profile)))return false;
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
     setPlaybackProfile(profile.id); syncPlayback(profile.id);
@@ -99,7 +115,8 @@ export function ProfileProvider({ children }) {
     window.dispatchEvent(new Event("xero-profile-changed"));
     // Update last_used_date
     base44.entities.ViewingProfile.update(profile.id, { last_used_date: new Date().toISOString() }).catch(() => {});
-  }, []);
+    return true;
+  }, [profiles]);
 
   // Create a new profile
   const createProfile = useCallback(async (data) => {
@@ -119,18 +136,23 @@ export function ProfileProvider({ children }) {
 
   // Update a profile
   const updateProfile = useCallback(async (id, data) => {
+    const profile=profiles.find(p=>p.id===id);
+    if(!profile)return null;
+    if(Object.hasOwn(data,"is_kids")&&!(await authorizeProfile(profile)))return null;
     const updated = await base44.entities.ViewingProfile.update(id, data);
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
     if (activeProfile?.id === id) {
       setActiveProfileState((prev) => ({ ...prev, ...data }));
     }
     return updated;
-  }, [activeProfile]);
+  }, [activeProfile, profiles]);
 
   // Delete a profile
   const deleteProfile = useCallback(async (id) => {
     // Don't allow deleting if it's the only profile
     if (profiles.length <= 1) return false;
+    const profile=profiles.find(p=>p.id===id);
+    if(!profile||!(await authorizeProfile(profile)))return false;
     // Clear profile-scoped localStorage data
     clearProfileStorage(id);
     await base44.entities.ViewingProfile.delete(id);
