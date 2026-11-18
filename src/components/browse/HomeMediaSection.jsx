@@ -2,8 +2,8 @@ import React from "react";
 import HomeSectionHeader from "@/components/browse/HomeSectionHeader";
 import HomeMediaCard from "@/components/browse/HomeMediaCard";
 
-export default function HomeMediaSection({ title, items, to, id }) {
-  const visible = items.slice(0, 14);
+export default function HomeMediaSection({ title, items, to, id, limit = 16 }) {
+  const visible = items.slice(0, limit);
   if (!visible.length) return null;
   return (
     <section className="home-section" id={id} data-home-count={visible.length}>
