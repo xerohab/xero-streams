@@ -29,6 +29,7 @@ const TABS = [
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "requests", label: "Requests", icon: MessageSquare },
   { id: "subscription", label: "Subscription", icon: Crown },
+  { id: "notifications", label: "Notifications", icon: MessageSquare },
   { id: "following", label: "Following & Reminders", icon: Star },
   { id: "settings", label: "Settings", icon: Settings },
 ];
@@ -182,6 +183,7 @@ export default function Dashboard() {
     enabled: !!user
   });
 
+  const inbox=useQuery({queryKey:["streaming-inbox",user?.id],enabled:!!user,queryFn:()=>base44.entities.StreamingNotification.filter({user_id:user.id},"-created_date",100)});
   const follows = useQuery({queryKey:["series-follows",user?.id],enabled:!!user,queryFn:()=>base44.entities.SeriesFollow.filter({user_id:user.id})});
   const reminders = useQuery({queryKey:["release-reminders",user?.id],enabled:!!user,queryFn:()=>base44.entities.ReleaseReminder.filter({user_id:user.id})});
   const [preferenceError,setPreferenceError]=useState("");
@@ -308,6 +310,7 @@ export default function Dashboard() {
             onCancel={handleCancelSub}
           />
         )}
+        {activeTab==="notifications" && <section><h2 className="font-bold text-lg mb-4">Notifications</h2>{inbox.isError?<p>Unable to load notifications.</p>:!inbox.data?.length?<p>No notifications yet.</p>:inbox.data.map(n=><div key={n.id} className="border-b border-border py-3"><Link to={n.link?.startsWith("/watch?id=")?n.link:"/dashboard"} className="font-semibold">{n.title}</Link><p className="text-sm text-muted-foreground">{n.message}</p>{!n.read&&<button className="text-primary text-xs" onClick={async()=>{try{await base44.functions.invoke("streamingAlerts",{action:"read",id:n.id});await inbox.refetch();}catch{setPreferenceError("Unable to mark read");}}}>Mark as read</button>}</div>)}{preferenceError&&<p role="alert">{preferenceError}</p>}</section>}
         {activeTab==="following" && <section className="space-y-5">
           <h2 className="text-lg font-bold">Followed Series</h2>
           {follows.isError?<p>Unable to load followed series.</p>:follows.isLoading?<p>Loading…</p>:!follows.data?.length?<p className="text-muted-foreground">Follow shows from their series pages.</p>:follows.data.map(row=><div key={row.id} className="flex flex-wrap items-center gap-3 border-b border-border py-2 text-sm"><Link className="flex-1 font-semibold" to={"/series?id="+row.series_id}>{allSeries.find(s=>s.id===row.series_id)?.title||"Series"}</Link><label className="flex items-center gap-2"><input type="checkbox" checked={row.email_enabled!==false} onChange={e=>{const checked=e.target.checked;changePreference(()=>base44.entities.SeriesFollow.update(row.id,{email_enabled:checked}));}}/> Email alerts</label><button className="text-primary" onClick={()=>changePreference(()=>base44.entities.SeriesFollow.delete(row.id))}>Unfollow</button></div>)}
