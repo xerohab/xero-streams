@@ -5,15 +5,16 @@ const MAX = 20;
 let queue=Promise.resolve();
 const last=new Map();
 let verifiedProfile=null;
-export function setPlaybackProfile(id){verifiedProfile=id;}
+export function setPlaybackProfile(id){if(verifiedProfile!==id)last.clear();verifiedProfile=id;}
 function push(videoId,state,position=0,duration=0){
  const id=localStorage.getItem("xero_active_profile");
  if(!id||id!==verifiedProfile)return;
  const key=id+":"+videoId,now=Date.now();
  const previous=last.get(key);
  if(previous?.state===state&&(state!=="progress"||now-previous.time<10000))return;
- last.set(key,{state,time:now});
- queue=queue.catch(()=>{}).then(()=>base44.functions.invoke("profilePlayback",{action:"save",profile_id:id,video_id:videoId,state,position,duration})).catch(()=>{last.delete(key);});
+ const marker={state,time:now};last.set(key,marker);
+ if(last.size>1000)last.delete(last.keys().next().value);
+ queue=queue.catch(()=>{}).then(async()=>{if(verifiedProfile!==id)return;const result=await base44.functions.invoke("profilePlayback",{action:"save",profile_id:id,video_id:videoId,state,position,duration});if(result.data?.ok!==true)throw Error("Sync rejected");}).catch(()=>{if(last.get(key)===marker)last.delete(key);});
 }
 export async function syncPlayback(profileId=verifiedProfile){
  if(!profileId||profileId!==verifiedProfile)return;
@@ -46,12 +47,13 @@ function getWatchedKey(profile) {
 }
 
 export function saveProgress(video, currentTime, duration) {
-  if (!video?.id || !duration || duration < 60) return;
+  if (!video?.id || !Number.isFinite(currentTime)||!Number.isFinite(duration)||currentTime<0||currentTime>duration||duration < 60) return;
   const progress = Math.floor((currentTime / duration) * 100);
   if (progress < 2 || progress > 95) {
     if (progress > 95) {
       localStorage.setItem(getCurrentKey(),JSON.stringify(getAll().filter(v=>v.id!==video.id)));
       addWatched(video.id);
+      notify();
     }
     return;
   }
@@ -69,12 +71,14 @@ export function saveProgress(video, currentTime, duration) {
   };
   const updated = [entry, ...filtered].slice(0, MAX);
   localStorage.setItem(getCurrentKey(), JSON.stringify(updated));
+  const watched=getWatched();if(watched.includes(video.id))localStorage.setItem(getCurrentWatchedKey(),JSON.stringify(watched.filter(id=>id!==video.id)));
   push(video.id,"progress",currentTime,duration);
   notify();
 }
 
 export function removeProgress(videoId) {
   push(videoId,"removed");
+  localStorage.setItem(getCurrentWatchedKey(),JSON.stringify(getWatched().filter(id=>id!==videoId)));
   const list = getAll().filter((v) => v.id !== videoId);
   localStorage.setItem(getCurrentKey(), JSON.stringify(list));
   notify();
