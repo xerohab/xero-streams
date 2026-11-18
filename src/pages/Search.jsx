@@ -1,3 +1,5 @@
+import {useProfile} from "@/lib/ProfileContext";
+import {allowsKidsContent} from "@/lib/parentalControls";
 import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +19,7 @@ import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 import loadMediaRecords from "@/components/browse/loadMediaRecords";
 
 export default function Search() {
+  const kids=!!useProfile()?.activeProfile?.is_kids;
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const [query, setQuery] = useState(urlParams.get("q") || "");
@@ -54,10 +57,10 @@ export default function Search() {
       return [];
     }
 
-    let filteredVideos = videos;
-    let filteredSeries = seriesList;
-    let filteredFranchises = franchises;
-    let filteredBooks = books;
+    let filteredVideos = kids? videos.filter(allowsKidsContent):videos;
+    let filteredSeries = kids?[]:seriesList;
+    let filteredFranchises = kids?[]:franchises;
+    let filteredBooks = kids?[]:books;
 
     if (q) {
       filteredVideos = filteredVideos.filter(v => v.title?.toLowerCase().includes(q) || v.description?.toLowerCase().includes(q));
@@ -124,7 +127,7 @@ export default function Search() {
     ];
 
     return items;
-  }, [query, videos, seriesList, franchises, books, authors, filterType, filterCategory, filterYear, filterCast]);
+  }, [kids, query, videos, seriesList, franchises, books, authors, filterType, filterCategory, filterYear, filterCast]);
 
   const hasResults = results.length > 0;
   const totalPages = Math.ceil(results.length / itemsPerPage) || 1;
