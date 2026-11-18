@@ -1,3 +1,4 @@
+import webpush from 'npm:web-push@3.6.7';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
 export default async function(req:Request){
  const base=createClientFromRequest(req), db=base.asServiceRole.entities;
@@ -13,12 +14,25 @@ export default async function(req:Request){
  if((body.action && body.action!=='deliver')||(user && user.role!=='admin'))return Response.json({error:'Forbidden'},{status:403});
  try{
  const [follows,reminders]=await Promise.all([db.SeriesFollow.list('-created_date',5000),db.ReleaseReminder.list('-created_date',5000)]);
- let sent=0,failed=0;
+ let sent=0,failed=0,pushed=0;
+ const publicKey=Deno.env.get('XERO_VAPID_PUBLIC_KEY'),privateKey=Deno.env.get('XERO_VAPID_PRIVATE_KEY'),subject=Deno.env.get('XERO_VAPID_SUBJECT');
+ const pushEnabled=!!(publicKey&&privateKey&&subject&&user?.role==='admin');
  const deliver=async(row:any,v:any,email:boolean)=>{
   if(!v||v.coming_soon||!v.video_url||v.is_adult)return;
   const key='release:'+v.id;
   let n=(await db.StreamingNotification.filter({user_id:row.user_id,event_key:key}))[0];
   if(!n)n=await db.StreamingNotification.create({user_id:row.user_id,event_key:key,title:'Available now: '+v.title,message:'Your requested release is ready to watch.',link:'/watch?id='+encodeURIComponent(v.id),read:false,email_sent:false});
+  if(pushEnabled&&!n.read&&Date.now()-Date.parse(n.created_date)<86400000){
+   const owner=(await db.User.filter({id:row.user_id}))[0];
+   if(owner&&!owner.is_banned){for(const sub of await db.BrowserPushSubscription.filter({user_id:row.user_id},'-created_date',100)){
+    const receipt={notification_id:n.id,subscription_id:sub.id};
+    if((await db.BrowserPushReceipt.filter(receipt))[0])continue;
+    const device=(await db.StreamingDevice.filter({user_id:row.user_id,device_id:sub.device_id}))[0];if(!device||device.revoked)continue;
+    try{const url=new URL(sub.endpoint);if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash||!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(url.hostname))continue;
+    await webpush.sendNotification({endpoint:sub.endpoint,keys:{p256dh:sub.p256dh,auth:sub.auth}},JSON.stringify({type:'release',id:n.id,title:String(n.title).slice(0,160),link:n.link}),{vapidDetails:{subject,publicKey,privateKey},TTL:3600,timeout:10000});await db.BrowserPushReceipt.create({...receipt,sent_at:Date.now()});pushed++;
+    }catch(e){if(e.statusCode===404||e.statusCode===410)await db.BrowserPushSubscription.delete(sub.id);failed++;}
+   }}
+  }
   if(email&&!n.email_sent){
    const u=(await db.User.filter({id:row.user_id}))[0];
    if(u?.email&&!u.is_banned){await base.asServiceRole.integrations.Core.SendEmail({to:u.email,subject:n.title,body:n.message+' https://xerostreams.com'+n.link,from_name:'Xero Streams'});await db.StreamingNotification.update(n.id,{email_sent:true});sent++;}
@@ -26,6 +40,6 @@ export default async function(req:Request){
  };
  for(const r of reminders)try{await deliver(r,(await db.Video.filter({id:r.video_id}))[0],true);}catch{failed++;}
  for(const f of follows)try{const videos=await db.Video.filter({series_id:f.series_id},'-updated_date',100);for(const v of videos)if(Date.parse(v.created_date)>=Date.parse(f.created_date)||Date.parse(v.content_updated_at)>=Date.parse(f.created_date))await deliver(f,v,f.email_enabled!==false);}catch{failed++;}
- return Response.json({sent,failed});
+ return Response.json({sent,failed,pushed,pushEnabled});
  }catch{return Response.json({error:'Delivery failed'},{status:500});}
 }
