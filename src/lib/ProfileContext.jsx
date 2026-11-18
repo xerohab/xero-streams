@@ -1,3 +1,4 @@
+import {setPlaybackProfile,syncPlayback} from "@/hooks/useContinueWatching";
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 
@@ -69,6 +70,7 @@ export function ProfileProvider({ children }) {
       if (active) {
         setActiveProfileState(active);
         localStorage.setItem(ACTIVE_KEY, active.id);
+        setPlaybackProfile(active.id); syncPlayback(active.id);
         // Update last_used_date in background
         base44.entities.ViewingProfile.update(active.id, { last_used_date: new Date().toISOString() }).catch(() => {});
       }
@@ -92,6 +94,7 @@ export function ProfileProvider({ children }) {
   const switchProfile = useCallback((profile) => {
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
+    setPlaybackProfile(profile.id); syncPlayback(profile.id);
     // Notify continue-watching system to reload profile-scoped data
     window.dispatchEvent(new Event("xero-profile-changed"));
     // Update last_used_date
@@ -144,6 +147,7 @@ export function ProfileProvider({ children }) {
   const clearActiveProfile = useCallback(() => {
     setActiveProfileState(null);
     localStorage.removeItem(ACTIVE_KEY);
+    setPlaybackProfile(null);
   }, []);
 
   const value = {
