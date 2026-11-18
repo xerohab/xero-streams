@@ -1,0 +1,60 @@
+{
+  "name": "ProfilePlayback",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "profile_id": {
+      "type": "string"
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "position": {
+      "type": "number"
+    },
+    "duration": {
+      "type": "number"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "progress",
+        "completed",
+        "removed"
+      ]
+    },
+    "changed_at": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "user_id",
+    "profile_id",
+    "video_id",
+    "state"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
