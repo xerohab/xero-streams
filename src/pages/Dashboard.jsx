@@ -1,3 +1,4 @@
+import { getAll, getWatched } from "@/hooks/useContinueWatching";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -43,9 +44,9 @@ function useContinueWatching() {
   useEffect(() => {
     const read = () => {
       try {
-        const inProgress = (JSON.parse(localStorage.getItem("xero_continue_watching")) || [])
+        const inProgress = (getAll())
           .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-        const completed = (JSON.parse(localStorage.getItem("xero_watched")) || []);
+        const completed = (getWatched());
         return { inProgress, completed: completed.map((id) => ({ id })) };
       } catch {
         return { inProgress: [], completed: [] };
@@ -55,10 +56,12 @@ function useContinueWatching() {
     const handler = () => setData(read());
     window.addEventListener("storage", handler);
     window.addEventListener("focus", handler);
+    window.addEventListener("xero-profile-changed", handler);
     window.addEventListener("xero-progress-updated", handler);
     return () => {
       window.removeEventListener("storage", handler);
       window.removeEventListener("focus", handler);
+      window.removeEventListener("xero-profile-changed", handler);
       window.removeEventListener("xero-progress-updated", handler);
     };
   }, []);
