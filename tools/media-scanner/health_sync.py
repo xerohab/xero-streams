@@ -8,7 +8,7 @@ def invoke(body):
     endpoint=os.environ["XERO_HEALTH_ENDPOINT"]
     token=os.environ["XERO_SCANNER_TOKEN"]
     u=urlsplit(endpoint)
-    if u.scheme!="https" or u.username or u.password or not u.hostname: raise ValueError("HTTPS endpoint required")
+    if u.scheme!="https" or u.username or u.password or not u.hostname or u.port not in (None,443) or u.fragment: raise ValueError("HTTPS endpoint required")
     req=urllib.request.Request(endpoint,data=json.dumps(body).encode(),headers={"Content-Type":"application/json","x-scanner-token":token},method="POST")
     with urllib.request.build_opener(NoRedirect()).open(req,timeout=45) as response:
         return json.load(response)
@@ -18,7 +18,9 @@ def main():
         rows=[];offset=0
         for _ in range(1000):
             data=invoke({"action":"catalog","offset":offset})
-            rows.extend(data["rows"])
+            batch=data["rows"]
+            if not isinstance(batch,list) or len(batch)>500 or any(not isinstance(r,dict) or not isinstance(r.get("id"),str) or not isinstance(r.get("url"),str) for r in batch):raise ValueError("Invalid catalog response")
+            rows.extend(batch)
             new=data["next"]
             if new is None:break
             if not isinstance(new,int) or new<=offset:raise ValueError("Invalid pagination")
