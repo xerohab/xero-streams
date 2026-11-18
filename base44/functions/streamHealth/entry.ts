@@ -13,12 +13,12 @@ try{
  if(b.action==='results'&&Array.isArray(b.rows)&&b.rows.length<=100){
  let saved=0,skipped=0;
  for(const r of b.rows){
- if(typeof r.id!=='string'||!['reachable','review','missing','skipped','error'].includes(r.status)||!Number.isFinite(Date.parse(r.checked_at))){skipped++;continue;}
+ if(!r||typeof r.id!=='string'||!['reachable','review','missing','skipped','error'].includes(r.status)||(!Number.isFinite(Date.parse(r.checked_at))||Date.parse(r.checked_at)>Date.now()+300000)){skipped++;continue;}
  const v=(await db.Video.filter({id:r.id}))[0];
  if(!v||v.is_adult||v.coming_soon||(v.updated_date||'')!==r.revision){skipped++;continue;}
  const old=(await db.StreamHealthResult.filter({video_id:r.id}))[0];
  if(old&&Date.parse(old.checked_at)>Date.parse(r.checked_at)){skipped++;continue;}
- const data={video_id:r.id,revision:r.revision,status:r.status,checked_at:r.checked_at,http_status:Number(r.http_status)||0};
+ const data={video_id:r.id,revision:r.revision,status:r.status,checked_at:r.checked_at,http_status:Number.isInteger(r.http_status)&&r.http_status>=100&&r.http_status<=599?r.http_status:0};
  if(old)await db.StreamHealthResult.update(old.id,data);else await db.StreamHealthResult.create(data);saved++;
  }
  return Response.json({saved,skipped});
