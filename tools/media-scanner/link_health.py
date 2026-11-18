@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 def check(row, allowed):
-    result = {"id": row["id"], "checked_at": datetime.now(timezone.utc).isoformat()}
+    result = {"id": row["id"], "revision": row.get("revision",""), "checked_at": datetime.now(timezone.utc).isoformat()}
     conn = None
     try:
         u = urlsplit(row["url"])
