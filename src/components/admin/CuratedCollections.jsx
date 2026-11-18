@@ -1,0 +1,14 @@
+import React,{useState} from "react";
+import {base44} from "@/api/base44Client";
+import {useQuery,useQueryClient} from "@tanstack/react-query";
+import useHomeCatalog from "@/components/browse/useHomeCatalog";
+export default function CuratedCollections(){
+ const catalog=useHomeCatalog(),client=useQueryClient();
+ const [draft,setDraft]=useState({name:"",titles:[],enabled:false,sort_order:0}),[search,setSearch]=useState(""),[status,setStatus]=useState(""),[busy,setBusy]=useState(false);
+ const q=useQuery({queryKey:["admin-curated"],queryFn:()=>base44.entities.CuratedCollection.list("sort_order",200)});
+ const items=[...catalog.movies,...catalog.tv,...catalog.movieFranchises,...catalog.tvFranchises];
+ const key=i=>i.type+":"+i.data.id;
+ const patch=d=>setDraft(x=>({...x,...d}));
+ const save=async()=>{setBusy(true);try{const {id,name,titles,enabled,sort_order}=draft;const data={name:name.trim(),titles,enabled,sort_order};if(id)await base44.entities.CuratedCollection.update(id,data);else await base44.entities.CuratedCollection.create(data);await client.invalidateQueries({queryKey:["admin-curated"]});await client.invalidateQueries({queryKey:["curated-home"]});setStatus("Saved");}catch(e){setStatus(e.message||"Save failed");}finally{setBusy(false);}};
+ return <section className="space-y-4"><h2 className="text-xl font-bold">Curated Collections</h2>{q.isError&&<p>Unable to load collections.</p>}<div className="flex flex-wrap gap-2">{(q.data||[]).map(c=><button key={c.id} className="border rounded p-2" onClick={()=>setDraft(c)}>{c.name} ({c.enabled?"Published":"Draft"})</button>)}<button className="border rounded p-2" onClick={()=>setDraft({name:"",titles:[],enabled:false,sort_order:0})}>New collection</button></div><input className="bg-secondary rounded p-2 w-full" placeholder="Collection name" maxLength={100} value={draft.name} onChange={e=>patch({name:e.target.value})}/><label className="block">Display order <input type="number" value={draft.sort_order} onChange={e=>patch({sort_order:Number(e.target.value)})}/></label><label><input type="checkbox" checked={draft.enabled} onChange={e=>patch({enabled:e.target.checked})}/> Publish on homepage</label><p>{draft.titles.length} selected</p><input className="bg-secondary rounded p-2 w-full" placeholder="Search movies, series and franchises" value={search} onChange={e=>setSearch(e.target.value)}/><div className="max-h-72 overflow-auto space-y-2">{items.filter(i=>i.data.title?.toLowerCase().includes(search.toLowerCase())).slice(0,100).map(i=><label key={key(i)} className="block"><input type="checkbox" checked={draft.titles.includes(key(i))} onChange={e=>patch({titles:e.target.checked?[...draft.titles,key(i)]:draft.titles.filter(k=>k!==key(i))})}/> {i.data.title} ({i.type})</label>)}</div><button disabled={busy||!draft.name.trim()||!draft.titles.length} className="xero-action p-2" onClick={save}>Save collection</button>{status&&<p role="status">{status}</p>}</section>;
+}
