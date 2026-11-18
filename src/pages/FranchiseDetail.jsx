@@ -1,4 +1,5 @@
 import { getWatched } from "@/hooks/useContinueWatching";
+import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -29,13 +30,11 @@ export default function FranchiseDetail() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
-  const isFavourited = user?.favourite_franchises?.includes(franchiseId) ?? false;
+  const profileFavourites=useProfileFavourites(user,"favourite_franchises");
+  const isFavourited=profileFavourites.values.includes(franchiseId);
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(location.pathname + location.search); return; }
-    const current = user.favourite_franchises || [];
-    const updated = isFavourited ? current.filter((id) => id !== franchiseId) : [...current, franchiseId];
-    await base44.auth.updateMe({ favourite_franchises: updated });
-    setUser((prev) => ({ ...prev, favourite_franchises: updated }));
+    await profileFavourites.toggle(franchiseId);
   };
 
   const { data: franchise, isLoading: loadingFranchise } = useQuery({
