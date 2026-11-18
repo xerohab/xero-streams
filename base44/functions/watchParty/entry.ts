@@ -14,6 +14,7 @@ export default async function(req:Request){
  const row=await db.WatchParty.create({host_id:user.id,video_id:video.id,token,expires_at:new Date(start+6*3600000).toISOString(),position:0,paused:true,synced_at:new Date().toISOString(),start_at:new Date(start).toISOString()});
  return Response.json({token,host:true});
  }
+ if(typeof b.token!=='string'||! /^[a-f0-9-]{72}$/i.test(b.token))return Response.json({error:'Invalid invitation'},{status:400});
  const room=(await db.WatchParty.filter({token:b.token,video_id:video.id}))[0];
  if(!room||Date.parse(room.expires_at)<Date.now())return Response.json({error:'Party expired'},{status:404});
  const host=room.host_id===user.id;
@@ -21,7 +22,7 @@ export default async function(req:Request){
  if(b.action==='messages'){const rows=await db.PartyMessage.filter({party_id:room.id},'-created_date',50);return Response.json({messages:rows.reverse().map(m=>({id:m.id,sender:m.sender,message:m.message}))});}
  if(room.start_at&&Date.parse(room.start_at)>Date.now()){if(b.action==='state')return Response.json({host,scheduled:true,start_at:room.start_at});if(b.action==='sync')return Response.json({error:'Party has not started'},{status:409});}
  if(b.action==='sync'){
- if(!host||!Number.isFinite(b.position)||b.position<0||typeof b.paused!=='boolean')return Response.json({error:'Forbidden'},{status:403});
+ if(!host||!Number.isFinite(b.position)||b.position<0||b.position>86400||typeof b.paused!=='boolean')return Response.json({error:'Forbidden'},{status:403});
  await db.WatchParty.update(room.id,{position:b.position,paused:b.paused,synced_at:new Date().toISOString()});
  return Response.json({ok:true});
  }
