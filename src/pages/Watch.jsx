@@ -244,8 +244,9 @@ export default function Watch() {
     : null;
 
   const candidate = nextEpisode || nextFranchiseMovie;
-  const nextVideo = candidate?.video_url && !candidate.coming_soon && !candidate.is_adult ? candidate : null;
-  const prevVideo = prevSeriesEpisode || prevEpisode || prevFranchiseMovie;
+  const nextVideo = candidate?.video_url && !candidate.coming_soon && !candidate.is_adult && (!kids||allowsKidsContent(candidate)) ? candidate : null;
+  const previousCandidate = prevSeriesEpisode || prevEpisode || prevFranchiseMovie;
+  const prevVideo = !kids||allowsKidsContent(previousCandidate)?previousCandidate:null;
 
   // Keep nextVideoRef in sync for use inside event handlers
   useEffect(() => {
@@ -254,7 +255,7 @@ export default function Watch() {
 
 
 
-  const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult).slice(0, 15);
+  const moreVideos = allVideos.filter((v) => v.id !== videoId && !v.series_id && !v.franchise_id && !v.is_adult && (!kids||allowsKidsContent(v))).slice(0, 15);
 
   // Autoplay countdown
   const startCountdown = useCallback((seconds = 10) => {
