@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, Pencil, Check, X, Trash2, ArrowLeft } from "lucide-react";
 import { useProfile, AVATAR_OPTIONS } from "@/lib/ProfileContext";
 import { base44 } from "@/api/base44Client";
@@ -10,6 +10,9 @@ import { base44 } from "@/api/base44Client";
  */
 export default function ProfileSelect({ manage = false }) {
   const navigate = useNavigate();
+  const location=useLocation();
+  const requested=location.state?.from;
+  const destination=typeof requested==="string"&&requested.startsWith("/")&&!requested.startsWith("//")&&!requested.startsWith("/profiles")?requested:"/";
   const { profiles = [], activeProfile, switchProfile, createProfile, updateProfile, deleteProfile, loading = true, maxProfiles = 5, avatarOptions = [] } = useProfile() || {};
   const [managing, setManaging] = useState(manage);
   const [editing, setEditing] = useState(null); // profile being edited
@@ -24,9 +27,9 @@ export default function ProfileSelect({ manage = false }) {
   // Redirect to home if only one profile and not in manage mode
   useEffect(() => {
     if (!loading && profiles.length <= 1 && !managing) {
-      if (activeProfile) navigate("/", { replace: true });
+      if (activeProfile) navigate(destination, { replace: true });
     }
-  }, [loading, profiles.length, managing, activeProfile, navigate]);
+  }, [loading, profiles.length, managing, activeProfile, navigate,destination]);
 
   if (loading) {
     return (
@@ -43,18 +46,21 @@ export default function ProfileSelect({ manage = false }) {
   };
 
   const startCreate = () => {
+    if(!activeProfile||activeProfile.is_kids)return;
     setForm({ name: "", avatar: "popcorn", is_kids: false });
     setCreating(true);
   };
 
   const handleCreate = async () => {
     if (!form.name.trim() || !activeProfile || activeProfile.is_kids) return;
-    await createProfile({ name: form.name.trim(), avatar: form.avatar, is_kids: form.is_kids });
+    const created=await createProfile({ name: form.name.trim(), avatar: form.avatar, is_kids: form.is_kids });
+    if(!created)return;
     setCreating(false);
     setForm({ name: "", avatar: "popcorn", is_kids: false });
   };
 
   const startEdit = (profile) => {
+    if(!activeProfile||activeProfile.is_kids)return;
     setForm({ name: profile.name, avatar: profile.avatar || "popcorn", is_kids: profile.is_kids });
     setEditing(profile.id);
   };
@@ -68,7 +74,7 @@ export default function ProfileSelect({ manage = false }) {
   };
 
   const handleDelete = async (profile) => {
-    if (profiles.length <= 1) return;
+    if (profiles.length <= 1||!activeProfile||activeProfile.is_kids) return;
     if (!confirm(`Delete "${profile.name}"? This will remove this profile's watch progress and My List. Your account, subscriptions and purchases are not affected.`)) return;
     await deleteProfile(profile.id);
   };
@@ -198,9 +204,9 @@ export default function ProfileSelect({ manage = false }) {
         <div className="mt-10 flex gap-3">
           {managing ? (
             <button onClick={() => setManaging(false)} className="rounded-lg bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90">Done</button>
-          ) : (
+          ) : activeProfile&&!activeProfile.is_kids ? (
             <button onClick={() => setManaging(true)} className="rounded-lg border border-border px-6 py-2.5 text-sm font-bold text-muted-foreground hover:border-primary hover:text-foreground">Manage Profiles</button>
-          )}
+          ):null}
           <button onClick={() => navigate("/")} className="flex items-center gap-1.5 rounded-lg border border-border px-6 py-2.5 text-sm font-bold text-muted-foreground hover:border-primary hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
