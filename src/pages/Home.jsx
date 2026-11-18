@@ -32,6 +32,8 @@ export default function Home() {
   const finishedSeries=new Set(catalog.series.filter(series=>{const episodes=catalog.videos.filter(v=>v.series_id===series.id && !v.coming_soon && v.video_url);return episodes.length>0 && episodes.every(v=>completed.has(v.id));}).map(s=>s.id));
   const recommendations = [...catalog.movies,...catalog.tv].filter(item=>!history.has(item.data.id) && !finishedSeries.has(item.data.id) && !item.data.coming_soon).map(item=>({...item,score:genresOf(item.data).reduce((n,g)=>n+(scores.get(g)||0),0)})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score || b.latestActivityAt-a.latestActivityAt);
   const genres = [...new Set([...catalog.movies,...catalog.tv].flatMap(item=>genresOf(item.data)))].sort();
+  const [collection,setCollection]=useState("");
+  const collections=[{name:"Movie Night",items:catalog.movies.filter(i=>i.data.video_url&&!i.data.coming_soon)},{name:"Binge-worthy TV",items:catalog.tv.filter(i=>catalog.videos.filter(v=>v.series_id===i.data.id&&v.video_url&&!v.coming_soon).length>=5)},{name:"Rediscover the Classics",items:catalog.movies.filter(i=>i.data.video_url&&Number(i.data.release_year)>1900&&Number(i.data.release_year)<=2000)},{name:"Franchise Marathons",items:[...catalog.movieFranchises,...catalog.tvFranchises]}].filter(c=>c.items.length);
   const [genre,setGenre] = useState("");
   const genreItems = [...catalog.movies,...catalog.tv].filter(item=>genresOf(item.data).includes(genre)).sort((a,b)=>b.latestActivityAt-a.latestActivityAt);
   if (catalog.isLoading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -58,6 +60,7 @@ export default function Home() {
         </section>}
         <HomeMediaSection title="Top 10 This Week" items={rankedItems} id="home-top-ten" limit={10} />
         {catalog.user && <HomeMediaSection title="Because You Watched" items={recommendations} id="home-recommendations" />}
+        {collections.length>0&&<section className="home-section"><h2 className="font-bold uppercase tracking-widest text-sm mb-4">Explore Collections</h2><div className="flex flex-wrap gap-2">{collections.map(c=><button key={c.name} type="button" aria-pressed={collection===c.name} onClick={()=>setCollection(collection===c.name?"":c.name)} className="rounded-lg border border-border px-4 py-2 text-sm hover:border-primary">{c.name}</button>)}</div>{collections.filter(c=>c.name===collection).map(c=><HomeMediaSection key={c.name} title={c.name} items={c.items} id="home-curated"/>)}</section>}
         {genres.length>0 && <section className="home-section">
           <h2 className="font-bold uppercase tracking-widest text-sm mb-4">Browse by Genre</h2>
           <div className="flex flex-wrap gap-2">{genres.map(g=><button key={g} type="button" aria-pressed={genre===g} onClick={()=>setGenre(genre===g?"":g)} className={`rounded-lg border px-4 py-3 text-sm font-semibold capitalize ${genre===g?"bg-primary text-primary-foreground":"bg-card border-border hover:border-primary"}`}>{g}</button>)}</div>
