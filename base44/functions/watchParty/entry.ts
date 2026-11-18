@@ -8,8 +8,10 @@ export default async function(req:Request){
  const video=(await base.entities.Video.filter({id:b.video_id}))[0];
  if(!video||video.is_adult||video.coming_soon||!video.video_url)return Response.json({error:'Unavailable'},{status:403});
  if(b.action==='create'){
+ const start=b.start_at?Date.parse(b.start_at):Date.now();
+ if(!Number.isFinite(start)||start<Date.now()-60000||start>Date.now()+30*86400000)return Response.json({error:'Choose a start within 30 days'},{status:400});
  const token=crypto.randomUUID()+crypto.randomUUID();
- const row=await db.WatchParty.create({host_id:user.id,video_id:video.id,token,expires_at:new Date(Date.now()+6*3600000).toISOString(),position:0,paused:true,synced_at:new Date().toISOString()});
+ const row=await db.WatchParty.create({host_id:user.id,video_id:video.id,token,expires_at:new Date(start+6*3600000).toISOString(),position:0,paused:true,synced_at:new Date().toISOString(),start_at:new Date(start).toISOString()});
  return Response.json({token,host:true});
  }
  const room=(await db.WatchParty.filter({token:b.token,video_id:video.id}))[0];
@@ -17,6 +19,7 @@ export default async function(req:Request){
  const host=room.host_id===user.id;
  if(b.action==='chat'){const message=String(b.message||'').trim().slice(0,500);if(!message)return Response.json({error:'Empty message'},{status:400});await db.PartyMessage.create({party_id:room.id,sender:String(user.full_name||'Viewer').slice(0,80),message});return Response.json({ok:true});}
  if(b.action==='messages'){const rows=await db.PartyMessage.filter({party_id:room.id},'-created_date',50);return Response.json({messages:rows.reverse().map(m=>({id:m.id,sender:m.sender,message:m.message}))});}
+ if(room.start_at&&Date.parse(room.start_at)>Date.now()){if(b.action==='state')return Response.json({host,scheduled:true,start_at:room.start_at});if(b.action==='sync')return Response.json({error:'Party has not started'},{status:409});}
  if(b.action==='sync'){
  if(!host||!Number.isFinite(b.position)||b.position<0||typeof b.paused!=='boolean')return Response.json({error:'Forbidden'},{status:403});
  await db.WatchParty.update(room.id,{position:b.position,paused:b.paused,synced_at:new Date().toISOString()});
