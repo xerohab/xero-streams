@@ -120,7 +120,7 @@ export function ProfileProvider({ children }) {
 
   // Create a new profile
   const createProfile = useCallback(async (data) => {
-    if (!user) return null;
+    if (!user || activeProfile?.is_kids) return null;
     if (profiles.length >= MAX_PROFILES) return null;
     const profile = await base44.entities.ViewingProfile.create({
       user_id: user.id,
@@ -132,12 +132,12 @@ export function ProfileProvider({ children }) {
     });
     setProfiles((prev) => [...prev, profile]);
     return profile;
-  }, [user, profiles.length]);
+  }, [user, profiles.length, activeProfile]);
 
   // Update a profile
   const updateProfile = useCallback(async (id, data) => {
     const profile=profiles.find(p=>p.id===id);
-    if(!profile)return null;
+    if(!profile||activeProfile?.is_kids)return null;
     if(Object.hasOwn(data,"is_kids")&&!(await authorizeProfile(profile)))return null;
     const updated = await base44.entities.ViewingProfile.update(id, data);
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
@@ -150,7 +150,7 @@ export function ProfileProvider({ children }) {
   // Delete a profile
   const deleteProfile = useCallback(async (id) => {
     // Don't allow deleting if it's the only profile
-    if (profiles.length <= 1) return false;
+    if (profiles.length <= 1 || activeProfile?.is_kids) return false;
     const profile=profiles.find(p=>p.id===id);
     if(!profile||!(await authorizeProfile(profile)))return false;
     // Clear profile-scoped localStorage data
@@ -160,7 +160,10 @@ export function ProfileProvider({ children }) {
     setProfiles(remaining);
     // If deleting active, switch to first remaining
     if (activeProfile?.id === id && remaining.length > 0) {
-      switchProfile(remaining[0]);
+      setActiveProfileState(null);
+      localStorage.removeItem(ACTIVE_KEY);
+      setPlaybackProfile(null);
+      window.dispatchEvent(new Event("xero-profile-changed"));
     }
     return true;
   }, [profiles, activeProfile, switchProfile]);
