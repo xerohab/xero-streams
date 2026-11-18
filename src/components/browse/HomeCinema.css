@@ -84,3 +84,27 @@
   .home-cinema .home-poster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
 }
 @media (max-width: 389px) { .home-cinema .home-poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Homepage streaming shelves: one row, eight desktop cards, swipe on touch. */
+.home-cinema .home-hero { height: 440px; }
+.home-cinema .home-carousel-section { padding-block: 19px; }
+.home-carousel-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.home-carousel-heading .home-section-heading { flex: 1; min-width: 0; margin-bottom: 0; }
+.home-carousel-controls { display: flex; gap: 5px; flex-shrink: 0; }
+.home-carousel-controls button { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 6px; border: 1px solid hsl(var(--border)); color: hsl(var(--primary)); background: hsl(var(--card)); }
+.home-carousel-controls button:hover:not(:disabled) { border-color: hsl(var(--primary)); }
+.home-carousel-controls button:disabled { opacity: .28; cursor: default; }
+.home-carousel-track { --shelf-count: 8; --shelf-gap: 14px; display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - (var(--shelf-count) - 1) * var(--shelf-gap)) / var(--shelf-count)); gap: var(--shelf-gap); align-items: stretch; overflow-x: auto; padding-block: 3px 5px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.home-carousel-track::-webkit-scrollbar { display: none; }
+.home-carousel-track:focus-visible, .home-carousel-controls button:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 2px; }
+.home-carousel-slide { min-width: 0; scroll-snap-align: start; }
+.home-carousel-slide .home-media-card { max-width: none; }
+@media (min-width: 1536px) { .home-cinema .home-hero { height: 480px; } }
+@media (max-width: 1023px) { .home-carousel-track { --shelf-count: 5; } }
+@media (max-width: 639px) {
+  .home-cinema .home-hero { height: 420px; }
+  .home-carousel-track { --shelf-count: 3; --shelf-gap: 10px; }
+  .home-carousel-heading { gap: 6px; }
+  .home-carousel-controls button { width: 25px; height: 25px; }
+}
+@media (max-width: 389px) { .home-carousel-track { --shelf-count: 2; } }
