@@ -5,3 +5,6 @@ self.addEventListener("fetch", event => {
   if (event.request.mode === "navigate") event.respondWith(fetch(event.request).catch(() => new Response("<!doctype html><title>XeroStreams offline</title><body style='background:#101114;color:white;font-family:sans-serif;padding:3rem'><h1>XeroStreams</h1><p>You are offline. Reconnect to continue streaming.</p><a style='color:#e7b62d' href='/'>Try again</a></body>", {headers:{"Content-Type":"text/html; charset=utf-8"}})));
 });
 self.addEventListener("notificationclick",event=>{event.notification.close();const path=event.notification.data?.link;const target=typeof path==="string"&&path.startsWith("/watch?id=")?path:"/dashboard";event.waitUntil(self.clients.openWindow(new URL(target,self.location.origin).href));});
+
+// Accept only release-alert payloads; never render arbitrary destinations.
+self.addEventListener("push",event=>{let data;try{data=event.data?.json();}catch{return;}if(!data||data.type!=="release"||typeof data.title!=="string"||typeof data.id!=="string")return;const link=typeof data.link==="string"&&data.link.startsWith("/watch?id=")?data.link:"/dashboard";event.waitUntil(self.registration.showNotification("XeroStreams",{body:data.title.slice(0,160),tag:"xero-"+data.id.slice(0,100),icon:"/xero-icon.svg",data:{link}}));});
