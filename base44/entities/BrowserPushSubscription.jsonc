@@ -1,0 +1,50 @@
+{
+  "name": "BrowserPushSubscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    },
+    "endpoint": {
+      "type": "string"
+    },
+    "p256dh": {
+      "type": "string"
+    },
+    "auth": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "device_id",
+    "endpoint",
+    "p256dh",
+    "auth"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
