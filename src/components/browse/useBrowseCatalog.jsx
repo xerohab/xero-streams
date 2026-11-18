@@ -28,7 +28,7 @@ export default function useBrowseCatalog(type) {
   const { groups, genreIndex, genres } = useMemo(() => {
     const safeSeries = series.filter((s) => !s.is_adult && (!kids||allowsKidsContent(s)));
     const safeVideos = videos.filter((v) => !v.is_adult && (!kids||allowsKidsContent(v)));
-    const groups = getCatalogMedia(kids?[]:franchises, safeSeries, safeVideos.map(v=>kids?{...v,franchise_id:null}:v), type);
+    const groups = getCatalogMedia(kids?[]:franchises, safeSeries.map(s=>kids?{...s,franchise_id:null}:s), safeVideos.map(v=>kids?{...v,franchise_id:null}:v), type);
     const genreIndex = buildGenreIndex(groups, { franchises, series: safeSeries, videos: safeVideos, categories, type });
     return { groups, genreIndex, genres: listGenres(groups, genreIndex) };
   }, [videos, series, franchises, categories, type, kids]);
