@@ -115,6 +115,8 @@ export const AuthProvider = ({ children }) => {
       setAuthChecked(true);
     } catch (error) {
       console.error('User auth check failed:', error);
+      setUser(null);
+      localStorage.removeItem("xero_active_profile");
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -130,6 +132,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
+    localStorage.removeItem("xero_active_profile");
     setUser(null);
     setIsAuthenticated(false);
     
