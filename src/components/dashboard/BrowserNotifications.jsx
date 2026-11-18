@@ -28,6 +28,7 @@ export function BrowserNotificationMonitor({userId}){
 }
 export default function BrowserNotifications({userId}){
  const [enabled,setEnabled]=useState(()=>localStorage.getItem(key(userId))==="1"),[status,setStatus]=useState("");
+ useEffect(()=>{setEnabled(localStorage.getItem(key(userId))==="1");},[userId]);
  const supported="Notification" in window&&"serviceWorker" in navigator;
  const toggle=async()=>{
  if(enabled){localStorage.removeItem(key(userId));setEnabled(false);return;}
