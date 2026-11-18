@@ -11,8 +11,7 @@
         "deliver_alerts": {
           "call": "invoke_backend_function",
           "with": {
-            "function_name": "streamingAlerts",
-            "action": "deliver"
+            "function_name": "streamingAlerts"
           },
           "then": "end",
           "x-base44": {
