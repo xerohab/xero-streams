@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, array, json, math, subprocess, sqlite3, statistics, os
+import argparse, array, json, math, subprocess, sqlite3, statistics, os, time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
 def fingerprint(url):
@@ -28,7 +28,9 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('manifest');p.add_argument('--db',default=str(ROOT/'scan.sqlite'));args=p.parse_args()
     db=sqlite3.connect(args.db);db.execute('create table if not exists fingerprints(id text primary key, revision text, series text, data text)');db.execute('create table if not exists results(id text primary key, data text)')
     rows=json.loads(Path(args.manifest).read_text())
+    os.nice(15)
     for r in rows:
+        if (ROOT/'pause').exists():return
         try:
             old=db.execute('select data from fingerprints where id=? and revision=?',(r['id'],r.get('revision',''))).fetchone()
             if not old:
@@ -36,6 +38,7 @@ def main():
         except Exception as e:
             db.execute('insert or replace into results values(?,?)',(r['id'],json.dumps({'status':'failed','error':type(e).__name__})));db.commit()
     for r in rows:
+        if (ROOT/'pause').exists():return
         cur=db.execute('select data from fingerprints where id=?',(r['id'],)).fetchone()
         if not cur:continue
         a=json.loads(cur[0]);peers=db.execute('select data from fingerprints where series=? and id!=? limit 8',(r['series_id'],r['id'])).fetchall()
