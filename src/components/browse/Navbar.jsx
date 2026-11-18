@@ -129,8 +129,8 @@ export default function Navbar() {
                       </div>
                     )}
                     <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><User className="w-4 h-4 text-muted-foreground" /> My Profile</Link>
-                    {profiles && profiles.length > 1 && (
-                      <Link to="/profiles" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Users className="w-4 h-4 text-muted-foreground" /> Switch Profile</Link>
+                    {user && (
+                      <Link to="/profiles" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Users className="w-4 h-4 text-muted-foreground" /> Manage / Switch Profiles</Link>
                     )}
                     <Link to="/dashboard#list" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><Heart className="w-4 h-4 text-muted-foreground" /> My List</Link>
                     <Link to="/dashboard#books" onClick={() => setProfileOpen(false)} className="px-4 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-3 transition-colors"><BookOpen className="w-4 h-4 text-muted-foreground" /> My Books</Link>
