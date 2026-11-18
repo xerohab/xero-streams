@@ -15,9 +15,10 @@ if(!device||device.revoked)return Response.json({error:'Device unavailable'},{st
 if(!Deno.env.get('XERO_VAPID_PUBLIC_KEY')||!Deno.env.get('XERO_VAPID_PRIVATE_KEY')||!Deno.env.get('XERO_VAPID_SUBJECT'))return Response.json({error:'Push not configured'},{status:503});
 const s=b.subscription;
 if(typeof s?.endpoint!=='string'||s.endpoint.length>2048||!/^[-_A-Za-z0-9]{87}$/.test(s.keys?.p256dh||'')||!/^[-_A-Za-z0-9]{22}$/.test(s.keys?.auth||''))return Response.json({error:'Invalid subscription'},{status:400});
-const url=new URL(s.endpoint);
+let url:URL;try{url=new URL(s.endpoint);}catch{return Response.json({error:'Invalid endpoint'},{status:400});}
 if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash||!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(url.hostname))return Response.json({error:'Unsupported push provider'},{status:400});
 const data={endpoint:s.endpoint,p256dh:s.keys.p256dh,auth:s.keys.auth};
+for(const other of await db.BrowserPushSubscription.filter({endpoint:s.endpoint})){if(other.user_id!==u.id||other.device_id!==b.device_id)await db.BrowserPushSubscription.delete(other.id);}
 if(rows.length){await db.BrowserPushSubscription.update(rows[0].id,data);for(const row of rows.slice(1))await db.BrowserPushSubscription.delete(row.id);}else await db.BrowserPushSubscription.create({...scope,...data});
 return Response.json({ok:true});
 }catch{return Response.json({error:'Push registration unavailable'},{status:500});}
