@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Loader2, MessageSquare, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,13 @@ export default function RequestsSection({ userId, hasAccess, requests, onChanged
   const [desc, setDesc] = useState("");
   const [requesting, setRequesting] = useState(false);
 
+  const [community,setCommunity]=useState([]);
+  const [votes,setVotes]=useState([]);
+  const [voteBusy,setVoteBusy]=useState(false);
+  const [voteError,setVoteError]=useState("");
+  const refreshCommunity=async()=>{const [rows,own]=await Promise.all([base44.entities.ContentRequest.filter({status:"pending"},"-created_date",100),base44.entities.RequestVote.filter({user_id:userId})]);setCommunity(rows);setVotes(own);};
+  useEffect(()=>{if(userId)refreshCommunity().catch(()=>setVoteError("Unable to load community requests"));},[userId]);
+  const toggleVote=async(id)=>{setVoteBusy(true);setVoteError("");try{const existing=votes.filter(v=>v.request_id===id);if(existing.length)await Promise.all(existing.map(v=>base44.entities.RequestVote.delete(v.id)));else await base44.entities.RequestVote.create({user_id:userId,request_id:id});await refreshCommunity();}catch{setVoteError("Unable to save vote");}finally{setVoteBusy(false);}};
   const submitRequest = async (e) => {
     e.preventDefault();
     if (!title) return;
@@ -22,6 +29,7 @@ export default function RequestsSection({ userId, hasAccess, requests, onChanged
       setTitle("");
       setDesc("");
       onChanged();
+      await refreshCommunity();
     } catch (err) {
       console.error(err);
       alert("Failed to submit request: " + (err.message || "Unknown error"));
@@ -75,6 +83,11 @@ export default function RequestsSection({ userId, hasAccess, requests, onChanged
             )}
           </>
         )}
+      </div>
+      <div className="mt-4 rounded-lg border border-border bg-card p-4"><h3 className="font-bold mb-3">Community Requests</h3>
+        {community.length===0 && <p className="text-sm text-muted-foreground">No pending requests to vote on.</p>}
+        {community.map(req=><div key={req.id} className="flex items-center justify-between gap-3 border-b border-border py-2"><span className="text-sm">{req.title}</span><Button size="sm" variant={votes.some(v=>v.request_id===req.id)?"default":"outline"} disabled={voteBusy} onClick={()=>toggleVote(req.id)}>{votes.some(v=>v.request_id===req.id)?"Voted":"Vote"}</Button></div>)}
+        {voteError&&<p role="alert" className="text-sm text-red-400">{voteError}</p>}
       </div>
     </section>
   );
