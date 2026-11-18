@@ -2,7 +2,7 @@ import { getAll, getWatched } from "@/hooks/useContinueWatching";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Loader2, Play, Heart, Download as DownloadIcon, Book, Clock, Star, MessageSquare, Crown, Settings } from "lucide-react";
 import Navbar from "@/components/browse/Navbar";
 import Footer from "@/components/browse/Footer";
@@ -28,6 +28,7 @@ const TABS = [
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "requests", label: "Requests", icon: MessageSquare },
   { id: "subscription", label: "Subscription", icon: Crown },
+  { id: "following", label: "Following & Reminders", icon: Star },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -179,6 +180,10 @@ export default function Dashboard() {
     enabled: !!user
   });
 
+  const follows = useQuery({queryKey:["series-follows",user?.id],enabled:!!user,queryFn:()=>base44.entities.SeriesFollow.filter({user_id:user.id})});
+  const reminders = useQuery({queryKey:["release-reminders",user?.id],enabled:!!user,queryFn:()=>base44.entities.ReleaseReminder.filter({user_id:user.id})});
+  const [preferenceError,setPreferenceError]=useState("");
+  const changePreference=async(action)=>{setPreferenceError("");try{await action();await Promise.all([follows.refetch(),reminders.refetch()]);}catch{setPreferenceError("Unable to update preference. Please try again.");}};
   const handleSubscribe = async (plan) => {
     if (!user) return;
     setSubscribingTo(plan.id);
@@ -301,6 +306,13 @@ export default function Dashboard() {
             onCancel={handleCancelSub}
           />
         )}
+        {activeTab==="following" && <section className="space-y-5">
+          <h2 className="text-lg font-bold">Followed Series</h2>
+          {follows.isError?<p>Unable to load followed series.</p>:follows.isLoading?<p>Loading…</p>:!follows.data?.length?<p className="text-muted-foreground">Follow shows from their series pages.</p>:follows.data.map(row=><div key={row.id} className="flex flex-wrap items-center gap-3 border-b border-border py-2 text-sm"><Link className="flex-1 font-semibold" to={"/series?id="+row.series_id}>{allSeries.find(s=>s.id===row.series_id)?.title||"Series"}</Link><label className="flex items-center gap-2"><input type="checkbox" checked={row.email_enabled!==false} onChange={e=>{const checked=e.target.checked;changePreference(()=>base44.entities.SeriesFollow.update(row.id,{email_enabled:checked}));}}/> Email alerts</label><button className="text-primary" onClick={()=>changePreference(()=>base44.entities.SeriesFollow.delete(row.id))}>Unfollow</button></div>)}
+          <h2 className="text-lg font-bold">Release Reminders</h2>
+          {reminders.isError?<p>Unable to load reminders.</p>:reminders.isLoading?<p>Loading…</p>:!reminders.data?.length?<p className="text-muted-foreground">No reminders saved.</p>:reminders.data.map(row=><div key={row.id} className="flex justify-between gap-3 border-b border-border py-2 text-sm"><span>{videos.find(v=>v.id===row.video_id)?.title||"Upcoming release"}</span><button className="text-primary" onClick={()=>changePreference(()=>base44.entities.ReleaseReminder.delete(row.id))}>Remove</button></div>)}
+          {preferenceError&&<p role="alert" className="text-red-400">{preferenceError}</p>}
+        </section>}
         {activeTab === "settings" && <SettingsSection user={user} onToggleRow={handleToggleRow} onToggleDigest={handleToggleDigest} />}
           </main>
         </div>
