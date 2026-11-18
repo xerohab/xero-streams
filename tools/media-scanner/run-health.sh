@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 umask 077
-cd /home/xerostreams-scanner
+cd "${XERO_HEALTH_DIR:-/home/xerostreams-scanner}"
+script_dir="$(cd "$(dirname "$0")" && pwd)"
 [ -s health-hosts.txt ] && [ -s health-manifest.json ] || { echo "Awaiting approved hosts and manifest"; exit 0; }
 args=()
 while IFS= read -r host || [ -n "$host" ]; do
@@ -9,4 +10,4 @@ while IFS= read -r host || [ -n "$host" ]; do
  args+=(--allow-host "$host")
 done < health-hosts.txt
 [ "${#args[@]}" -gt 0 ] || exit 0
-exec flock -n health.lock timeout 6h nice -n 15 python3 link_health.py health-manifest.json "${args[@]}" --output health-results.json
+exec flock -n health.lock timeout 6h nice -n 15 python3 "$script_dir/link_health.py" health-manifest.json "${args[@]}" --output health-results.json
