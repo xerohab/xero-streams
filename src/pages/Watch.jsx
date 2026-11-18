@@ -1,3 +1,4 @@
+import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -39,7 +40,9 @@ export default function Watch() {
   const [autoplayCountdown, setAutoplayCountdown] = useState(null);
   const countdownRef = useRef(null);
   const [user, setUser] = useState(null);
-  const [isFavourited, setIsFavourited] = useState(false);
+  const profileFavourites=useProfileFavourites(user,"favourites");
+  const isFavourited=profileFavourites.values.includes(videoId);
+
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [showSkipRecap, setShowSkipRecap] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -67,18 +70,13 @@ export default function Watch() {
     base44.auth.me().then((u) => {
       setUser(u);
       if (u && videoId) {
-        setIsFavourited(u.favourites?.includes(videoId) ?? false);
       }
     }).catch(() => {});
   }, [videoId]);
 
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
-    const current = user.favourites || [];
-    const updated = isFavourited ? current.filter((id) => id !== videoId) : [...current, videoId];
-    await base44.auth.updateMe({ favourites: updated });
-    setUser((prev) => ({ ...prev, favourites: updated }));
-    setIsFavourited(!isFavourited);
+    await profileFavourites.toggle(videoId);
     base44.analytics.track({
       eventName: isFavourited ? "video_unfavourited" : "video_favourited",
       properties: { video_id: videoId }
