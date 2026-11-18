@@ -48,7 +48,7 @@ export default function ProfileSelect({ manage = false }) {
   };
 
   const handleCreate = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || activeProfile?.is_kids) return;
     await createProfile({ name: form.name.trim(), avatar: form.avatar, is_kids: form.is_kids });
     setCreating(false);
     setForm({ name: "", avatar: "popcorn", is_kids: false });
@@ -74,6 +74,7 @@ export default function ProfileSelect({ manage = false }) {
   };
 
   const managePin=async(profile,remove=false)=>{
+    if(activeProfile?.is_kids)return;
     try{
       const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:profile.id});
       if(typeof status.data?.enabled!=="boolean")throw new Error();
@@ -89,7 +90,7 @@ export default function ProfileSelect({ manage = false }) {
     }catch{window.alert("PIN change failed. Check your current PIN or try again later.");}
   };
 
-  const canAdd = profiles.length < maxProfiles;
+  const canAdd = !activeProfile?.is_kids && profiles.length < maxProfiles;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
