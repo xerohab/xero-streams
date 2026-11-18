@@ -1,3 +1,4 @@
+import {BrowserNotificationMonitor} from "@/components/dashboard/BrowserNotifications";
 import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -86,6 +87,7 @@ const AuthenticatedApp = () => {
     <PremiumModalProvider>
     <ProfileProvider>
     <DownloadManagerProvider>
+    <BrowserNotificationMonitor userId={user?.id}/>
     <Routes>
       <Route path="/profiles" element={<ProfileSelect />} />
       <Route element={<ProfileRouteGate />}>
