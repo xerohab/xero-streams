@@ -82,6 +82,7 @@ export default function ProfileSelect({ manage = false }) {
       const pin=status.data.enabled?window.prompt("Current profile PIN"):undefined;
       if(pin===null)return;
       const new_pin=remove?undefined:window.prompt("New PIN (4–8 digits)");
+      if(!remove&&new_pin&&window.prompt("Confirm new PIN")!==new_pin){window.alert("PINs do not match.");return;}
       if(new_pin===null)return;
       if(!remove&&!/^\d{4,8}$/.test(new_pin)){window.alert("Choose a 4–8 digit PIN.");return;}
       const result=await base44.functions.invoke("profilePin",{action:remove?"remove":"set",profile_id:profile.id,pin,new_pin});
