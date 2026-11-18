@@ -22,6 +22,9 @@
     },
     "synced_at": {
       "type": "string"
+    },
+    "start_at": {
+      "type": "string"
     }
   },
   "required": [
