@@ -15,15 +15,16 @@ export default function HomeContinueWatching({ videos, series }) {
     window.addEventListener("xero-profile-changed", refresh);
     return () => { window.removeEventListener("xero-progress-updated", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("focus", refresh); window.removeEventListener("xero-profile-changed", refresh); };
   }, []);
-  if (!items.length) return null;
+  const visible=items.filter(item=>videos.some(v=>v.id===item.id));
+  if (!visible.length) return null;
   return (
     <section className="home-section" id="home-continue">
       <HomeSectionHeader title="Continue Watching" />
       <EpisodeGrid landscape>
-        {items.slice(0, 7).map((saved) => {
+        {visible.slice(0, 7).map((saved) => {
           const video = videos.find((item) => item.id === saved.id);
           const season = series.find((item) => item.id === video?.series_id);
-          const display = { ...video, ...saved, title: season ? `${season.title} · ${saved.title}` : saved.title };
+          const display = { ...video, ...saved, title: season ? `${season.title} · ${video.title}` : video.title };
           return <EpisodeCard key={saved.id} video={display} landscape playable href={`/watch?id=${saved.id}&t=${Math.floor(saved.currentTime)}`} onRemove={removeProgress} />;
         })}
       </EpisodeGrid>
