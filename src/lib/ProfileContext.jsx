@@ -88,6 +88,7 @@ export function ProfileProvider({ children }) {
       const savedId = localStorage.getItem(ACTIVE_KEY);
       let active = list.find((p) => p.id === savedId);
       if (!active) active = list[0]; // fallback to first (default)
+      if(active?.is_kids){for(const adult of list.filter(p=>!p.is_kids)){const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(status.data?.enabled!==true){active=null;break;}}}
       if (active && await authorizeProfile(active,false)) {
         setActiveProfileState(active);
         localStorage.setItem(ACTIVE_KEY, active.id);
@@ -95,7 +96,7 @@ export function ProfileProvider({ children }) {
         window.dispatchEvent(new Event("xero-profile-changed"));
         // Update last_used_date in background
         base44.entities.ViewingProfile.update(active.id, { last_used_date: new Date().toISOString() }).catch(() => {});
-      } else {localStorage.removeItem(ACTIVE_KEY);setPlaybackProfile(null);}
+      } else {setActiveProfileState(null);localStorage.removeItem(ACTIVE_KEY);setPlaybackProfile(null);}
     } catch (err) {
       console.error("Profile load error:", err);
     } finally {
