@@ -1,3 +1,4 @@
+import {requestProfilePin} from "@/lib/requestProfilePin";
 import {setPlaybackProfile,syncPlayback} from "@/hooks/useContinueWatching";
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
@@ -37,14 +38,14 @@ async function authorizeProfile(profile, allowSetup=false){
  const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:profile.id});
  if(status.data?.requires_setup){
  if(!allowSetup){window.alert("An adult must configure a PIN before this profile can be opened.");return false;}
- const new_pin=window.prompt("Set an adult profile PIN (4–8 digits)");
- if(!new_pin||!/^\d{4,8}$/.test(new_pin)||window.prompt("Confirm adult PIN")!==new_pin)return false;
+ const new_pin=await requestProfilePin("Set an adult profile PIN (4–8 digits)");
+ if(!new_pin||!/^\d{4,8}$/.test(new_pin)||await requestProfilePin("Confirm adult PIN")!==new_pin)return false;
  const setup=await base44.functions.invoke("profilePin",{action:"set",profile_id:profile.id,new_pin});
  return setup.data?.ok===true;
  }
  if(status.data?.enabled===false)return true;
  if(status.data?.enabled!==true)throw new Error("Unavailable");
- const pin=window.prompt("Enter PIN for "+profile.name);
+ const pin=await requestProfilePin("Enter PIN for "+profile.name);
  if(pin===null)return false;
  const result=await base44.functions.invoke("profilePin",{action:"verify",profile_id:profile.id,pin});
  if(result.data?.ok===true)return true;
@@ -133,6 +134,7 @@ export function ProfileProvider({ children }) {
   const createProfile = useCallback(async (data) => {
     if (!user || !activeProfile || activeProfile.is_kids) return null;
     if (profiles.length >= MAX_PROFILES) return null;
+    if(data.is_kids){for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before creating a Kids profile.");return null;}}}
     const profile = await base44.entities.ViewingProfile.create({
       user_id: user.id,
       name: data.name || "New Profile",
