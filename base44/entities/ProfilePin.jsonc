@@ -1,0 +1,52 @@
+{
+  "name": "ProfilePin",
+  "type": "object",
+  "properties": {
+    "profile_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "salt": {
+      "type": "string"
+    },
+    "digest": {
+      "type": "string"
+    },
+    "failures": {
+      "type": "number"
+    },
+    "locked_until": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "profile_id",
+    "user_id",
+    "salt",
+    "digest"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    }
+  }
+}
