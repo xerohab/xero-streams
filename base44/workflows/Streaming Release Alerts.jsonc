@@ -1,0 +1,44 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "streaming_release_alerts",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "deliver_alerts": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "streamingAlerts",
+            "action": "deliver"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Deliver release alerts"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Deliver release reminders and followed series notifications hourly",
+  "name": "Streaming Release Alerts",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "15 * * * *",
+      "one_time_date": null,
+      "timezone": "Europe/London",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}
