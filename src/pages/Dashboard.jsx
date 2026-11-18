@@ -31,6 +31,7 @@ const TABS = [
   { id: "subscription", label: "Subscription", icon: Crown },
   { id: "notifications", label: "Notifications", icon: MessageSquare },
   { id: "following", label: "Following & Reminders", icon: Star },
+  { id: "stats", label: "Viewing Statistics", icon: Star },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -319,6 +320,7 @@ export default function Dashboard() {
           {reminders.isError?<p>Unable to load reminders.</p>:reminders.isLoading?<p>Loading…</p>:!reminders.data?.length?<p className="text-muted-foreground">No reminders saved.</p>:reminders.data.map(row=><div key={row.id} className="flex justify-between gap-3 border-b border-border py-2 text-sm"><span>{videos.find(v=>v.id===row.video_id)?.title||"Upcoming release"}</span><button className="text-primary" onClick={()=>changePreference(()=>base44.entities.ReleaseReminder.delete(row.id))}>Remove</button></div>)}
           {preferenceError&&<p role="alert" className="text-red-400">{preferenceError}</p>}
         </section>}
+        {activeTab === "stats" && <section className="space-y-4"><h2 className="text-xl font-bold">Viewing Statistics</h2><p className="text-muted-foreground text-sm">Current profile history on this device.</p><div className="grid grid-cols-2 gap-3">{[["Movies completed",completedVideos.filter(v=>!v.series_id&&v.content_type==="movie").length],["Episodes completed",completedVideos.filter(v=>v.series_id).length],["Series completed",allSeries.filter(s=>{const ep=videos.filter(v=>v.series_id===s.id&&!v.coming_soon);return ep.length&&ep.every(v=>completedVideos.some(c=>c.id===v.id));}).length],["Titles in progress",cwVideos.length]].map(([label,value])=><div key={label} className="border rounded p-4"><strong className="text-2xl text-primary">{value}</strong><p>{label}</p></div>)}</div><h3 className="font-bold">Achievements</h3>{[[1,"First Screening"],[10,"Film Fan"],[50,"Binge Master"],[100,"Cinema Legend"]].map(([n,label])=><p key={n} className={completedVideos.length>=n?"text-primary":"text-muted-foreground"}>{label} — {Math.min(n,completedVideos.length)}/{n} completed titles</p>)}</section>}
         {activeTab === "settings" && <SettingsSection user={user} onToggleRow={handleToggleRow} onToggleDigest={handleToggleDigest} />}
           </main>
         </div>
