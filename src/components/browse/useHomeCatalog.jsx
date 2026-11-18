@@ -1,3 +1,5 @@
+import {useProfile} from "@/lib/ProfileContext";
+import {allowsKidsContent} from "@/lib/parentalControls";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { getCatalogMedia, getItemActivityAt } from "@/lib/activityUtils";
@@ -9,8 +11,9 @@ export default function useHomeCatalog() {
   const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: user } = useQuery({ queryKey: ["current_user"], queryFn: () => base44.auth.me().catch(() => null), staleTime: 0 });
   const rows = user?.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
-  const safeVideos = videos.filter((v) => !v.is_adult);
-  const safeSeries = series.filter((s) => !s.is_adult);
+  const kids=useProfile()?.activeProfile?.is_kids;
+  const safeVideos = videos.filter((v) => !v.is_adult && (!kids||allowsKidsContent(v)));
+  const safeSeries = series.filter((s) => !s.is_adult && (!kids||allowsKidsContent(s)));
   const populated = (items) => items.filter((item) => item.type !== "franchise" || item.items > 0).sort((a, b) => b.latestActivityAt - a.latestActivityAt);
   const latest = populated(getCatalogMedia(franchises, safeSeries, safeVideos));
   const byActivity = (a, b) => b.latestActivityAt - a.latestActivityAt;
