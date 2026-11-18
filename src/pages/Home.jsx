@@ -19,16 +19,6 @@ export default function Home() {
   const showTv = catalog.rows.includes("tv");
   const active = showMovies && showTv ? selected : showTv ? "tv" : "movies";
   const surprise = catalog.videos.filter(v => !v.series_id && !v.is_adult && !v.coming_soon && v.video_url && !["book", "episode"].includes(v.content_type));
-  const comingSoon = [...catalog.movies.filter(item=>item.data.coming_soon),...catalog.videos.filter(v=>v.series_id && v.coming_soon).map(data=>({type:"video",data,latestActivityAt:Date.parse(data.created_date)||0}))].sort((a,b) => (a.data.release_date || "9999").localeCompare(b.data.release_date || "9999"));
-  const [reminders,setReminders]=useState([]);
-  const [reminderBusy,setReminderBusy]=useState(false);
-  const [reminderError,setReminderError]=useState("");
-  useEffect(()=>{let active=true;if(catalog.user?.id)base44.entities.ReleaseReminder.filter({user_id:catalog.user.id}).then(rows=>{if(active)setReminders(rows)}).catch(()=>{if(active)setReminderError("Unable to load reminders")});else setReminders([]);return()=>{active=false};},[catalog.user?.id]);
-  const toggleReminder=async(id)=>{
-    if(!catalog.user){base44.auth.redirectToLogin(window.location.href);return;}
-    setReminderBusy(true);setReminderError("");
-    try{const rows=reminders.filter(r=>r.video_id===id);if(rows.length){await Promise.all(rows.map(r=>base44.entities.ReleaseReminder.delete(r.id)));setReminders(old=>old.filter(r=>r.video_id!==id));}else{const row=await base44.entities.ReleaseReminder.create({user_id:catalog.user.id,video_id:id});setReminders(old=>[...old,row]);}}catch{setReminderError("Unable to save reminder");}finally{setReminderBusy(false);}
-  };
   const [rankings,setRankings]=useState([]);
   useEffect(()=>{let live=true;base44.functions.invoke("streamingCommunity",{action:"rankings"}).then(r=>{if(live)setRankings(r.data.rankings||[])}).catch(()=>{});return()=>{live=false};},[]);
   const rankedItems=rankings.map(({key})=>[...catalog.movies,...catalog.tv].find(i=>key===(i.type==="series"?"series:":"video:")+i.data.id)).filter(Boolean).slice(0,10);
@@ -63,7 +53,6 @@ export default function Home() {
           </React.Fragment>}
         </section>}
         <HomeMediaSection title="Top 10 This Week" items={rankedItems} id="home-top-ten" limit={10} />
-        {comingSoon.length>0 && <details className="rounded-lg border border-border bg-card p-3"><summary className="cursor-pointer font-bold">Coming Soon · {comingSoon.length} upcoming releases</summary><HomeMediaSection title="Upcoming Releases" items={comingSoon} id="home-coming-soon" limit={8} /><div className="divide-y divide-border">{comingSoon.slice(0,8).map(({data:v})=><div key={v.id} className="flex items-center justify-between gap-3 py-2 text-sm"><span>{v.title} <small className="text-muted-foreground">{v.release_date||"Date TBA"}</small></span><button disabled={reminderBusy} className="rounded border border-primary px-3 py-1 text-xs text-primary" onClick={()=>toggleReminder(v.id)}>{reminders.some(r=>r.video_id===v.id)?"Reminder saved":"Remind Me"}</button></div>)}</div>{reminderError&&<p role="alert">{reminderError}</p>}</details>}
         {catalog.user && <HomeMediaSection title="Recommended For You" items={recommendations} id="home-recommendations" />}
         {genres.length>0 && <section className="home-section">
           <h2 className="font-bold uppercase tracking-widest text-sm mb-4">Browse by Genre</h2>
