@@ -108,3 +108,13 @@
   .home-carousel-controls button { width: 25px; height: 25px; }
 }
 @media (max-width: 389px) { .home-carousel-track { --shelf-count: 2; } }
+
+
+/* Option 2: compact content switcher above the selected shelves. */
+.home-discovery { margin-top: 10px; }
+.home-discovery-tabs { display: flex; gap: 8px; padding: 5px; width: fit-content; max-width: 100%; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); }
+.home-discovery-tabs button { display: flex; align-items: center; justify-content: center; gap: 9px; min-width: 160px; padding: 12px 24px; border-radius: 8px; color: hsl(var(--muted-foreground)); font-size: 13px; font-weight: 800; transition: background .15s, color .15s; }
+.home-discovery-tabs button:hover { color: hsl(var(--foreground)); }
+.home-discovery-tabs button[aria-pressed="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.home-discovery-tabs button:focus-visible { outline: 2px solid hsl(var(--primary)); outline-offset: 3px; }
+@media (max-width: 639px) { .home-discovery-tabs { width: 100%; } .home-discovery-tabs button { flex: 1; min-width: 0; padding-inline: 12px; } }
