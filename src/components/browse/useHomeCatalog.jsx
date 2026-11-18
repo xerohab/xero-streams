@@ -15,13 +15,13 @@ export default function useHomeCatalog() {
   const safeVideos = videos.filter((v) => !v.is_adult && (!kids||allowsKidsContent(v)));
   const safeSeries = series.filter((s) => !s.is_adult && (!kids||allowsKidsContent(s)));
   const populated = (items) => items.filter((item) => item.type !== "franchise" || item.items > 0).sort((a, b) => b.latestActivityAt - a.latestActivityAt);
-  const latest = populated(getCatalogMedia(franchises, safeSeries, safeVideos));
+  const latest = populated(getCatalogMedia(kids?[]:franchises, safeSeries.map(s=>kids?{...s,franchise_id:null}:s), safeVideos.map(v=>kids?{...v,franchise_id:null}:v)));
   const byActivity = (a, b) => b.latestActivityAt - a.latestActivityAt;
   const movieVideos = safeVideos.filter(v => !v.series_id && !["episode", "book"].includes(v.content_type));
   const movies = movieVideos.map(data => ({ type: "video", data, latestActivityAt: getItemActivityAt(data) })).sort(byActivity);
   const tv = safeSeries.map(data => ({ type: "series", data, latestActivityAt: getItemActivityAt(data, franchises, safeSeries, safeVideos) })).sort(byActivity);
-  const movieFranchises = populated(getCatalogMedia(franchises, safeSeries, movieVideos, "video")).filter(item => item.type === "franchise").map(item => ({ ...item, latestActivityAt: getItemActivityAt(item.data, franchises, safeSeries, safeVideos) })).sort(byActivity);
-  const tvFranchises = populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series")).filter(item => item.type === "franchise").sort(byActivity);
+  const movieFranchises = kids?[]:populated(getCatalogMedia(franchises, safeSeries, movieVideos, "video")).filter(item => item.type === "franchise").map(item => ({ ...item, latestActivityAt: getItemActivityAt(item.data, franchises, safeSeries, safeVideos) })).sort(byActivity);
+  const tvFranchises = kids?[]:populated(getCatalogMedia(franchises, safeSeries, safeVideos, "series")).filter(item => item.type === "franchise").sort(byActivity);
 
   // Rotating hero: top-level items from latest activity with suitable landscape artwork.
   // Eligible: standalone Movie, standalone Series, Franchise — never individual Episodes or Books.
@@ -34,5 +34,5 @@ export default function useHomeCatalog() {
     })
     .slice(0, 5);
 
-  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises, latest, tv, movies, movieFranchises, tvFranchises };
+  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises:kids?[]:franchises, latest, tv, movies, movieFranchises, tvFranchises };
 }
