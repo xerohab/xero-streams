@@ -37,9 +37,9 @@ import ProfileSelect from '@/pages/ProfileSelect';
 function ProfileRouteGate(){
  const {user}=useAuth(),{activeProfile,loading}=useProfile()||{},location=useLocation();
  if(user&&loading)return <div className="min-h-screen flex items-center justify-center">Loading profile…</div>;
- if(user&&!activeProfile)return <Navigate to="/profiles" replace state={{from:location.pathname}}/>;
- if(activeProfile?.is_kids&&["/admin","/leaks","/leaks/section","/cast","/books","/dashboard"].includes(location.pathname))return <Navigate to="/" replace/>;
- if(activeProfile?.is_kids&&location.pathname.startsWith("/dl/"))return <Navigate to="/" replace/>;
+ if(user&&!activeProfile&&!["/privacy","/terms","/callback"].includes(location.pathname.toLowerCase()))return <Navigate to="/profiles" replace state={{from:location.pathname}}/>;
+ if(activeProfile?.is_kids&&["/admin","/leaks","/leaks/section","/cast","/books","/dashboard","/movies","/tv-series","/series","/franchise","/donate"].includes(location.pathname.toLowerCase().replace(/\/+$/,"")))return <Navigate to="/" replace/>;
+ if(activeProfile?.is_kids&&location.pathname.toLowerCase().startsWith("/dl/"))return <Navigate to="/" replace/>;
  return <Outlet/>;
 }
 const AuthenticatedApp = () => {
