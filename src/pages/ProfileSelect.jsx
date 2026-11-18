@@ -36,9 +36,9 @@ export default function ProfileSelect({ manage = false }) {
     );
   }
 
-  const handleSelect = (profile) => {
+  const handleSelect = async (profile) => {
     if (managing) return;
-    switchProfile(profile);
+    if(!(await switchProfile(profile)))return;
     navigate("/", { replace: true });
   };
 
@@ -61,7 +61,8 @@ export default function ProfileSelect({ manage = false }) {
 
   const handleSaveEdit = async () => {
     if (!form.name.trim()) return;
-    await updateProfile(editing, { name: form.name.trim(), avatar: form.avatar, is_kids: form.is_kids });
+    const updated=await updateProfile(editing, { name: form.name.trim(), avatar: form.avatar, is_kids: form.is_kids });
+    if(!updated)return;
     setEditing(null);
     setForm({ name: "", avatar: "popcorn", is_kids: false });
   };
@@ -70,6 +71,22 @@ export default function ProfileSelect({ manage = false }) {
     if (profiles.length <= 1) return;
     if (!confirm(`Delete "${profile.name}"? This will remove this profile's watch progress and My List. Your account, subscriptions and purchases are not affected.`)) return;
     await deleteProfile(profile.id);
+  };
+
+  const managePin=async(profile,remove=false)=>{
+    try{
+      const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:profile.id});
+      if(typeof status.data?.enabled!=="boolean")throw new Error();
+      if(remove&&!status.data.enabled)return;
+      const pin=status.data.enabled?window.prompt("Current profile PIN"):undefined;
+      if(pin===null)return;
+      const new_pin=remove?undefined:window.prompt("New PIN (4–8 digits)");
+      if(new_pin===null)return;
+      if(!remove&&!/^\d{4,8}$/.test(new_pin)){window.alert("Choose a 4–8 digit PIN.");return;}
+      const result=await base44.functions.invoke("profilePin",{action:remove?"remove":"set",profile_id:profile.id,pin,new_pin});
+      if(result.data?.ok!==true)throw new Error();
+      window.alert(remove?"PIN removed.":"PIN saved.");
+    }catch{window.alert("PIN change failed. Check your current PIN or try again later.");}
   };
 
   const canAdd = profiles.length < maxProfiles;
@@ -121,6 +138,7 @@ export default function ProfileSelect({ manage = false }) {
                   {profile.is_kids && <span className="absolute bottom-1 right-1 rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">KIDS</span>}
                 </button>
               )}
+              {managing&&!isEditing&&<div className="flex gap-2 text-xs"><button onClick={()=>managePin(profile)} className="text-primary">Set / change PIN</button><button onClick={()=>managePin(profile,true)} className="text-muted-foreground">Remove PIN</button></div>}
               <div className="flex items-center gap-1">
                 <span className="max-w-[120px] truncate text-sm font-semibold text-foreground">{profile.name}</span>
                 {managing && !isEditing && profiles.length > 1 && (
