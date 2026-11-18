@@ -1,3 +1,5 @@
+import {useProfile} from "@/lib/ProfileContext";
+import {allowsKidsContent} from "@/lib/parentalControls";
 import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -26,6 +28,7 @@ import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 const OUTLINE_BTN = "xero-action px-5";
 
 export default function SeriesDetail() {
+  const kids=!!useProfile()?.activeProfile?.is_kids;
   const [searchParams] = useSearchParams();
   const seriesId = searchParams.get("id");
   const from = searchParams.get("from") || "/";
@@ -72,9 +75,9 @@ export default function SeriesDetail() {
   });
 
   useEffect(() => {
-    if (series) document.title = `${series.title} | Xero Streams`;
+    if (series && (!kids||allowsKidsContent(series))) document.title = `${series.title} | Xero Streams`;
     return () => { document.title = "Xero Streams"; };
-  }, [series]);
+  }, [series,kids]);
 
   const { data: episodes = [], isLoading: loadingEpisodes } = useQuery({
     queryKey: ["episodes", seriesId],
@@ -109,17 +112,17 @@ export default function SeriesDetail() {
 
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
-  const sortedEpisodes = [...episodes].sort((a, b) => {
+  const sortedEpisodes = episodes.filter(ep=>!kids||allowsKidsContent(ep)).sort((a, b) => {
     if (a.episode_number && b.episode_number) return a.episode_number - b.episode_number;
     return a.title.localeCompare(b.title);
   });
 
-  const seasons = [...siblings].sort(
+  const seasons = siblings.filter(s=>!kids||allowsKidsContent(s)).sort(
     (a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.title.localeCompare(b.title, undefined, { numeric: true })
   );
 
   const recommendations = recentSeries
-    .filter((s) => s.id !== seriesId && (!series?.franchise_id || s.franchise_id !== series.franchise_id))
+    .filter((s) => (!kids||allowsKidsContent(s)) && s.id !== seriesId && (!series?.franchise_id || s.franchise_id !== series.franchise_id))
     .sort((a, b) => Number(b.category === series?.category) - Number(a.category === series?.category))
     .slice(0, 14);
 
@@ -131,6 +134,7 @@ export default function SeriesDetail() {
     );
   }
 
+  if(kids&&series&&!allowsKidsContent(series))return <div className="min-h-screen p-12 text-center">This series is unavailable on Kids profiles.<Link to="/tv-series" className="block text-primary">Back to TV Series</Link></div>;
   if (!series) {
     return (
       <div className="min-h-screen bg-background">
@@ -175,7 +179,7 @@ export default function SeriesDetail() {
         eyebrow={<>
           <StatusBadge status="TV Series" />
           {isUpdated && <StatusBadge status="UPDATED" />}
-          {franchise && <Link to={`/franchise?id=${franchise.id}`} className="text-xs font-semibold text-primary hover:underline">{franchise.title} Collection</Link>}
+          {!kids && franchise && <Link to={`/franchise?id=${franchise.id}`} className="text-xs font-semibold text-primary hover:underline">{franchise.title} Collection</Link>}
         </>}
         meta={
           <>
@@ -323,7 +327,7 @@ export default function SeriesDetail() {
           </section>
         )}
 
-        {images.length > 0 && (
+        {!kids && images.length > 0 && (
           <section>
             <SectionHeader title="Gallery" />
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
