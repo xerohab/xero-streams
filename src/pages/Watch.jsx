@@ -38,6 +38,7 @@ export default function Watch() {
   const { isCasting: isMobileCasting } = useCast();
   const videoRef = useRef(null);
   const [cinemaMode,setCinemaMode]=useState(false);
+  const [bingeMode,setBingeMode]=useState(()=>localStorage.getItem("xero_binge_mode")==="true");
   const [playbackPrefs,setPlaybackPrefs]=useState(()=>{try{return JSON.parse(localStorage.getItem("xero_playback_preferences")||"{}");}catch{return {};}});
   const savePlaybackPrefs=e=>{const v=e.currentTarget;const prefs={volume:v.volume,muted:v.muted,rate:v.playbackRate};setPlaybackPrefs(prefs);try{localStorage.setItem("xero_playback_preferences",JSON.stringify(prefs));}catch{}};
   const restorePlaybackPrefs=e=>{const v=e.currentTarget;if(Number.isFinite(playbackPrefs.volume))v.volume=Math.max(0,Math.min(1,playbackPrefs.volume));if(typeof playbackPrefs.muted==="boolean")v.muted=playbackPrefs.muted;if(Number.isFinite(playbackPrefs.rate))v.playbackRate=Math.max(.5,Math.min(2,playbackPrefs.rate));};
@@ -467,7 +468,7 @@ export default function Watch() {
                   onVolumeChange={savePlaybackPrefs}
                   onRateChange={savePlaybackPrefs}
                   onEnded={handleEnded}
-                  onTimeUpdate={handleTimeUpdate}
+                  onTimeUpdate={e=>{handleTimeUpdate();const v=e.currentTarget;if(bingeMode&&Number.isFinite(video.intro_start)&&Number.isFinite(video.intro_end)&&video.intro_end>video.intro_start&&video.intro_end<v.duration&&v.currentTime>=video.intro_start&&v.currentTime<video.intro_end)v.currentTime=video.intro_end;}}
                   onPlay={trackPlaybackBoundary}
                   onPause={trackPlaybackBoundary}
                   onSeeking={trackPlaybackBoundary}
@@ -551,7 +552,7 @@ export default function Watch() {
         </div>
         <div className="xero-container">
           {user && !isComingSoon && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
-          {!isComingSoon&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
+          {!isComingSoon&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
           <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
           <WatchInfo video={video} series={series} />
         </div>
