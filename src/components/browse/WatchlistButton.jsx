@@ -1,3 +1,4 @@
+import { useProfile } from "@/lib/ProfileContext";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function WatchlistButton({ videoId, seriesId, variant = "outline", className = "", label = "Add to Watchlist" }) {
+  const {activeProfile,loading:profileLoading}=useProfile();
   const [isOpen, setIsOpen] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const queryClient = useQueryClient();
@@ -23,9 +25,9 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
   });
 
   const { data: watchlists = [], isLoading: isLoadingWatchlists } = useQuery({
-    queryKey: ["watchlists", user?.id],
-    queryFn: () => base44.entities.Watchlist.filter({ user_id: user.id }),
-    enabled: !!user,
+    queryKey: ["watchlists", user?.id, activeProfile?.id],
+    queryFn: async () => (await base44.entities.Watchlist.filter({ user_id: user.id })).filter(w=>w.profile_id===activeProfile?.id || (!w.profile_id && activeProfile?.is_default)),
+    enabled: !!user && !!activeProfile && !profileLoading,
   });
 
   const { data: watchlistItems = [] } = useQuery({
@@ -35,7 +37,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
   });
 
   const createWatchlistMutation = useMutation({
-    mutationFn: (name) => base44.entities.Watchlist.create({ user_id: user.id, name }),
+    mutationFn: (name) => {if(!activeProfile)throw new Error("Choose a profile");return base44.entities.Watchlist.create({ user_id: user.id, profile_id:activeProfile.id, name });},
     onSuccess: (newWatchlist) => {
       queryClient.invalidateQueries(["watchlists"]);
       setNewWatchlistName("");
@@ -140,7 +142,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
               className="flex-1"
             />
             <Button
-              disabled={!newWatchlistName.trim() || createWatchlistMutation.isPending}
+              disabled={!activeProfile || !newWatchlistName.trim() || createWatchlistMutation.isPending}
               onClick={() => createWatchlistMutation.mutate(newWatchlistName.trim())}
             >
               {createWatchlistMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
