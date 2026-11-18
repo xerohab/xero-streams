@@ -17,11 +17,13 @@ let sent=0,failed=0,skipped=0;
 for(const s of rows){
 const device=(await db.StreamingDevice.filter({user_id:n.user_id,device_id:s.device_id}))[0];
 if(!device||device.revoked){skipped++;continue;}
+const receipt={notification_id:n.id,subscription_id:s.id};
+if((await db.BrowserPushReceipt.filter(receipt))[0]){skipped++;continue;}
 try{
 const url=new URL(s.endpoint);
 if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash||!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(url.hostname)){skipped++;continue;}
 await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},JSON.stringify({type:'release',id:n.id,title:String(n.title).slice(0,160),link:n.link}),{vapidDetails:{subject,publicKey,privateKey},TTL:3600,timeout:10000});
-sent++;
+await db.BrowserPushReceipt.create({...receipt,sent_at:Date.now()});sent++;
 }catch(e){if(e.statusCode===404||e.statusCode===410)await db.BrowserPushSubscription.delete(s.id);failed++;}
 }
 return Response.json({sent,failed,skipped});
