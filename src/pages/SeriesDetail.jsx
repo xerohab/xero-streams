@@ -1,3 +1,4 @@
+import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -54,13 +55,11 @@ export default function SeriesDetail() {
     }catch{setFollowError("Unable to save follow preference. Please try again.");}
     finally{setFollowBusy(false);}
   };
-  const isFavourited = user?.favourite_series?.includes(seriesId) ?? false;
+  const profileFavourites=useProfileFavourites(user,"favourite_series");
+  const isFavourited=profileFavourites.values.includes(seriesId);
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
-    const current = user.favourite_series || [];
-    const updated = isFavourited ? current.filter((id) => id !== seriesId) : [...current, seriesId];
-    await base44.auth.updateMe({ favourite_series: updated });
-    setUser((prev) => ({ ...prev, favourite_series: updated }));
+    await profileFavourites.toggle(seriesId);
   };
 
   const { data: series, isLoading: loadingSeries } = useQuery({
