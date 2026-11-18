@@ -32,9 +32,16 @@ const AVATAR_OPTIONS = [
   { id: "crown", emoji: "👑", color: "#f39c12" },
 ];
 
-async function authorizeProfile(profile){
+async function authorizeProfile(profile, allowSetup=false){
  try{
  const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:profile.id});
+ if(status.data?.requires_setup){
+ if(!allowSetup){window.alert("An adult must configure a PIN before this profile can be opened.");return false;}
+ const new_pin=window.prompt("Set an adult profile PIN (4–8 digits)");
+ if(!new_pin||!/^\d{4,8}$/.test(new_pin)||window.prompt("Confirm adult PIN")!==new_pin)return false;
+ const setup=await base44.functions.invoke("profilePin",{action:"set",profile_id:profile.id,new_pin});
+ return setup.data?.ok===true;
+ }
  if(status.data?.enabled===false)return true;
  if(status.data?.enabled!==true)throw new Error("Unavailable");
  const pin=window.prompt("Enter PIN for "+profile.name);
@@ -81,7 +88,7 @@ export function ProfileProvider({ children }) {
       const savedId = localStorage.getItem(ACTIVE_KEY);
       let active = list.find((p) => p.id === savedId);
       if (!active) active = list[0]; // fallback to first (default)
-      if (active && await authorizeProfile(active)) {
+      if (active && await authorizeProfile(active,false)) {
         setActiveProfileState(active);
         localStorage.setItem(ACTIVE_KEY, active.id);
         setPlaybackProfile(active.id); syncPlayback(active.id);
@@ -107,7 +114,8 @@ export function ProfileProvider({ children }) {
 
   // Switch active profile
   const switchProfile = useCallback(async (profile) => {
-    if(!profiles.some(p=>p.id===profile.id)||!(await authorizeProfile(profile)))return false;
+    if(profile.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
+    if(!profiles.some(p=>p.id===profile.id)||!(await authorizeProfile(profile,false)))return false;
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
     setPlaybackProfile(profile.id); syncPlayback(profile.id);
@@ -137,7 +145,7 @@ export function ProfileProvider({ children }) {
   // Update a profile
   const updateProfile = useCallback(async (id, data) => {
     const profile=profiles.find(p=>p.id===id);
-    if(!profile||activeProfile?.is_kids)return null;
+    if(!profile||(activeProfile?.is_kids&&Object.keys(data).some(k=>!["favourites","favourite_series","favourite_franchises"].includes(k))))return null;
     if(Object.hasOwn(data,"is_kids")&&!(await authorizeProfile(profile)))return null;
     const updated = await base44.entities.ViewingProfile.update(id, data);
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
