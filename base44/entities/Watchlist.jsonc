@@ -10,6 +10,10 @@
     },
     "description": {
       "type": "string"
+    },
+    "profile_id": {
+      "type": "string",
+      "description": "Viewing profile that owns this list; legacy lists belong to default profile"
     }
   },
   "required": [
