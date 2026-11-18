@@ -249,9 +249,10 @@ export default function Dashboard() {
   const activePlan = activeSub ? plans.find(p => p.id === activeSub.plan_id) : null;
   const hasAccess = !!activeSub || user?.role === 'admin';
 
-  const favouriteVideos = videos.filter((v) => user?.favourites?.includes(v.id));
-  const favouriteSeries = allSeries.filter((s) => user?.favourite_series?.includes(s.id));
-  const favouriteFranchises = allFranchises.filter((f) => user?.favourite_franchises?.includes(f.id));
+  const profileValues = field => activeProfile ? (activeProfile[field] ?? (activeProfile.is_default ? user?.[field] : []) ?? []) : [];
+  const favouriteVideos = videos.filter((v) => profileValues("favourites").includes(v.id));
+  const favouriteSeries = allSeries.filter((s) => profileValues("favourite_series").includes(s.id));
+  const favouriteFranchises = allFranchises.filter((f) => profileValues("favourite_franchises").includes(f.id));
   const cwVideos = continueWatching
     .map(({ id, progress, currentTime }) => ({ video: videos.find((v) => v.id === id), percent: (progress || 0) / 100, currentTime }))
     .filter((x) => x.video);
