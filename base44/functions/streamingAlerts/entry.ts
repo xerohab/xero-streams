@@ -5,6 +5,7 @@ export default async function(req:Request){
  const user=await base.auth.me().catch(()=>null);
  if(body.action==='read'){
   if(!user)return Response.json({error:'Unauthorized'},{status:401});
+  if(typeof body.id!=='string'||!body.id)return Response.json({error:'Invalid notification'},{status:400});
   const rows=await db.StreamingNotification.filter({id:body.id,user_id:user.id});
   if(!rows.length)return Response.json({error:'Not found'},{status:404});
   await db.StreamingNotification.update(rows[0].id,{read:true});return Response.json({ok:true});
@@ -20,7 +21,7 @@ export default async function(req:Request){
   if(!n)n=await db.StreamingNotification.create({user_id:row.user_id,event_key:key,title:'Available now: '+v.title,message:'Your requested release is ready to watch.',link:'/watch?id='+encodeURIComponent(v.id),read:false,email_sent:false});
   if(email&&!n.email_sent){
    const u=(await db.User.filter({id:row.user_id}))[0];
-   if(u?.email){await base.asServiceRole.integrations.Core.SendEmail({to:u.email,subject:n.title,body:n.message+' https://xerostreams.com'+n.link,from_name:'Xero Streams'});await db.StreamingNotification.update(n.id,{email_sent:true});sent++;}
+   if(u?.email&&!u.is_banned){await base.asServiceRole.integrations.Core.SendEmail({to:u.email,subject:n.title,body:n.message+' https://xerostreams.com'+n.link,from_name:'Xero Streams'});await db.StreamingNotification.update(n.id,{email_sent:true});sent++;}
   }
  };
  for(const r of reminders)try{await deliver(r,(await db.Video.filter({id:r.video_id}))[0],true);}catch{failed++;}
