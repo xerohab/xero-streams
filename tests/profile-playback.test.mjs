@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import handler from '../base44/functions/profilePlayback/entry.ts';
+function setup({user={id:'u'},kids=true,owns=true}={}){
+ const rows=[{id:'r',video_id:'adult',state:'progress',position:10,duration:100}];
+ const videos=[{id:'adult',age_rating:'18',title:'Adult'},{id:'safe',age_rating:'PG',title:'Safe'}];
+ globalThis.__testClient={auth:{me:async()=>user},entities:{Video:{filter:async q=>videos.filter(v=>v.id===q.id)}},asServiceRole:{entities:{
+ ViewingProfile:{filter:async()=>owns?[{is_kids:kids}]:[]},
+ ProfilePlayback:{filter:async q=>rows.filter(r=>!q.video_id||r.video_id===q.video_id),update:async(id,data)=>Object.assign(rows.find(r=>r.id===id),data),create:async data=>rows.push(data)}
+ }}};
+ return rows;
+}
+const call=b=>handler(new Request('https://example.test',{method:'POST',body:JSON.stringify({profile_id:'p',...b})}));
+test('reject unauthorized and banned playback requests',async()=>{for(const user of [null,{id:'u',is_banned:true}]){setup({user});assert.equal((await call({action:'list'})).status,401);}setup({owns:false});assert.equal((await call({action:'list'})).status,403);});
+test('Kids playback list and saves exclude adult titles',async()=>{setup();assert.deepEqual((await (await call({action:'list'})).json()).rows,[]);assert.equal((await call({action:'save',video_id:'adult',state:'progress',position:10,duration:100})).status,404);});
+test('invalid numeric progress is rejected',async()=>{setup();for(const position of ['10',-1,101])assert.equal((await call({action:'save',video_id:'safe',state:'progress',position,duration:100})).status,400);});
+test('scoped removal can clear unavailable titles without creating rows',async()=>{const rows=setup();assert.equal((await call({action:'save',video_id:'adult',state:'removed'})).status,200);assert.equal(rows[0].state,'removed');assert.equal((await call({action:'save',video_id:'missing',state:'removed'})).status,200);assert.equal(rows.length,1);});
