@@ -1,3 +1,4 @@
+import { getAll, getWatched } from "@/hooks/useContinueWatching";
 import React, { useState } from "react";
 import { Film, Tv, Loader2, Shuffle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,14 @@ export default function Home() {
   const active = showMovies && showTv ? selected : showTv ? "tv" : "movies";
   const surprise = catalog.videos.filter(v => !v.series_id && !v.is_adult && !v.coming_soon && v.video_url && !["book", "episode"].includes(v.content_type));
   const comingSoon = catalog.movies.filter(item => item.data.coming_soon || !item.data.video_url).sort((a,b) => (a.data.release_date || "9999").localeCompare(b.data.release_date || "9999"));
+  const history = new Set([...getWatched(), ...getAll().map(v=>v.id)]);
+  const genresOf = v => [...new Set([...(Array.isArray(v.genres)?v.genres:[]),v.category].filter(g=>typeof g==="string" && g.trim()))];
+  const scores = new Map();
+  for (const v of catalog.videos.filter(v=>history.has(v.id))) for (const g of genresOf(v)) scores.set(g,(scores.get(g)||0)+1);
+  const recommendations = [...catalog.movies,...catalog.tv].filter(item=>!history.has(item.data.id) && !item.data.coming_soon).map(item=>({...item,score:genresOf(item.data).reduce((n,g)=>n+(scores.get(g)||0),0)})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score || b.latestActivityAt-a.latestActivityAt);
+  const genres = [...new Set([...catalog.movies,...catalog.tv].flatMap(item=>genresOf(item.data)))].sort();
+  const [genre,setGenre] = useState("");
+  const genreItems = [...catalog.movies,...catalog.tv].filter(item=>genresOf(item.data).includes(genre)).sort((a,b)=>b.latestActivityAt-a.latestActivityAt);
   if (catalog.isLoading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   return (
     <div className="home-cinema pb-16 md:pb-0">
@@ -41,6 +50,12 @@ export default function Home() {
           </React.Fragment>}
         </section>}
         {showMovies && <HomeMediaSection title="Coming Soon" items={comingSoon} to="/movies" id="home-coming-soon" limit={8} />}
+        {catalog.user && <HomeMediaSection title="Recommended For You" items={recommendations} id="home-recommendations" />}
+        {genres.length>0 && <section className="home-section">
+          <h2 className="font-bold uppercase tracking-widest text-sm mb-4">Browse by Genre</h2>
+          <div className="flex flex-wrap gap-2">{genres.map(g=><button key={g} type="button" aria-pressed={genre===g} onClick={()=>setGenre(genre===g?"":g)} className={`rounded-lg border px-4 py-3 text-sm font-semibold capitalize ${genre===g?"bg-primary text-primary-foreground":"bg-card border-border hover:border-primary"}`}>{g}</button>)}</div>
+          {genre && <HomeMediaSection title={genre} items={genreItems} id="home-genre" />}
+        </section>}
         {!catalog.latest.length && <p className="py-16 text-center text-muted-foreground">Content is coming soon. Check back later!</p>}
       </main>
       <Footer />
