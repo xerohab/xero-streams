@@ -37,7 +37,9 @@ def check(row, allowed):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("manifest");p.add_argument("--allow-host",action="append",required=True);p.add_argument("--output",required=True)
-    a=p.parse_args();rows=json.loads(Path(a.manifest).read_text());allowed={h.lower() for h in a.allow_host}
+    a=p.parse_args();rows=json.loads(Path(a.manifest).read_text());
+    if not isinstance(rows,list) or any(not isinstance(r,dict) or not isinstance(r.get("id"),str) or not isinstance(r.get("url"),str) for r in rows): p.error("Invalid manifest")
+    allowed={h.lower() for h in a.allow_host}
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         results=list(pool.map(lambda r:check(r,allowed),rows))
     target=Path(a.output);tmp=target.with_suffix(".tmp");tmp.write_text(json.dumps(results,indent=2));tmp.replace(target)
