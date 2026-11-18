@@ -1,3 +1,5 @@
+import {useProfile} from "@/lib/ProfileContext";
+import {allowsKidsContent} from "@/lib/parentalControls";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +13,7 @@ const MAX_GENRE_ROWS = 3;
 
 /** Movies / TV catalogue: reuses the shared cached catalogue queries and filters them in memory. */
 export default function useBrowseCatalog(type) {
+  const kids=!!useProfile()?.activeProfile?.is_kids;
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -23,12 +26,12 @@ export default function useBrowseCatalog(type) {
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
 
   const { groups, genreIndex, genres } = useMemo(() => {
-    const safeSeries = series.filter((s) => !s.is_adult);
-    const safeVideos = videos.filter((v) => !v.is_adult);
-    const groups = getCatalogMedia(franchises, safeSeries, safeVideos, type);
+    const safeSeries = series.filter((s) => !s.is_adult && (!kids||allowsKidsContent(s)));
+    const safeVideos = videos.filter((v) => !v.is_adult && (!kids||allowsKidsContent(v)));
+    const groups = getCatalogMedia(kids?[]:franchises, safeSeries, safeVideos.map(v=>kids?{...v,franchise_id:null}:v), type);
     const genreIndex = buildGenreIndex(groups, { franchises, series: safeSeries, videos: safeVideos, categories, type });
     return { groups, genreIndex, genres: listGenres(groups, genreIndex) };
-  }, [videos, series, franchises, categories, type]);
+  }, [videos, series, franchises, categories, type, kids]);
 
   const sorted = useMemo(() => {
     const needle = query.trim().toLowerCase();
