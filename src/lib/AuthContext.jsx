@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
     const check=async()=>{
       if(busy||!active)return;
       busy=true;
-      try{if(await heartbeatDevice()&&active){setUser(null);setIsAuthenticated(false);localStorage.removeItem("xero_active_profile");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
+      try{if(await heartbeatDevice()&&active){setUser(null);setIsAuthenticated(false);localStorage.removeItem("xero_active_profile");localStorage.setItem("xero_device_revoked","1");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
     };
     check();
     const timer=setInterval(check,60000);
@@ -144,6 +144,7 @@ export const AuthProvider = ({ children }) => {
 
   const navigateToLogin = () => {
     // Use the SDK's redirectToLogin method
+    if(localStorage.getItem("xero_device_revoked")==="1"){localStorage.removeItem("xero_device_id");localStorage.removeItem("xero_device_revoked");}
     base44.auth.redirectToLogin(window.location.href);
   };
 
