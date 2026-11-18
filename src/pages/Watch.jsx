@@ -19,7 +19,7 @@ import loadMediaRecords from "@/components/browse/loadMediaRecords";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
-import { saveProgress, getProgress, removeProgress, addWatched } from "@/hooks/useContinueWatching";
+import { saveProgress, getProgress, removeProgress, addWatched, syncPlayback } from "@/hooks/useContinueWatching";
 
 import { useCast } from "@/lib/CastContext";
 
@@ -289,10 +289,11 @@ export default function Watch() {
     if (t > 0) {
       videoRef.current.currentTime = t;
     } else {
+      const player=videoRef.current;
       const saved = getProgress(videoId);
-      if (saved?.currentTime > 0) {
-        videoRef.current.currentTime = saved.currentTime;
-      }
+      if (saved?.currentTime > 0) player.currentTime = saved.currentTime;
+      const initial=player.currentTime;
+      syncPlayback().then(()=>{const remote=getProgress(videoId);if(videoRef.current===player&&player.paused&&Math.abs(player.currentTime-initial)<1&&remote?.currentTime>0)player.currentTime=remote.currentTime;}).catch(()=>{});
     }
   }, [video]);
 
