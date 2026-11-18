@@ -1,3 +1,4 @@
+import PlaybackReports from "@/components/admin/PlaybackReports";
 import MediaIntelligence from "@/components/admin/MediaIntelligence";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -196,6 +197,7 @@ export default function Admin() {
 
         <Tabs defaultValue="upload" className="space-y-6">
           <TabsList className="bg-secondary flex-wrap h-auto gap-1 justify-start">
+            <TabsTrigger value="playback-reports">Playback Reports</TabsTrigger>
             <TabsTrigger value="media-intelligence">Media Intelligence</TabsTrigger>
             <TabsTrigger value="upload">Add Movie</TabsTrigger>
             <TabsTrigger value="bulkmovies">Bulk Add Movies</TabsTrigger>
@@ -219,6 +221,7 @@ export default function Admin() {
             <TabsTrigger value="perksphere">Perk Sphere</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="playback-reports"><PlaybackReports /></TabsContent>
           <TabsContent value="media-intelligence"><MediaIntelligence /></TabsContent>
           <TabsContent value="upload">
             <Card className="bg-card border-border">
