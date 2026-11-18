@@ -57,7 +57,7 @@ export default function Home() {
           </React.Fragment>}
         </section>}
         <HomeMediaSection title="Top 10 This Week" items={rankedItems} id="home-top-ten" limit={10} />
-        {catalog.user && <HomeMediaSection title="Recommended For You" items={recommendations} id="home-recommendations" />}
+        {catalog.user && <HomeMediaSection title="Because You Watched" items={recommendations} id="home-recommendations" />}
         {genres.length>0 && <section className="home-section">
           <h2 className="font-bold uppercase tracking-widest text-sm mb-4">Browse by Genre</h2>
           <div className="flex flex-wrap gap-2">{genres.map(g=><button key={g} type="button" aria-pressed={genre===g} onClick={()=>setGenre(genre===g?"":g)} className={`rounded-lg border px-4 py-3 text-sm font-semibold capitalize ${genre===g?"bg-primary text-primary-foreground":"bg-card border-border hover:border-primary"}`}>{g}</button>)}</div>
