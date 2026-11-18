@@ -17,9 +17,9 @@ export default function Home() {
       {catalog.rows.includes("hero") && catalog.heroSlides.length > 0 && <HeroSection slides={catalog.heroSlides} />}
       <main className={`home-container pb-6 ${catalog.heroSlides.length && catalog.rows.includes("hero") ? "" : "pt-28"}`}>
         {catalog.user && catalog.rows.includes("continue_watching") && <HomeContinueWatching videos={catalog.videos} series={catalog.series} />}
-        {catalog.rows.includes("latest") && <HomeMediaSection title="Recently Added & Updated" items={catalog.latest} to="/search" id="home-recent" />}
-        {catalog.rows.includes("tv") && <HomeMediaSection title="TV Series" items={catalog.tv} to="/tv-series" id="home-series" />}
-        {catalog.rows.includes("movies") && <HomeMediaSection title="Movies" items={catalog.movies} to="/movies" id="home-movies" />}
+        {catalog.rows.includes("latest") && <HomeMediaSection title="Recently Added & Updated" items={catalog.latest} to="/search" id="home-recent" limit={8} />}
+        {catalog.rows.includes("tv") && <><HomeMediaSection title="Latest TV Series" items={catalog.tv} to="/tv-series" id="home-series" /><HomeMediaSection title="Latest TV Franchises" items={catalog.tvFranchises} to="/tv-series" id="home-tv-franchises" /></>}
+        {catalog.rows.includes("movies") && <><HomeMediaSection title="Latest Movies" items={catalog.movies} to="/movies" id="home-movies" /><HomeMediaSection title="Latest Movie Franchises" items={catalog.movieFranchises} to="/movies" id="home-movie-franchises" /></>}
         {!catalog.latest.length && <p className="py-16 text-center text-muted-foreground">Content is coming soon. Check back later!</p>}
       </main>
       <Footer />
