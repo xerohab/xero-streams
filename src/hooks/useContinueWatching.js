@@ -10,8 +10,9 @@ function push(videoId,state,position=0,duration=0){
  const id=localStorage.getItem("xero_active_profile");
  if(!id||id!==verifiedProfile)return;
  const key=id+":"+videoId,now=Date.now();
- if(state==="progress"&&now-(last.get(key)||0)<10000)return;
- last.set(key,now);
+ const previous=last.get(key);
+ if(previous?.state===state&&(state!=="progress"||now-previous.time<10000))return;
+ last.set(key,{state,time:now});
  queue=queue.catch(()=>{}).then(()=>base44.functions.invoke("profilePlayback",{action:"save",profile_id:id,video_id:videoId,state,position,duration})).catch(()=>{last.delete(key);});
 }
 export async function syncPlayback(profileId=verifiedProfile){
@@ -24,8 +25,8 @@ export async function syncPlayback(profileId=verifiedProfile){
  for(const row of r.data.rows){
  const old=local.get(row.id);
  if(old&&old.savedAt>row.changed_at)continue;
- if(row.state==="progress"&&row.duration>0)local.set(row.id,{...old,id:row.id,currentTime:row.position,duration:row.duration,progress:Math.floor(row.position/row.duration*100),savedAt:row.changed_at});
- else {local.delete(row.id);if(row.state==="completed")watched.add(row.id);}
+ if(row.state==="progress"&&row.duration>0){watched.delete(row.id);local.set(row.id,{...old,title:row.title||old?.title,thumbnail_url:row.thumbnail_url||old?.thumbnail_url,is_adult:row.is_adult,id:row.id,currentTime:row.position,duration:row.duration,progress:Math.floor(row.position/row.duration*100),savedAt:row.changed_at});}
+ else {local.delete(row.id);if(row.state==="completed")watched.add(row.id);else watched.delete(row.id);}
  }
  localStorage.setItem(getCurrentKey(),JSON.stringify([...local.values()].sort((a,b)=>b.savedAt-a.savedAt).slice(0,MAX)));
  localStorage.setItem(getCurrentWatchedKey(),JSON.stringify([...watched].slice(0,100)));
@@ -49,7 +50,7 @@ export function saveProgress(video, currentTime, duration) {
   const progress = Math.floor((currentTime / duration) * 100);
   if (progress < 2 || progress > 95) {
     if (progress > 95) {
-      removeProgress(video.id);
+      localStorage.setItem(getCurrentKey(),JSON.stringify(getAll().filter(v=>v.id!==video.id)));
       addWatched(video.id);
     }
     return;
