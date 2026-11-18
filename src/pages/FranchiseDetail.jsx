@@ -160,14 +160,20 @@ export default function FranchiseDetail() {
       />
 
       <main className="xero-container flex-1 space-y-8 pb-12 pt-8">
-        {playable.length > 0 && <section className="rounded-xl border border-border bg-card p-5 space-y-4">
-          <SectionHeader title="Your Collection Progress" />
-          <p>{completed} of {playable.length} watched · {Math.round(completed/playable.length*100)}%</p>
-          <progress className="w-full accent-yellow-500" max={playable.length} value={completed} />
-          {next && <Button asChild><Link to={"/watch?id="+next.id}>Watch Next: {next.title}</Link></Button>}
-          <div className="flex gap-2"><Button variant={order==="collection"?"default":"outline"} onClick={()=>setOrder("collection")}>Collection Order</Button><Button variant={order==="release"?"default":"outline"} onClick={()=>setOrder("release")}>Release Order</Button></div>
-          <div className="max-h-80 overflow-auto divide-y divide-border">{ordered.map((v,i)=><Link className="flex gap-3 py-2 text-sm hover:text-primary" key={v.id} to={"/watch?id="+v.id}><span>{i+1}.</span><span>{seasonMap.get(v.series_id)?.title ? seasonMap.get(v.series_id).title+" · " : ""}{v.title}</span>{watched.has(v.id)&&<span className="ml-auto text-primary">Watched</span>}</Link>)}</div>
-          <h3 className="font-bold">Latest additions</h3><div className="flex flex-wrap gap-3">{additions.map(v=><Link className="text-sm text-primary" key={v.id} to={"/watch?id="+v.id}>{v.title}</Link>)}</div>
+        {playable.length > 0 && <section className="rounded-lg border border-border bg-card px-3 py-2 space-y-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex-1 min-w-[160px] max-w-sm">
+              <div className="flex items-center justify-between gap-2 text-xs"><h2 className="font-bold">Collection Progress</h2><span className="text-muted-foreground">{completed}/{playable.length} · {Math.round(completed/playable.length*100)}%</span></div>
+              <div role="progressbar" aria-label="Collection progress" aria-valuenow={completed} aria-valuemin={0} aria-valuemax={playable.length} className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width: (completed/playable.length*100)+"%"}} /></div>
+            </div>
+            {next && <Button size="sm" asChild className="h-8 max-w-full"><Link className="truncate" to={"/watch?id="+next.id}>Watch Next: {next.title}</Link></Button>}
+          </div>
+          <details className="text-xs"><summary className="cursor-pointer font-semibold text-primary py-1">Viewing order &amp; latest additions</summary>
+          <div className="space-y-2 pt-2">
+          <div className="flex gap-2"><Button size="sm" variant={order==="collection"?"default":"outline"} onClick={()=>setOrder("collection")}>Collection Order</Button><Button size="sm" variant={order==="release"?"default":"outline"} onClick={()=>setOrder("release")}>Release Order</Button></div>
+          <div className="max-h-48 overflow-auto divide-y divide-border">{ordered.map((v,i)=><Link className="flex gap-3 py-1.5 text-xs hover:text-primary" key={v.id} to={"/watch?id="+v.id}><span>{i+1}.</span><span>{seasonMap.get(v.series_id)?.title ? seasonMap.get(v.series_id).title+" · " : ""}{v.title}</span>{watched.has(v.id)&&<span className="ml-auto text-primary">Watched</span>}</Link>)}</div>
+          <h3 className="font-bold text-xs">Latest additions</h3><div className="flex flex-wrap gap-3">{additions.map(v=><Link className="text-sm text-primary" key={v.id} to={"/watch?id="+v.id}>{v.title}</Link>)}</div>
+          </div></details>
         </section>}
         <GenreChips record={franchise} legacyField="category" />
         {groups.length > 0 ? (
