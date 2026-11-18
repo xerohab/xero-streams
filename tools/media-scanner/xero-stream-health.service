@@ -1,0 +1,17 @@
+[Unit]
+Description=XeroStreams stream health audit
+[Service]
+Type=oneshot
+DynamicUser=yes
+StateDirectory=xero-stream-health
+WorkingDirectory=/var/lib/xero-stream-health
+Environment=XERO_HEALTH_DIR=/var/lib/xero-stream-health
+ExecStart=/opt/xero-stream-health/run-health.sh
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+CPUQuota=25%
+MemoryMax=256M
+TimeoutStartSec=6h
