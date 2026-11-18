@@ -9,7 +9,7 @@ export default async function(req:Request){
   if(!rows.length)return Response.json({error:'Not found'},{status:404});
   await db.StreamingNotification.update(rows[0].id,{read:true});return Response.json({ok:true});
  }
- if(body.action!=='deliver'||user?.role!=='admin')return Response.json({error:'Forbidden'},{status:403});
+ if((body.action && body.action!=='deliver')||(user && user.role!=='admin'))return Response.json({error:'Forbidden'},{status:403});
  try{
  const [follows,reminders]=await Promise.all([db.SeriesFollow.list('-created_date',5000),db.ReleaseReminder.list('-created_date',5000)]);
  let sent=0,failed=0;
