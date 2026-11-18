@@ -36,6 +36,24 @@ export default function SeriesDetail() {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
 
+  const [followRows,setFollowRows] = useState([]);
+  const [followBusy,setFollowBusy] = useState(false);
+  const [followError,setFollowError] = useState("");
+  useEffect(()=>{
+    let active=true;
+    setFollowRows([]);
+    if(user?.id && seriesId) base44.entities.SeriesFollow.filter({user_id:user.id,series_id:seriesId}).then(rows=>{if(active)setFollowRows(rows)}).catch(()=>{if(active)setFollowError("Unable to load follow status")});
+    return ()=>{active=false};
+  },[user?.id,seriesId]);
+  const toggleFollow=async()=>{
+    if(!user){base44.auth.redirectToLogin(window.location.href);return;}
+    setFollowBusy(true);setFollowError("");
+    try{
+      if(followRows.length){await Promise.all(followRows.map(r=>base44.entities.SeriesFollow.delete(r.id)));setFollowRows([]);}
+      else{const row=await base44.entities.SeriesFollow.create({user_id:user.id,series_id:seriesId,email_enabled:true});setFollowRows([row]);}
+    }catch{setFollowError("Unable to save follow preference. Please try again.");}
+    finally{setFollowBusy(false);}
+  };
   const isFavourited = user?.favourite_series?.includes(seriesId) ?? false;
   const handleToggleFavourite = async () => {
     if (!user) { base44.auth.redirectToLogin(window.location.pathname + window.location.search); return; }
@@ -181,6 +199,8 @@ export default function SeriesDetail() {
             </Link>
           </Button>
         )}
+        <Button variant={followRows.length?"default":"outline"} disabled={followBusy} onClick={toggleFollow} className={OUTLINE_BTN} aria-pressed={followRows.length>0}>{followRows.length?"Following":"Follow Series"}</Button>
+        {followError && <span role="alert" className="text-xs text-red-400">{followError}</span>}
         <WatchlistButton videoId={null} seriesId={series.id} variant="outline" className={OUTLINE_BTN} label="My List" />
         <Button
           variant={isFavourited ? "default" : "outline"}
