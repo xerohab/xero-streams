@@ -116,7 +116,9 @@ export function ProfileProvider({ children }) {
   // Switch active profile
   const switchProfile = useCallback(async (profile) => {
     if(profile.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
-    if(!profiles.some(p=>p.id===profile.id)||!(await authorizeProfile(profile,false)))return false;
+    const target=profiles.find(p=>p.id===profile.id);
+    if(!target||!(await authorizeProfile(target,false)))return false;
+    profile=target;
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
     setPlaybackProfile(profile.id); syncPlayback(profile.id);
@@ -129,7 +131,7 @@ export function ProfileProvider({ children }) {
 
   // Create a new profile
   const createProfile = useCallback(async (data) => {
-    if (!user || activeProfile?.is_kids) return null;
+    if (!user || !activeProfile || activeProfile.is_kids) return null;
     if (profiles.length >= MAX_PROFILES) return null;
     const profile = await base44.entities.ViewingProfile.create({
       user_id: user.id,
@@ -146,7 +148,7 @@ export function ProfileProvider({ children }) {
   // Update a profile
   const updateProfile = useCallback(async (id, data) => {
     const profile=profiles.find(p=>p.id===id);
-    if(!profile||(activeProfile?.is_kids&&Object.keys(data).some(k=>!["favourites","favourite_series","favourite_franchises"].includes(k))))return null;
+    if(!profile||!activeProfile||(activeProfile.is_kids&&(id!==activeProfile.id||Object.keys(data).some(k=>!["favourites","favourite_series","favourite_franchises"].includes(k)))))return null;
     if(Object.hasOwn(data,"is_kids")&&!(await authorizeProfile(profile)))return null;
     const updated = await base44.entities.ViewingProfile.update(id, data);
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
@@ -159,12 +161,12 @@ export function ProfileProvider({ children }) {
   // Delete a profile
   const deleteProfile = useCallback(async (id) => {
     // Don't allow deleting if it's the only profile
-    if (profiles.length <= 1 || activeProfile?.is_kids) return false;
+    if (profiles.length <= 1 || !activeProfile || activeProfile.is_kids) return false;
     const profile=profiles.find(p=>p.id===id);
     if(!profile||!(await authorizeProfile(profile)))return false;
     // Clear profile-scoped localStorage data
-    clearProfileStorage(id);
     await base44.entities.ViewingProfile.delete(id);
+    clearProfileStorage(id);
     const remaining = profiles.filter((p) => p.id !== id);
     setProfiles(remaining);
     // If deleting active, switch to first remaining
