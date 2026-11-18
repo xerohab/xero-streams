@@ -234,7 +234,8 @@ export default function Watch() {
     ? franchiseMovies[currentFranchiseIndex - 1]
     : null;
 
-  const nextVideo = nextEpisode || nextFranchiseMovie;
+  const candidate = nextEpisode || nextFranchiseMovie;
+  const nextVideo = candidate?.video_url && !candidate.coming_soon && !candidate.is_adult ? candidate : null;
   const prevVideo = prevSeriesEpisode || prevEpisode || prevFranchiseMovie;
 
   // Keep nextVideoRef in sync for use inside event handlers
@@ -256,7 +257,7 @@ export default function Watch() {
     if (autoplayCountdown === null) return;
     if (autoplayCountdown === 0) {
       // Seamlessly navigate to next video
-      navigate(`/watch?id=${nextVideoRef.current.id}`);
+      if (nextVideoRef.current) navigate(`/watch?id=${nextVideoRef.current.id}`);
       return;
     }
     countdownRef.current = setTimeout(() => setAutoplayCountdown((c) => c - 1), 1000);
@@ -369,7 +370,7 @@ export default function Watch() {
       }).catch(() => {});
     }
     if (!countdownStartedRef.current) {
-      startCountdown(0);
+      startCountdown(10);
     }
   }, [video, startCountdown, user, sendPlaybackReport]);
 
@@ -521,14 +522,8 @@ export default function Watch() {
 
               {/* Autoplay countdown overlay */}
               {autoplayCountdown !== null && nextVideo && (
-                <dialog
-                  ref={el => { if (el && !el.open) el.showModal(); }}
-                  onCancel={(e) => { e.preventDefault(); cancelAutoplay(); }}
-                  className="up-next-dialog bg-black/80 backdrop-blur-sm rounded-xl p-4 border-none m-0 fixed z-50 flex-col items-end gap-2"
-                  style={{ bottom: '5rem', right: '1rem', left: 'auto', top: 'auto', display: 'flex' }}
-                >
-                  <style>{`.up-next-dialog::backdrop { background: transparent; }`}</style>
-                  <p className="text-white text-sm font-semibold">Up Next</p>
+                <div role="status" className="absolute bottom-16 right-3 z-40 flex flex-col items-end gap-2 rounded-xl bg-black/90 p-3 shadow-xl border border-white/20">
+                  <p className="text-white text-sm font-semibold">Up Next · {autoplayCountdown}s</p>
                   <p className="text-muted-foreground text-xs max-w-[180px] truncate">{nextVideo.title}</p>
                   <div className="flex items-center gap-2">
                     <button onClick={cancelAutoplay} className="text-xs text-muted-foreground hover:text-white transition-colors">Cancel</button>
@@ -539,10 +534,10 @@ export default function Watch() {
                       }}
                       className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
                     >
-                      Play in {autoplayCountdown}s
+                      Watch Now
                     </button>
                   </div>
-                </dialog>
+                </div>
               )}
             </div>
         </div>
