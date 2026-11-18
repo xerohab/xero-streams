@@ -31,15 +31,15 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
   });
 
   const { data: watchlistItems = [] } = useQuery({
-    queryKey: ["watchlistItems"],
-    queryFn: () => base44.entities.WatchlistItem.list(),
-    enabled: !!user && isOpen,
+    queryKey: ["watchlistItems", user?.id, activeProfile?.id, watchlists.map(w=>w.id).join(",")],
+    queryFn: async () => (await Promise.all(watchlists.map(w=>base44.entities.WatchlistItem.filter({watchlist_id:w.id})))).flat(),
+    enabled: !!user && !!activeProfile && watchlists.length>0,
   });
 
   const createWatchlistMutation = useMutation({
     mutationFn: (name) => {if(!activeProfile)throw new Error("Choose a profile");return base44.entities.Watchlist.create({ user_id: user.id, profile_id:activeProfile.id, name });},
     onSuccess: (newWatchlist) => {
-      queryClient.invalidateQueries(["watchlists"]);
+      queryClient.invalidateQueries({queryKey:["watchlists"]});
       setNewWatchlistName("");
       // Add current video to the new watchlist automatically
       toggleItemMutation.mutate({ watchlistId: newWatchlist.id, action: "add" });
@@ -59,7 +59,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["watchlistItems"]);
+      queryClient.invalidateQueries({queryKey:["watchlistItems"]});
     },
   });
 
