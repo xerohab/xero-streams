@@ -22,11 +22,15 @@ export default function Home() {
   const [rankings,setRankings]=useState([]);
   useEffect(()=>{let live=true;base44.functions.invoke("streamingCommunity",{action:"rankings"}).then(r=>{if(live)setRankings(r.data.rankings||[])}).catch(()=>{});return()=>{live=false};},[]);
   const rankedItems=rankings.map(({key})=>[...catalog.movies,...catalog.tv].find(i=>key===(i.type==="series"?"series:":"video:")+i.data.id)).filter(Boolean).slice(0,10);
+  const [,refreshHistory]=useState(0);
+  useEffect(()=>{const refresh=()=>refreshHistory(n=>n+1);for(const event of ["xero-profile-changed","xero-progress-updated","storage"])window.addEventListener(event,refresh);return()=>{for(const event of ["xero-profile-changed","xero-progress-updated","storage"])window.removeEventListener(event,refresh);};},[]);
   const history = new Set([...getWatched(), ...getAll().map(v=>v.id)]);
   const genresOf = v => [...new Set([...(Array.isArray(v.genres)?v.genres:[]),v.category].filter(g=>typeof g==="string" && g.trim()))];
   const scores = new Map();
   for (const v of catalog.videos.filter(v=>history.has(v.id))) for (const g of genresOf(v)) scores.set(g,(scores.get(g)||0)+1);
-  const recommendations = [...catalog.movies,...catalog.tv].filter(item=>!history.has(item.data.id) && !item.data.coming_soon).map(item=>({...item,score:genresOf(item.data).reduce((n,g)=>n+(scores.get(g)||0),0)})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score || b.latestActivityAt-a.latestActivityAt);
+  const completed=new Set(getWatched());
+  const finishedSeries=new Set(catalog.series.filter(series=>{const episodes=catalog.videos.filter(v=>v.series_id===series.id && !v.coming_soon && v.video_url);return episodes.length>0 && episodes.every(v=>completed.has(v.id));}).map(s=>s.id));
+  const recommendations = [...catalog.movies,...catalog.tv].filter(item=>!history.has(item.data.id) && !finishedSeries.has(item.data.id) && !item.data.coming_soon).map(item=>({...item,score:genresOf(item.data).reduce((n,g)=>n+(scores.get(g)||0),0)})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score || b.latestActivityAt-a.latestActivityAt);
   const genres = [...new Set([...catalog.movies,...catalog.tv].flatMap(item=>genresOf(item.data)))].sort();
   const [genre,setGenre] = useState("");
   const genreItems = [...catalog.movies,...catalog.tv].filter(item=>genresOf(item.data).includes(genre)).sort((a,b)=>b.latestActivityAt-a.latestActivityAt);
