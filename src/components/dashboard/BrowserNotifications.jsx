@@ -1,3 +1,4 @@
+import {deviceId,heartbeatDevice} from "@/lib/deviceSession";
 import React,{useEffect,useState} from "react";
 import {base44} from "@/api/base44Client";
 const key=id=>"xero_browser_alerts_"+id;
@@ -30,6 +31,9 @@ export default function BrowserNotifications({userId}){
  const [enabled,setEnabled]=useState(()=>localStorage.getItem(key(userId))==="1"),[status,setStatus]=useState("");
  useEffect(()=>{setEnabled(localStorage.getItem(key(userId))==="1");},[userId]);
  const supported="Notification" in window&&"serviceWorker" in navigator;
+ const [background,setBackground]=useState(false);
+ const enableBackground=async()=>{try{const config=await base44.functions.invoke("browserPush",{action:"config"});if(!config.data?.enabled){setStatus("Background push is not configured yet.");return;}if(await Notification.requestPermission()!=="granted")return;const reg=await navigator.serviceWorker.ready;if(await heartbeatDevice())throw Error("Revoked");const key=config.data.public_key.replace(/-/g,"+").replace(/_/g,"/");const bytes=Uint8Array.from(atob(key.padEnd(Math.ceil(key.length/4)*4,"=")),c=>c.charCodeAt(0));const sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes});const result=await base44.functions.invoke("browserPush",{action:"register",device_id:deviceId(),subscription:sub.toJSON()});if(result.data?.ok!==true)throw Error("Registration failed");setBackground(true);setStatus("Background subscription registered; delivery depends on server configuration.");}catch{setStatus("Background notification registration failed.");}};
+ const disableBackground=async()=>{try{const result=await base44.functions.invoke("browserPush",{action:"remove",device_id:deviceId()});if(result.data?.ok!==true)throw Error("Removal failed");const reg=await navigator.serviceWorker.getRegistration();await (await reg?.pushManager?.getSubscription())?.unsubscribe();setBackground(false);setStatus("Background notifications disabled.");}catch{setStatus("Unable to remove background notifications.");}};
  const toggle=async()=>{
  if(enabled){localStorage.removeItem(key(userId));setEnabled(false);return;}
  try{
@@ -38,5 +42,5 @@ export default function BrowserNotifications({userId}){
  localStorage.setItem(key(userId),"1");setEnabled(true);setStatus("");window.dispatchEvent(new Event("xero-notifications-changed"));
  }catch{setStatus("Unable to enable notifications.");}
  };
- return <section className="space-y-2"><h2 className="text-xl font-bold">Browser notifications</h2><p className="text-sm text-muted-foreground">Receive release alerts while XeroStreams is open in this browser. Closed-browser push is not yet available.</p>{supported?<button className="border rounded px-4 py-2" onClick={toggle}>{enabled?"Disable":"Enable"} browser notifications</button>:<p>This browser does not support notifications.</p>}{status&&<p role="status">{status}</p>}</section>;
+ return <section className="space-y-2"><h2 className="text-xl font-bold">Browser notifications</h2><p className="text-sm text-muted-foreground">Receive release alerts while XeroStreams is open in this browser. Closed-browser push is not yet available.</p>{supported?<button className="border rounded px-4 py-2" onClick={toggle}>{enabled?"Disable":"Enable"} browser notifications</button>:<p>This browser does not support notifications.</p>}{supported&&"PushManager" in window&&<div className="flex gap-2"><button className="border rounded px-4 py-2" onClick={enableBackground}>{background?"Refresh":"Register"} background notifications</button><button className="border rounded px-4 py-2" onClick={disableBackground}>Remove background notifications</button></div>}{status&&<p role="status">{status}</p>}</section>;
 }
