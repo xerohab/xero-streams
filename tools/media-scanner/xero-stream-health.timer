@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily XeroStreams health audit
+[Timer]
+OnCalendar=*-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=900
+[Install]
+WantedBy=timers.target
