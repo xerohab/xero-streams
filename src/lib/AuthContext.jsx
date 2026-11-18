@@ -1,3 +1,4 @@
+import {cancelProfilePin} from "@/lib/requestProfilePin";
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import {heartbeatDevice} from "@/lib/deviceSession";
 import { base44 } from '@/api/base44Client';
@@ -25,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     const check=async()=>{
       if(busy||!active)return;
       busy=true;
-      try{if(await heartbeatDevice()&&active){setUser(null);setIsAuthenticated(false);localStorage.removeItem("xero_active_profile");localStorage.setItem("xero_device_revoked","1");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
+      try{if(await heartbeatDevice()&&active){setUser(null);setIsAuthenticated(false);cancelProfilePin();localStorage.removeItem("xero_active_profile");localStorage.setItem("xero_device_revoked","1");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
     };
     check();
     const timer=setInterval(check,60000);
@@ -116,7 +117,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('User auth check failed:', error);
       setUser(null);
-      localStorage.removeItem("xero_active_profile");
+      cancelProfilePin();localStorage.removeItem("xero_active_profile");
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
@@ -132,7 +133,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
-    localStorage.removeItem("xero_active_profile");
+    cancelProfilePin();localStorage.removeItem("xero_active_profile");
     setUser(null);
     setIsAuthenticated(false);
     
