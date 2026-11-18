@@ -6,7 +6,7 @@ export function useProfileFavourites(user,field){
  const toggle=async(id)=>{
  if(!activeProfile)throw Error("Select a viewing profile");
  const next=values.includes(id)?values.filter(x=>x!==id):[...values,id];
- await updateProfile(activeProfile.id,{[field]:next});return next;
+ const updated=await updateProfile(activeProfile.id,{[field]:next});if(!updated)throw Error("Unable to update favourites");return next;
  };
  return {values,toggle};
 }
