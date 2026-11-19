@@ -18,7 +18,7 @@ async function serialize(key,work){
 async function access(){
  if(!secrets.get('PAYPAL_CLIENT_ID')||!secrets.get('PAYPAL_CLIENT_SECRET'))throw Error('Payment unavailable');
  const r=await fetch(api()+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+btoa(secrets.get('PAYPAL_CLIENT_ID')+':'+secrets.get('PAYPAL_CLIENT_SECRET')),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials',redirect:'error',signal:AbortSignal.timeout(12000)});
- if(!r.ok)throw Error('Payment unavailable');const data=await r.json();if(!data.access_token)throw Error('Payment unavailable');return data.access_token;
+ if(!r.ok)throw Error('Payment unavailable');const data=await r.json();if(typeof data.access_token!=='string'||!data.access_token)throw Error('Payment unavailable');return data.access_token;
 }
 export default async function(req:Request){
  const headers={'Cache-Control':'no-store'};
@@ -61,6 +61,9 @@ export default async function(req:Request){
  const existing=await entity.filter({paypal_order_id:b.orderId});
  if(existing.length>1||existing.some(r=>r.user_id!==u.id||r[field]!==binding.item_id||(!video&&r.format!==binding.format)))throw Error();
  if(binding.capture_id&&binding.capture_id!==cap.id)throw Error();
+ const reused=await db.MediaPayment.filter({capture_id:cap.id});
+ if(reused.some(row=>row.id!==binding.id))throw Error();
+ if(existing.some(row=>row.status!=='completed'))throw Error();
  if(!existing.length)await entity.create({user_id:u.id,[field]:binding.item_id,...(!video?{format:binding.format}:{}),status:'completed',paypal_order_id:b.orderId});
  await db.MediaPayment.update(binding.id,{status:'completed',capture_id:cap.id});
  return Response.json({success:true,kind:binding.kind},{headers});
