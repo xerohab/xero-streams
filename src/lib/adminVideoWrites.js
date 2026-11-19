@@ -1,0 +1,25 @@
+import {base44} from "@/api/base44Client";
+const fields=['video_url','download_url','subtitles'];
+const hasSource=p=>fields.some(k=>Object.prototype.hasOwnProperty.call(p,k));
+async function sync(id,p){
+ if(!hasSource(p))return;
+ const r=await base44.functions.invoke('adminMediaSource',{action:'get',video_id:id});
+ if(!r.data?.source)throw Error('Unable to load protected source');
+ const source={...r.data.source};
+ for(const k of fields)if(Object.prototype.hasOwnProperty.call(p,k))source[k]=p[k]??(k==='subtitles'?[]:'');
+ const saved=await base44.functions.invoke('adminMediaSource',{action:'save',video_id:id,...source});
+ if(!saved.data?.ok)throw Error('Protected source synchronization failed');
+}
+export async function createAdminVideo(p){
+ const result=await base44.entities.Video.create(p);
+ const id=result?.id||result?.data?.id||result?.record?.id;
+ if(hasSource(p)){if(!id)throw Error('Created video ID unavailable for source synchronization');await sync(id,p);}
+ return result;
+}
+export async function updateAdminVideo(id,p){
+ const result=await base44.entities.Video.update(id,p);
+ await sync(id,p);return result;
+}
+export async function bulkCreateAdminVideos(rows){
+ const out=[];for(const row of rows)out.push(await createAdminVideo(row));return out;
+}
