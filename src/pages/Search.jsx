@@ -19,7 +19,9 @@ import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 
 export default function Search() {
-  const profile = useProfile()?.activeProfile;
+  const context = useProfile();
+  const profile = context?.activeProfile;
+  const pending = Boolean(context?.loading || (context?.user && !profile));
   const kids = Boolean(profile?.is_kids);
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
@@ -31,8 +33,8 @@ export default function Search() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [itemsPerPage, setItemsPerPage] = useState(() => {
-    const saved = localStorage.getItem("xero_page_size");
-    return saved ? parseInt(saved, 10) : 20;
+    const saved = Number(localStorage.getItem("xero_page_size"));
+    return [20, 30, 40, 50].includes(saved) ? saved : 20;
   });
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -42,12 +44,12 @@ export default function Search() {
     setCurrentPage(1);
   };
 
-  const { data: videos = [], isLoading: loadingVideos } = useQuery(mediaCatalogueQuery(base44, "videos", kids ? profile.id : null));
-  const { data: seriesList = [], isLoading: loadingSeries } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
-  const { data: franchises = [] } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: loadingVideos } = useQuery({ ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null, pending), enabled: !pending });
+  const { data: seriesList = [], isLoading: loadingSeries } = useQuery({ ...mediaCatalogueQuery(base44, "series", kids ? profile.id : null, pending), enabled: !pending });
+  const { data: franchises = [] } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !pending && !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
-  const { data: books = [] } = useQuery({ queryKey: ["search_books"], enabled: !kids, queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
-  const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], enabled: !kids, queryFn: () => base44.entities.BookAuthor.list() });
+  const { data: books = [] } = useQuery({ queryKey: ["search_books"], enabled: !pending && !kids, queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
+  const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], enabled: !pending && !kids, queryFn: () => base44.entities.BookAuthor.list() });
 
   useEffect(() => { if (kids && filterType === "books") setFilterType("all"); }, [kids, filterType]);
   useEffect(() => { document.title = "Search | Xero Streams"; return () => { document.title = "Xero Streams"; }; }, []);
@@ -168,7 +170,7 @@ export default function Search() {
           <p className="text-muted-foreground">No results found for "<strong>{query}</strong>"</p>
         )}
 
-        {loadingVideos || loadingSeries ? <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : hasResults && (
+        {pending || loadingVideos || loadingSeries ? <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : hasResults && (
           <>
             <p className="mb-5 text-xs text-muted-foreground">{results.length} matching titles</p>
             <MediaGrid>
