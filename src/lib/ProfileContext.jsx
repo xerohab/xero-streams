@@ -33,25 +33,23 @@ const AVATAR_OPTIONS = [
   { id: "crown", emoji: "👑", color: "#f39c12" },
 ];
 
-async function authorizeProfile(profile, allowSetup=false){
- try{
- const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:profile.id});
- if(status.data?.requires_setup){
- if(!allowSetup){window.alert("An adult must configure a PIN before this profile can be opened.");return false;}
- const new_pin=await requestProfilePin("Set an adult profile PIN (4–8 digits)");
- if(!new_pin||!/^\d{4,8}$/.test(new_pin)||await requestProfilePin("Confirm adult PIN")!==new_pin)return false;
- const setup=await base44.functions.invoke("profilePin",{action:"set",profile_id:profile.id,new_pin});
- return setup.data?.ok===true;
- }
- if(status.data?.enabled===false)return true;
- if(status.data?.enabled!==true)throw new Error("Unavailable");
- const pin=await requestProfilePin("Enter PIN for "+profile.name);
- if(pin===null)return false;
- const result=await base44.functions.invoke("profilePin",{action:"verify",profile_id:profile.id,pin});
- if(result.data?.ok===true)return true;
- }catch{}
- window.alert("Profile could not be unlocked. Check your PIN or try again later.");
- return false;
+async function authorizeProfile(profile) {
+  try {
+    const { data: status } = await base44.functions.invoke("profilePin", { action: "status", profile_id: profile.id });
+    if (status?.requires_setup) {
+      window.alert("An adult must configure a PIN before this profile can be opened.");
+      return false;
+    }
+    if (typeof status?.enabled !== "boolean") throw new Error("PIN status unavailable");
+    const pin = status.enabled ? await requestProfilePin("Enter PIN for " + profile.name) : undefined;
+    if (pin === null) return false;
+    const result = await base44.functions.invoke("profilePin", { action: "verify", profile_id: profile.id, pin });
+    if (result.data?.ok === true) return true;
+  } catch {}
+  window.alert(profile.is_kids
+    ? "This profile couldn't be opened. Check that every adult profile has a PIN and try again."
+    : "Profile could not be unlocked. Check your PIN or try again later.");
+  return false;
 }
 
 async function manageProfile(active, action, payload) {
@@ -97,9 +95,8 @@ export function ProfileProvider({ children }) {
       const savedId = localStorage.getItem(ACTIVE_KEY);
       let active = list.find((p) => p.id === savedId);
       if (!active) active = list[0]; // fallback to first (default)
-      if(active?.is_kids){for(const adult of list.filter(p=>!p.is_kids)){const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(status.data?.enabled!==true){active=null;break;}}}
       if(version!==generation.current)return;
-      const authorized=active && await authorizeProfile(active,false);
+      const authorized=active && await authorizeProfile(active);
       if(version!==generation.current)return;
       if (authorized) {
         setActiveProfileState(active);
@@ -133,9 +130,8 @@ export function ProfileProvider({ children }) {
     const target=profiles.find(p=>p.id===profile?.id);
     if(!target||loading)return false;
     const version=++generation.current;
-    if(target.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
     if(version!==generation.current)return false;
-    if(!(await authorizeProfile(target,false)))return false;
+    if(!(await authorizeProfile(target)))return false;
     if(version!==generation.current)return false;
     profile=target;
     setActiveProfileState(profile);

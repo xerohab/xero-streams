@@ -88,6 +88,13 @@ try{
  if(b.action==='remove'&&kidsExist&&!target?.is_kids)return Response.json({error:'Adult profiles require a PIN while Kids profiles exist'},{status:403});
  if(b.action==='set'&&kidsExist&&!target?.is_kids&&!enabled)return Response.json({error:'Account recovery required before setting a missing adult PIN'},{status:403});
  if(b.action==='verify'&&kidsExist&&!target?.is_kids&&!enabled)return Response.json({error:'Adult PIN required'},{status:403});
+ if(b.action==='verify'&&target.is_kids){
+  const adults=profiles.filter(profile=>!profile.is_kids);
+  const pins=await db.ProfilePin.filter({user_id:u.id});
+  if(!adults.length||adults.some(adult=>!pins.some(pin=>pin.profile_id===adult.id&&pin.digest))){
+   return Response.json({error:'Set a PIN on every adult profile before entering Kids mode'},{status:403});
+  }
+ }
  if(!management&&!['verify','set','remove'].includes(b.action))return Response.json({error:'Unknown action'},{status:400});
  if(b.action==='set'&&(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin)))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
  if(enabled){

@@ -71,3 +71,12 @@ test('a failed recovery email allows another request without changing the curren
  assert.equal((await call({action:'request_recovery',new_pin:'7654'})).status,200);
  assert.equal(emails.length,1);
 });
+
+test('the server opens Kids profiles only when every adult profile has a PIN', async () => {
+ const {rows,profiles}=setup();
+ assert.equal((await call({action:'set',new_pin:'1234'})).status,200);
+ profiles.push({id:'k',is_kids:true},{id:'second-adult',is_kids:false});
+ assert.equal((await call({action:'verify',profile_id:'k'})).status,403);
+ rows.push({id:'second-pin',profile_id:'second-adult',digest:'configured'});
+ assert.equal((await call({action:'verify',profile_id:'k'})).status,200);
+});
