@@ -60,12 +60,14 @@ export function ProfileProvider({ children }) {
   const [activeProfile, setActiveProfileState] = useState(null);
   const [loading, setLoading] = useState(true);
   const migratedRef = useRef(false);
+  const generation = useRef(0);
 
   // Load user and profiles
-  const loadProfiles = useCallback(async (u) => {
-    if (!u) return;
+  const loadProfiles = useCallback(async (u, version) => {
+    if (!u || u.is_banned || version!==generation.current) return;
     try {
       const list = await base44.entities.ViewingProfile.filter({ user_id: u.id });
+      if(version!==generation.current)return;
       list.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0) || (a.sort_order || 0) - (b.sort_order || 0));
 
       // Migration: if no profiles exist, create a default one
@@ -78,6 +80,7 @@ export function ProfileProvider({ children }) {
           is_default: true,
           is_kids: false,
         });
+        if(version!==generation.current)return;
         // Copy existing localStorage continue-watching to the default profile's namespace
         migrateLocalStorageData(defaultProfile.id);
         list.push(defaultProfile);
@@ -90,7 +93,9 @@ export function ProfileProvider({ children }) {
       let active = list.find((p) => p.id === savedId);
       if (!active) active = list[0]; // fallback to first (default)
       if(active?.is_kids){for(const adult of list.filter(p=>!p.is_kids)){const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(status.data?.enabled!==true){active=null;break;}}}
-      if (active && await authorizeProfile(active,false)) {
+      const authorized=active && await authorizeProfile(active,false);
+      if(version!==generation.current)return;
+      if (authorized) {
         setActiveProfileState(active);
         localStorage.setItem(ACTIVE_KEY, active.id);
         setPlaybackProfile(active.id); syncPlayback(active.id);
@@ -101,25 +106,30 @@ export function ProfileProvider({ children }) {
     } catch (err) {
       console.error("Profile load error:", err);
     } finally {
-      setLoading(false);
+      if(version===generation.current)setLoading(false);
     }
   }, []);
 
   // Initialise
   useEffect(() => {
+    const version=++generation.current;
     base44.auth.me().then((u) => {
-      setUser(u);
-      if (u) loadProfiles(u);
+      if(version!==generation.current)return;
+      setUser(u&&!u.is_banned?u:null);
+      if (u&&!u.is_banned) loadProfiles(u,version);
       else setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => {if(version===generation.current)setLoading(false);});
+    return()=>{generation.current++;};
   }, [loadProfiles]);
 
   // Switch active profile
   const switchProfile = useCallback(async (profile) => {
     const target=profiles.find(p=>p.id===profile?.id);
     if(!target)return false;
+    const version=++generation.current;
     if(target.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
     if(!(await authorizeProfile(target,false)))return false;
+    if(version!==generation.current)return false;
     profile=target;
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
@@ -185,6 +195,8 @@ export function ProfileProvider({ children }) {
 
   // Clear active profile on logout
   const clearActiveProfile = useCallback(() => {
+    generation.current++;
+    setLoading(false);
     setActiveProfileState(null);
     localStorage.removeItem(ACTIVE_KEY);
     setPlaybackProfile(null);
