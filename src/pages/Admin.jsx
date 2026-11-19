@@ -9,7 +9,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Film, Video, Loader2, ImageIcon, Users, ShieldCheck, ShieldAlert, Heart, Pencil } from "lucide-react";
@@ -38,7 +38,141 @@ import PerkSphereAdminSection from "@/components/admin/PerkSphereAdminSection";
 import { Toaster } from "react-hot-toast";
 
 
+const ADMIN_SECTIONS = [
+  {
+    "label": "Content library",
+    "items": [
+      {
+        "id": "manage",
+        "label": "Manage"
+      },
+      {
+        "id": "upload",
+        "label": "Add Movie"
+      },
+      {
+        "id": "bulkmovies",
+        "label": "Bulk Add Movies"
+      },
+      {
+        "id": "episodes",
+        "label": "Add Episodes"
+      },
+      {
+        "id": "series",
+        "label": "Add Series"
+      },
+      {
+        "id": "franchise",
+        "label": "Add Franchise"
+      },
+      {
+        "id": "franchiseedit",
+        "label": "Franchise Editor"
+      },
+      {
+        "id": "sortorder",
+        "label": "Sort Order"
+      },
+      {
+        "id": "curated",
+        "label": "Curated Collections"
+      },
+      {
+        "id": "books",
+        "label": "Books"
+      }
+    ]
+  },
+  {
+    "label": "Media tools",
+    "items": [
+      {
+        "id": "scrape",
+        "label": "Scrape URL"
+      },
+      {
+        "id": "imagescrape",
+        "label": "Image Scraper"
+      },
+      {
+        "id": "masslinks",
+        "label": "Mass Links"
+      },
+      {
+        "id": "protected-sources",
+        "label": "Protected Sources"
+      }
+    ]
+  },
+  {
+    "label": "Reports & analytics",
+    "items": [
+      {
+        "id": "catalog-analytics",
+        "label": "Viewing Analytics"
+      },
+      {
+        "id": "catalog-health",
+        "label": "Catalog Health"
+      },
+      {
+        "id": "playback-reports",
+        "label": "Playback Reports"
+      },
+      {
+        "id": "media-intelligence",
+        "label": "Media Intelligence"
+      }
+    ]
+  },
+  {
+    "label": "Users & support",
+    "items": [
+      {
+        "id": "users",
+        "label": "Users"
+      },
+      {
+        "id": "requests",
+        "label": "Requests"
+      },
+      {
+        "id": "emails",
+        "label": "Emails"
+      }
+    ]
+  },
+  {
+    "label": "Commerce & integrations",
+    "items": [
+      {
+        "id": "donations",
+        "label": "Donations"
+      },
+      {
+        "id": "billing",
+        "label": "Billing"
+      },
+      {
+        "id": "store",
+        "label": "Store & Downloads"
+      },
+      {
+        "id": "downloads",
+        "label": "Downloads"
+      },
+      {
+        "id": "perksphere",
+        "label": "Perk Sphere"
+      }
+    ]
+  }
+];
+
 export default function Admin() {
+  const [adminTab, setAdminTab] = useState("manage");
+  const activeSection = ADMIN_SECTIONS.find(section => section.items.some(item => item.id === adminTab));
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(null); // null = loading
   const [editingVideo, setEditingVideo] = useState(null);
@@ -199,35 +333,18 @@ export default function Admin() {
           </div>
         </div>
 
-        <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="bg-secondary flex-wrap h-auto gap-1 justify-start">
-            <TabsTrigger value="curated">Curated Collections</TabsTrigger>
-            <TabsTrigger value="catalog-analytics">Viewing Analytics</TabsTrigger>
-            <TabsTrigger value="catalog-health">Catalog Health</TabsTrigger>
-            <TabsTrigger value="playback-reports">Playback Reports</TabsTrigger>
-            <TabsTrigger value="media-intelligence">Media Intelligence</TabsTrigger>
-            <TabsTrigger value="upload">Add Movie</TabsTrigger>
-            <TabsTrigger value="bulkmovies">Bulk Add Movies</TabsTrigger>
-            <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
-            <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
-            <TabsTrigger value="imagescrape">Image Scraper</TabsTrigger>
-            <TabsTrigger value="protected-sources">Protected Sources</TabsTrigger>
-            <TabsTrigger value="masslinks">Mass Links</TabsTrigger>
-            <TabsTrigger value="series">Add Series</TabsTrigger>
-            <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
-            <TabsTrigger value="franchiseedit">Franchise Editor</TabsTrigger>
-            <TabsTrigger value="sortorder">Sort Order</TabsTrigger>
-            <TabsTrigger value="manage">Manage</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="donations">Donations</TabsTrigger>
-            <TabsTrigger value="billing">Billing</TabsTrigger>
-            <TabsTrigger value="books">Books</TabsTrigger>
-            <TabsTrigger value="store">Store & Downloads</TabsTrigger>
-            <TabsTrigger value="requests">Requests</TabsTrigger>
-            <TabsTrigger value="downloads">Downloads</TabsTrigger>
-            <TabsTrigger value="emails">Emails</TabsTrigger>
-            <TabsTrigger value="perksphere">Perk Sphere</TabsTrigger>
-          </TabsList>
+        <Tabs value={adminTab} onValueChange={setAdminTab} className="space-y-6">
+          <nav aria-label="Admin sections" className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {ADMIN_SECTIONS.map(section => <button type="button" key={section.label} aria-pressed={activeSection === section} onClick={() => setAdminTab(section.items[0].id)} className={`rounded-lg border px-3 py-3 text-sm font-semibold text-left transition ${activeSection === section ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>{section.label}</button>)}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label htmlFor="admin-tool" className="text-sm font-medium text-muted-foreground">{activeSection.label}</label>
+              <select id="admin-tool" value={adminTab} onChange={event => setAdminTab(event.target.value)} className="w-full sm:max-w-sm rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground">
+                {activeSection.items.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+            </div>
+          </nav>
 
           <TabsContent value="curated"><CuratedCollections /></TabsContent>
           <TabsContent value="catalog-analytics"><CatalogAnalytics /></TabsContent>
