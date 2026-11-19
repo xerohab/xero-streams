@@ -14,7 +14,9 @@ try{
  if(!Number.isSafeInteger(offset)||offset<0||offset>500000)return Response.json({error:'Invalid offset'},{status:400});
  if(b.action==='catalog'){
  const rows=await db.Video.list('id',500,offset);
- return Response.json({rows:rows.filter(v=>!v.is_adult&&!v.coming_soon&&typeof v.video_url==='string'&&v.video_url.startsWith('https://')).map(v=>({id:v.id,url:v.video_url,revision:v.updated_date||''})),next:rows.length===500?offset+500:null});
+ const eligible=rows.filter(v=>!v.is_adult&&!v.coming_soon),out=[];
+ for(let i=0;i<eligible.length;i+=50){const batch=eligible.slice(i,i+50);const missing=batch.filter(v=>!v.video_url);const sources=missing.length&&db.ProtectedMediaSource?await db.ProtectedMediaSource.filter({video_id:{$in:missing.map(v=>v.id)}},'id',100):[];for(const v of batch){const matches=sources.filter(s=>s.video_id===v.id);const url=v.video_url||(matches.length===1?matches[0].video_url:null);if(typeof url==='string'&&url.startsWith('https://'))out.push({id:v.id,url,revision:v.updated_date||''});}}
+ return Response.json({rows:out,next:rows.length===500?offset+500:null},{headers:{'Cache-Control':'no-store'}});
  }
  if(b.action==='results'&&Array.isArray(b.rows)&&b.rows.length<=100){
  let saved=0,skipped=0;
