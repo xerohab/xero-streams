@@ -1,3 +1,4 @@
+import ProtectedSources from "@/components/admin/ProtectedSources";
 import CatalogAnalytics from "@/components/admin/CatalogAnalytics";
 import CatalogHealth from "@/components/admin/CatalogHealth";
 import CuratedCollections from "@/components/admin/CuratedCollections";
@@ -210,6 +211,7 @@ export default function Admin() {
             <TabsTrigger value="episodes">Add Episodes</TabsTrigger>
             <TabsTrigger value="scrape">Scrape URL</TabsTrigger>
             <TabsTrigger value="imagescrape">Image Scraper</TabsTrigger>
+            <TabsTrigger value="protected-sources">Protected Sources</TabsTrigger>
             <TabsTrigger value="masslinks">Mass Links</TabsTrigger>
             <TabsTrigger value="series">Add Series</TabsTrigger>
             <TabsTrigger value="franchise">Add Franchise</TabsTrigger>
@@ -348,6 +350,7 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="protected-sources"><ProtectedSources /></TabsContent>
           <TabsContent value="masslinks">
             <Card className="bg-card border-border">
               <CardHeader>
