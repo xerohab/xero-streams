@@ -37,7 +37,7 @@ import ProfileSelect from '@/pages/ProfileSelect';
 function ProfileNotificationMonitor({userId}){const {activeProfile,loading}=useProfile()||{};return !loading&&activeProfile&&!activeProfile.is_kids?<BrowserNotificationMonitor userId={userId}/>:null;}
 function ProfileRouteGate(){
  const {user}=useAuth(),{activeProfile,loading}=useProfile()||{},location=useLocation();
- if(user&&loading)return <div className="min-h-screen flex items-center justify-center">Loading profile…</div>;
+ if(user&&loading)return <div className="fixed inset-0 bg-background" role="status" aria-label="Loading"><div className="h-0.5 w-full overflow-hidden bg-muted"><div className="h-full w-1/3 animate-pulse bg-primary"/></div></div>;
  if(user&&!activeProfile&&!["/privacy","/terms","/callback"].includes(location.pathname.toLowerCase()))return <Navigate to="/profiles" replace state={{from:location.pathname+location.search}}/>;
  if(activeProfile?.is_kids&&["/admin","/leaks","/leaks/section","/cast","/books","/dashboard","/franchise","/donate"].includes(location.pathname.toLowerCase().replace(/\/+$/,"")))return <Navigate to="/" replace/>;
  if(activeProfile?.is_kids&&location.pathname.toLowerCase().startsWith("/dl/"))return <Navigate to="/" replace/>;
