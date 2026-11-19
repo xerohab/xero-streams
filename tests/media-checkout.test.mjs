@@ -16,7 +16,7 @@ test('media checkout grants only the bound item after verified capture and suppo
  user={id:'other'};assert.equal((await call()).status,409);assert.equal(calls,0);
  user={id:'u'};amount='0.01';assert.equal((await call()).status,409);assert.equal(purchases.length,0);
  amount='4.99';custom='wrong';assert.equal((await call()).status,409);assert.equal(purchases.length,0);
- custom='XEROMEDIA:binding';assert.equal((await call()).status,200);assert.equal((await call()).status,200);
+ custom='XEROMEDIA:binding';assert.deepEqual((await Promise.all([call(),call()])).map(r=>r.status),[200,200]);
  assert.equal(purchases.length,1);assert.equal(purchases[0].video_id,'video');assert.equal(purchases[0].user_id,'u');
  }finally{globalThis.fetch=original;}
 });
