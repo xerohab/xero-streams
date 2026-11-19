@@ -2,13 +2,19 @@
 import argparse, array, json, math, subprocess, sqlite3, statistics, os, time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
+FORMATS={'.mp4':'mov','.m4v':'mov','.mov':'mov','.mkv':'matroska','.webm':'matroska'}
+def local_source(url,media_root):
+    source=Path(url).resolve(strict=True)
+    if not source.is_relative_to(media_root) or not source.is_file() or source.suffix.lower() not in FORMATS:raise ValueError('Unsupported local media')
+    return source
+
 def fingerprint(url, media_root, tail=False):
     # Only pre-staged local media. Remote ingestion needs a separately isolated fetcher.
-    source=Path(url).resolve(strict=True)
-    if not source.is_relative_to(media_root) or not source.is_file(): raise ValueError('Media outside approved local directory')
-    raw=subprocess.run(['ffmpeg','-nostdin','-v','error','-threads','1','-protocol_whitelist','file',*(['-sseof','-240'] if tail else []),'-i',str(source),'-t','240','-vn','-ac','1','-ar','1000','-f','s16le','-'],capture_output=True,timeout=180,check=True).stdout
+    source=local_source(url,media_root)
+    raw=subprocess.run(['ffmpeg','-nostdin','-v','error','-threads','1','-protocol_whitelist','file','-f',FORMATS[source.suffix.lower()],*(['-sseof','-240'] if tail else []),'-i',str(source),'-t','240','-vn','-ac','1','-ar','1000','-f','s16le','-'],capture_output=True,timeout=180,check=True).stdout
     a=array.array('h',raw)
-    return [math.log1p(sum(abs(x) for x in a[i:i+100])/100) for i in range(0,len(a)-100,100)]
+    if len(a)<15000:raise ValueError('Insufficient audio')
+    return [math.log1p(sum(abs(x) for x in a[i:i+100])/100) for i in range(0,len(a)-99,100)]
 def match(a,b):
     best=(0,None)
     for offset in range(-900,901,2):
@@ -57,13 +63,17 @@ def main():
     if not isinstance(rows,list) or any(not isinstance(r,dict) or not all(isinstance(r.get(k),str) and r[k] for k in ('id','series_id','url','revision')) for r in rows):raise ValueError('Invalid manifest')
     if len({r['id'] for r in rows})!=len(rows):raise ValueError('Duplicate episode IDs')
     current={r['id']:r for r in rows}
+    db.execute('create table if not exists source_cache(id text primary key, signature text)')
     os.nice(15)
     for r in rows:
         if (ROOT/'pause').exists():return
         try:
+            source=local_source(r['url'],media_root)
+            st=source.stat();signature=json.dumps([str(source),st.st_size,st.st_mtime_ns,r['series_id'],'v2'])
+            cached=db.execute('select signature from source_cache where id=?',(r['id'],)).fetchone()
             old=db.execute('select data from fingerprints where id=? and revision=?',(r['id'],r.get('revision',''))).fetchone()
-            if not old:
-                fp=fingerprint(r['url'],media_root);db.execute('insert or replace into fingerprints values(?,?,?,?)',(r['id'],r.get('revision',''),r['series_id'],json.dumps(fp)));db.commit()
+            if not old or not cached or cached[0]!=signature:
+                fp=fingerprint(r['url'],media_root);db.execute('insert or replace into fingerprints values(?,?,?,?)',(r['id'],r.get('revision',''),r['series_id'],json.dumps(fp)));db.execute('insert or replace into source_cache values(?,?)',(r['id'],signature));db.commit()
         except Exception as e:
             db.execute('delete from fingerprints where id=?',(r['id'],))
             db.execute('insert or replace into results values(?,?)',(r['id'],json.dumps({'status':'failed','error':type(e).__name__})));db.commit()
@@ -73,7 +83,7 @@ def main():
         if not cur:continue
         a=json.loads(cur[0]);peers=[]
         for peer_id,revision,data in db.execute('select id,revision,data from fingerprints where series=? and id!=? order by id',(r['series_id'],r['id'])):
-            if peer_id in current and current[peer_id]['revision']==revision:
+            if peer_id in current and current[peer_id]['revision']==revision and current[peer_id]['series_id']==r['series_id']:
                 peers.append((data,))
                 if len(peers)>=8:break
         hits=[m for peer in peers if (m:=match(a,json.loads(peer[0])))]
@@ -88,16 +98,15 @@ def main():
         for r in rows:
             if (ROOT/'pause').exists():return
             try:
-                source=Path(r['url']).resolve(strict=True)
-                if not source.is_relative_to(media_root) or not source.is_file():continue
-                duration=float(subprocess.run(['ffprobe','-v','error','-protocol_whitelist','file','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',str(source)],capture_output=True,text=True,timeout=30,check=True).stdout)
+                source=local_source(r['url'],media_root)
+                duration=float(subprocess.run(['ffprobe','-v','error','-protocol_whitelist','file','-f',FORMATS[source.suffix.lower()],'-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',str(source)],capture_output=True,text=True,timeout=30,check=True).stdout)
                 if math.isfinite(duration) and duration>=240:tails[r['id']]=(fingerprint(r['url'],media_root,True),duration)
             except (ValueError,OSError,subprocess.SubprocessError):continue
         for r in rows:
             if (ROOT/'pause').exists():return
             if r['id'] not in tails:continue
             a,duration=tails[r['id']];peers=[tails[v['id']][0] for v in rows if v['id']!=r['id'] and v['series_id']==r['series_id'] and v['id'] in tails][:8]
-            candidate=credits_candidate(a,peers,duration)
+            candidate=credits_candidate(a,peers,duration) if args.credits else None
             if args.credits and candidate:credits.append({'id':r['id'],'revision':r['revision'],**candidate})
     recaps=[]
     if args.recaps:
