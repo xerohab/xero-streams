@@ -6,11 +6,13 @@ import { getCatalogMedia, getItemActivityAt } from "@/lib/activityUtils";
 import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 
 export default function useHomeCatalog() {
-  const profile = useProfile()?.activeProfile;
+  const context = useProfile();
+  const profile = context?.activeProfile;
+  const pending = Boolean(context?.loading || (context?.user && !profile));
   const kids = Boolean(profile?.is_kids);
-  const { data: videos = [], isLoading: loadingVideos } = useQuery(mediaCatalogueQuery(base44, "videos", kids ? profile.id : null));
-  const { data: series = [], isLoading: loadingSeries } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
-  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: loadingVideos } = useQuery({ ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null, pending), enabled: !pending });
+  const { data: series = [], isLoading: loadingSeries } = useQuery({ ...mediaCatalogueQuery(base44, "series", kids ? profile.id : null, pending), enabled: !pending });
+  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !pending && !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: user } = useQuery({ queryKey: ["current_user"], queryFn: () => base44.auth.me().catch(() => null), staleTime: 0 });
   const rows = user?.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
   const safeVideos = videos.filter((v) => !v.is_adult && (!kids||allowsKidsContent(v)));
@@ -35,5 +37,5 @@ export default function useHomeCatalog() {
     })
     .slice(0, 5);
 
-  return { user, rows, isLoading: loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises:kids?[]:franchises, latest, tv, movies, movieFranchises, tvFranchises };
+  return { user, rows, isLoading: pending || loadingVideos || loadingSeries || loadingFranchises, heroSlides, videos: safeVideos, series: safeSeries, franchises:kids?[]:franchises, latest, tv, movies, movieFranchises, tvFranchises };
 }
