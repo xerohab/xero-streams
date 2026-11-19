@@ -156,6 +156,7 @@ export function ProfileProvider({ children }) {
     if (!profileAccess || !activeProfile) return;
     const timer = window.setTimeout(() => {
       generation.current++;
+      setLoading(false);
       setProfileAccess(null);
       setActiveProfileState(null);
       setPlaybackProfile(null);
@@ -245,6 +246,7 @@ export function ProfileProvider({ children }) {
       setProfileAccess(null);
     localStorage.removeItem(ACTIVE_KEY);
     setPlaybackProfile(null);
+    window.dispatchEvent(new Event('xero-profile-changed'));
   }, []);
 
   const value = {
