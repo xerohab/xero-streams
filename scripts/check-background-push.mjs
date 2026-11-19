@@ -14,12 +14,20 @@ const server=createServer((req,res)=>{
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const origin='http://127.0.0.1:'+server.address().port;
 const profile=await mkdtemp(join(tmpdir(),'xero-chromium-'));
-const browser=spawn(process.env.CHROMIUM_BIN || 'chromium',['--headless=new','--no-sandbox','--no-first-run','--disable-background-networking','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','inherit']});
+const browser=spawn(process.env.CHROMIUM_BIN || 'chromium',['--headless=new','--no-sandbox','--no-first-run','--disable-background-networking','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
+let announcedPort;
+let startupLog='';
+browser.stderr.on('data',chunk=>{
+ const line=chunk.toString();process.stderr.write(line);
+ startupLog=(startupLog+line).slice(-8192);
+ const match=startupLog.match(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//);
+ if(match)announcedPort=match[1];
+});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let ws;
 try {
  let port;
- for(let i=0;i<200&&!port;i++){try{port=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];}catch{await sleep(100);}}
+ for(let i=0;i<400&&!port;i++){if(browser.exitCode!==null)break;try{port=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];}catch{port=announcedPort;if(!port)await sleep(100);}}
  assert.ok(port, 'Chromium did not expose its local debugging port');
  const endpoint=await (await fetch('http://127.0.0.1:'+port+'/json/version')).json();
  ws=new WebSocket(endpoint.webSocketDebuggerUrl);

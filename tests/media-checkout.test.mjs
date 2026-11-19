@@ -13,6 +13,7 @@ test('media checkout grants only the bound item after verified capture and suppo
  globalThis.fetch=async url=>{calls++;return Response.json(url.endsWith('/token')?{access_token:'test'}:{id:'order',status:'COMPLETED',purchase_units:[{custom_id:custom,amount:{currency_code:'GBP',value:'4.99'},payments:{captures:[{id:'capture',status:'COMPLETED',amount:{currency_code:'GBP',value:amount}}]}}]});};
  const call=()=>handler(new Request('https://example.test',{method:'POST',body:JSON.stringify({action:'capture',orderId:'order'})}));
  try{
+ user={id:'u',is_banned:true};assert.equal((await call()).status,401);assert.equal(calls,0);
  user={id:'other'};assert.equal((await call()).status,409);assert.equal(calls,0);
  user={id:'u'};amount='0.01';assert.equal((await call()).status,409);assert.equal(purchases.length,0);
  amount='4.99';custom='wrong';assert.equal((await call()).status,409);assert.equal(purchases.length,0);
