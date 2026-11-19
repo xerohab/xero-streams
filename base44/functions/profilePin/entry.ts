@@ -1,5 +1,10 @@
 import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
 const hex=(a:Uint8Array)=>Array.from(a,x=>x.toString(16).padStart(2,'0')).join('');
+function equalDigest(a:string,b:string){
+ if(typeof b!=='string'||a.length!==b.length)return false;
+ let diff=0;for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i);
+ return diff===0;
+}
 async function digest(pin:string,salt:string){
  const enc=new TextEncoder(),key=await crypto.subtle.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveBits']);
  return hex(new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:enc.encode(salt),iterations:600000},key,256)));
@@ -22,7 +27,7 @@ try{
  if(b.action==='set'&&(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin)))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
  if(row){
  if(Number(row.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
- const valid=typeof b.pin==='string'&&/^\d{4,8}$/.test(b.pin)&&await digest(b.pin,row.salt)===row.digest;
+ const valid=typeof b.pin==='string'&&/^\d{4,8}$/.test(b.pin)&&equalDigest(await digest(b.pin,row.salt),row.digest);
  if(!valid){const failures=(row.failures||0)+1;await db.ProfilePin.update(row.id,{failures:failures>=5?0:failures,locked_until:failures>=5?Date.now()+900000:0});return Response.json({error:'Incorrect PIN'},{status:403});}
  await db.ProfilePin.update(row.id,{failures:0,locked_until:0});
  }
