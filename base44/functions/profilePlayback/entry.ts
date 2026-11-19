@@ -24,10 +24,16 @@ if(b.action==='catalogue'){
  const rows=await entity.list('id',500,b.offset);
  const visible=[];
  if(b.kind==='series')visible.push(...rows.filter(allowed));
- else for(let i=0;i<rows.length;i+=12){
-  const batch=rows.slice(i,i+12);
-  const approved=await Promise.all(batch.map(allowedVideo));
-  visible.push(...batch.filter((_,index)=>approved[index]));
+ else {
+  const rated=rows.filter(allowed);
+  const parentIds=[...new Set(rated.map(video=>video.series_id).filter(Boolean))];
+  const approvedParents=new Set<string>();
+  for(let i=0;i<parentIds.length;i+=100){
+   const ids=parentIds.slice(i,i+100);
+   const parents=await base.entities.Series.filter({id:{$in:ids}},'id',ids.length);
+   for(const parent of parents.filter(allowed))approvedParents.add(parent.id);
+  }
+  visible.push(...rated.filter(video=>!video.series_id||approvedParents.has(video.series_id)));
  }
  return Response.json({rows:visible,next:rows.length===500?b.offset+500:null});
 }

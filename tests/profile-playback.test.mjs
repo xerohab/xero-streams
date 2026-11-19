@@ -51,8 +51,9 @@ test('Kids profiles exclude episodes whose parent series is restricted or missin
  entities.Video.list=async()=>episodes;
  entities.Video.filter=async q=>episodes.filter(item=>item.id===q.id);
  entities.Series={filter:async({id})=>{
-  calls.push(id);
-  return id==='missing'?[]:[{id,age_rating:id==='restricted'?'18':'PG'}];
+  const ids=typeof id==='string'?[id]:id.$in;
+  calls.push(...ids);
+  return ids.filter(value=>value!=='missing').map(value=>({id:value,age_rating:value==='restricted'?'18':'PG'}));
  }};
  const response=await call({action:'catalogue',kind:'videos',offset:0});
  assert.equal(response.status,200);
