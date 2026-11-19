@@ -203,7 +203,7 @@ export default function Watch() {
       return result.data;
     }
   });
-  const playbackSource = profilePending ? null : kids ? approvedSource?.source : video?.video_url;
+  const playbackSource = profilePending || (video?.is_for_sale && !isPurchased && user?.role !== 'admin') ? null : kids ? approvedSource?.source : video?.video_url;
   const playbackSubtitles = kids ? approvedSource?.subtitles : video?.subtitles;
 
   // HLS hook — stop local playback when cast overlay is open
