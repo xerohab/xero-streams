@@ -44,3 +44,10 @@ test('pending viewing profiles never use unrestricted cached catalogue keys',asy
  assert.notDeepEqual(pending.queryKey,mediaCatalogueQuery({entities:{}},'videos',null).queryKey);
  assert.deepEqual(await pending.queryFn(),[]);
 });
+
+test('Kids catalogue rejects duplicate identities across pages and missing identities',async()=>{
+ const client={entities:{},functions:{invoke:async(_,b)=>({data:{rows:[{id:'same'}],next:b.offset===0?500:null}})}};
+ await assert.rejects(mediaCatalogueQuery(client,'videos','kid').queryFn,/Repeated or invalid Kids/);
+ client.functions.invoke=async()=>({data:{rows:[{}],next:null}});
+ await assert.rejects(mediaCatalogueQuery(client,'videos','kid').queryFn,/Repeated or invalid Kids/);
+});
