@@ -1,3 +1,4 @@
+import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -179,7 +180,7 @@ export default function BulkEpisodeUpload({ seriesList, isMovieMode = false, onS
     let failedAnnouncements = 0;
     for (const record of records) {
       const startedAt = Date.now();
-      const created = await base44.entities.Video.create(record);
+      const created = await createAdminVideo(record);
       const saved = await resolveCreatedRelease("Video", created, record, startedAt);
       const ok = await announceNewRelease(record.content_type || "episode", saved);
       if (ok) announcedCount++;
