@@ -140,6 +140,8 @@
     "recap_end": {
       "type": "number"
     },
+    "credits_start": {"type":"number"},
+    "credits_end": {"type":"number"},
     "views": {
       "type": "number",
       "default": 0
