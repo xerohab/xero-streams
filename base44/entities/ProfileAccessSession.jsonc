@@ -1,0 +1,49 @@
+{
+  "name": "ProfileAccessSession",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "profile_id": {
+      "type": "string"
+    },
+    "token_digest": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "number"
+    },
+    "pin_digest": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "profile_id",
+    "token_digest",
+    "expires_at"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    }
+  }
+}
