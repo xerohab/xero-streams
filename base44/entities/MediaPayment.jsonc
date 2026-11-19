@@ -1,0 +1,64 @@
+{
+  "name": "MediaPayment",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "item_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "request_reference": {
+      "type": "string"
+    },
+    "order_id": {
+      "type": "string"
+    },
+    "capture_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "item_id",
+    "kind",
+    "format",
+    "amount",
+    "status",
+    "request_reference"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    }
+  }
+}
