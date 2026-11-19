@@ -100,3 +100,20 @@ test('verification rejects a PIN replaced or locked while the request is in flig
   else assert.ok(rows[0].locked_until>Date.now());
  }
 });
+
+
+test('concurrent incorrect PIN attempts are serialized and lock the account',async()=>{
+ const {rows}=setup();
+ assert.equal((await call({action:'set',new_pin:'1234'})).status,200);
+ const attempts=await Promise.all(Array.from({length:6},()=>call({action:'verify',pin:'0000'})));
+ assert.equal(attempts.filter(r=>r.status===403).length,5);
+ assert.equal(attempts.filter(r=>r.status===429).length,1);
+ assert.ok(rows[0].locked_until>Date.now());
+});
+
+test('simultaneous recovery requests send one email in a warm runtime',async()=>{
+ const {emails}=setup({user:{id:'u',email:'owner@example.test',email_verified:true}});
+ const results=await Promise.all([call({action:'request_recovery',new_pin:'1234'}),call({action:'request_recovery',new_pin:'5678'})]);
+ assert.deepEqual(results.map(r=>r.status).sort(),[200,429]);
+ assert.equal(emails.length,1);
+});
