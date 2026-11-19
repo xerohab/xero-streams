@@ -35,3 +35,12 @@ test('full catalogue reads all pages and rejects a repeated page', async () => {
  await assert.rejects(loadMediaRecords({list:async()=>records.slice(0,2)},'id',2),/Repeated or invalid/);
  await assert.rejects(loadMediaRecords({list:async()=>null},'id',2),/Invalid catalogue page/);
 });
+
+
+test('pending viewing profiles never use unrestricted cached catalogue keys',async()=>{
+ const client={};
+ const pending=mediaCatalogueQuery(client,'videos',null,true);
+ assert.equal(pending.enabled,false);
+ assert.notDeepEqual(pending.queryKey,mediaCatalogueQuery({entities:{}},'videos',null).queryKey);
+ assert.deepEqual(await pending.queryFn(),[]);
+});
