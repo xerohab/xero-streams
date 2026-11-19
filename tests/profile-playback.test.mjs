@@ -102,3 +102,17 @@ test('duplicate progress rows do not permit ambiguous writes',async()=>{
  const rows=setup();rows.push({...rows[0],id:'duplicate'});
  assert.equal((await call({action:'save',video_id:'adult',state:'removed'})).status,409);
 });
+
+test('ambiguous parent ratings and duplicate video identities fail closed',async()=>{
+ setup();
+ const entities=globalThis.__testClient.entities;
+ const video={id:'safe',series_id:'parent',age_rating:'PG',video_url:'https://media.example.test/source'};
+ entities.Video.list=async()=>[video];
+ entities.Video.filter=async()=>[video];
+ entities.Series={filter:async()=>[{id:'parent',age_rating:'PG'},{id:'parent',age_rating:'18'}]};
+ assert.equal((await call({action:'source',video_id:'safe'})).status,404);
+ assert.deepEqual((await (await call({action:'catalogue',kind:'videos',offset:0})).json()).rows,[]);
+ entities.Video.filter=async()=>[video,video];
+ assert.equal((await call({action:'source',video_id:'safe'})).status,404);
+ assert.equal((await handler(new Request('https://example.test'))).status,405);
+});
