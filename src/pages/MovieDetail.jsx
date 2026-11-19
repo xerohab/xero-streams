@@ -24,7 +24,9 @@ import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 const OUTLINE_BTN = "xero-action px-5";
 
 export default function MovieDetail() {
-  const profile = useProfile()?.activeProfile;
+  const context = useProfile();
+  const profile = context?.activeProfile;
+  const pending = Boolean(context?.loading || (context?.user && !profile));
   const kids = Boolean(profile?.is_kids);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -54,7 +56,7 @@ export default function MovieDetail() {
   });
 
   const { data: kidsVideos = [], isLoading: kidsLoading } = useQuery({
-    ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null), enabled: kids,
+    ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null, pending), enabled: !pending && kids,
   });
   const { data: directVideo, isLoading: directLoading } = useQuery({
     queryKey: ["video", videoId],
@@ -62,19 +64,19 @@ export default function MovieDetail() {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
     },
-    enabled: !kids && !!videoId,
+    enabled: !pending && !kids && !!videoId,
   });
 
-  const video = kids ? kidsVideos.find(item => item.id === videoId) : directVideo;
+  const video = pending ? null : kids ? kidsVideos.find(item => item.id === videoId) : directVideo;
   const isLoading = kids ? kidsLoading : directLoading;
 
-  const { data: directFranchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !kids && !!video?.franchise_id });
+  const { data: directFranchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !pending && !kids && !!video?.franchise_id });
 
   const franchise = kids ? null : directFranchise;
 
   const { data: movieCatalog = [] } = useQuery({
     queryKey: ["movies_more_like_this"],
-    enabled: !kids,
+    enabled: !pending && !kids,
     queryFn: () => base44.entities.Video.filter({ content_type: "movie", is_adult: false }, "-updated_date", 120),
   });
   
@@ -125,7 +127,7 @@ export default function MovieDetail() {
     }
   }, [video?.id]);
 
-  if (isLoading) {
+  if (pending || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
