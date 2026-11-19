@@ -38,16 +38,24 @@
   ],
   "rls": {
     "create": {
-      "service_role_only": true
+      "user_condition": {
+        "role": "service_only"
+      }
     },
     "read": {
-      "service_role_only": true
+      "user_condition": {
+        "role": "service_only"
+      }
     },
     "update": {
-      "service_role_only": true
+      "user_condition": {
+        "role": "service_only"
+      }
     },
     "delete": {
-      "service_role_only": true
+      "user_condition": {
+        "role": "service_only"
+      }
     }
   }
 }
