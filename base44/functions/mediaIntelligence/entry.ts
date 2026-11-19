@@ -12,15 +12,19 @@ export default async function(req:Request){
  return Response.json({rows:rows.filter(v=>v.series_id&&!v.coming_soon&&v.video_url&&!v.is_adult).map(v=>({id:v.id,series_id:v.series_id,season_number:v.season_number,episode_number:v.episode_number,url:v.video_url,revision:v.updated_date})),next:rows.length===500?(Number(b.offset)||0)+500:null});
  }
  if(b.action==='approve'&&u?.role==='admin'&&!u.is_banned){
- const kind=b.kind??'intro';
- if(!['intro','recap','credits'].includes(kind))return Response.json({error:'Invalid segment'},{status:400});
- const start=b[kind+'_start'],end=b[kind+'_end'];
+ const segments=b.segments===undefined?[{kind:b.kind??'intro',start:b[(b.kind??'intro')+'_start'],end:b[(b.kind??'intro')+'_end']}]:b.segments;
+ if(!Array.isArray(segments)||segments.length<1||segments.length>3)return Response.json({error:'Invalid segments'},{status:400});
+ const fields:Record<string,number>={},seen=new Set();
+ for(const segment of segments){const {kind,start,end}=segment??{};
+ if(!['intro','recap','credits'].includes(kind)||seen.has(kind))return Response.json({error:'Invalid segment'},{status:400});
+ if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>(kind==='credits'?604800:240))return Response.json({error:'Invalid timestamps'},{status:400});
+ seen.add(kind);fields[kind+'_start']=start;fields[kind+'_end']=end;
+ }
  if(typeof b.id!=='string'||!b.id)return Response.json({error:'Invalid title'},{status:400});
  const v=(await db.Video.filter({id:b.id}))[0];
  if(!v||v.content_type!=='episode'||v.is_adult||v.coming_soon)return Response.json({error:'Unavailable episode'},{status:404});
- if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>(kind==='credits'?604800:240))return Response.json({error:'Invalid timestamps'},{status:400});
  if(typeof b.revision!=='string'||!b.revision||b.revision!==v.updated_date)return Response.json({error:'Episode changed; rescan before approving'},{status:409});
- await db.Video.update(b.id,{[kind+'_start']:start,[kind+'_end']:end});return Response.json({ok:true});
+ await db.Video.update(b.id,fields);return Response.json({ok:true});
  }
  return Response.json({error:'Unknown action'},{status:400});
 }
