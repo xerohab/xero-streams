@@ -3,10 +3,10 @@ export default async function(req:Request){
  try{
  const base=createClientFromRequest(req),db=base.asServiceRole.entities;
  const user=await base.auth.me().catch(()=>null);
- if(!user)return Response.json({error:'Sign in required'},{status:401});
+ if(!user||user.is_banned)return Response.json({error:'Sign in required'},{status:401});
  const b=await req.json();
  const video=(await base.entities.Video.filter({id:b.video_id}))[0];
- if(!video||video.is_adult||video.coming_soon||!video.video_url)return Response.json({error:'Unavailable'},{status:403});
+ if(!video||video.is_adult||video.is_for_sale||video.coming_soon||!(video.has_playback||video.video_url))return Response.json({error:'Unavailable'},{status:403});
  if(b.action==='create'){
  const start=b.start_at?Date.parse(b.start_at):Date.now();
  if(!Number.isFinite(start)||start<Date.now()-60000||start>Date.now()+30*86400000)return Response.json({error:'Choose a start within 30 days'},{status:400});
