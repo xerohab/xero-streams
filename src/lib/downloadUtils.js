@@ -86,7 +86,7 @@ export async function downloadSeriesZip(type, id, title, onProgress) {
   const query = type === "series" ? { series_id: id } : { franchise_id: id };
   const videos = await base44.entities.Video.filter(query, "sort_order");
 
-  const downloadable = videos.filter((v) => v.video_url && !v.coming_soon);
+  const downloadable = videos.filter((v) => (v.has_playback || v.video_url || v.download_url) && !v.coming_soon);
   if (downloadable.length === 0) {
     throw new Error("No downloadable episodes found.");
   }
