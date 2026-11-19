@@ -102,7 +102,7 @@ export default function FranchiseDetail() {
   for (let i = 0; i < allFranchises.length; i++) for (const f of allFranchises) if (ids.has(f.parent_id)) ids.add(f.id);
   const seasons = allSeries.filter(s => ids.has(s.franchise_id) && !s.is_adult);
   const seasonMap = new Map(seasons.map(s => [s.id,s]));
-  const playable = allVideos.filter(v => !v.is_adult && !v.coming_soon && v.video_url && (v.series_id ? seasonMap.has(v.series_id) : ids.has(v.franchise_id)));
+  const playable = allVideos.filter(v => !v.is_adult && !v.coming_soon && (v.has_playback || v.video_url) && (v.series_id ? seasonMap.has(v.series_id) : ids.has(v.franchise_id)));
   const release = v => Date.parse(v.release_date || seasonMap.get(v.series_id)?.release_year || v.release_year || "") || Infinity;
   const ordered = [...playable].sort((a,b) => order === "release" ? (release(a)-release(b) || a.title.localeCompare(b.title)) : ((seasonMap.get(a.series_id)?.sort_order ?? a.sort_order ?? 0) - (seasonMap.get(b.series_id)?.sort_order ?? b.sort_order ?? 0) || (a.episode_number || 0)-(b.episode_number || 0) || a.title.localeCompare(b.title)));
   const watched = new Set(getWatched());
