@@ -1,3 +1,4 @@
+import {verifyProfileAccess} from '../../shared/profileAccess.ts';
 import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
 const catalogueFields=[
  'id','title','description','thumbnail_url','cover_image','backdrop_url','series_id','franchise_id',
@@ -55,10 +56,11 @@ if(b.action==='catalogue'){
  return Response.json({rows:rowsWithoutSources,next:rows.length===500?b.offset+500:null});
 }
 if(b.action==='source'){
- if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
+ if(!profile.is_kids&&!(await verifyProfileAccess(db,u.id,b.profile_id,b.access_token)))return Response.json({error:'Profile unlock required'},{status:403});
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
  const v=await findVideo(b.video_id);
  if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
+ if(!profile.is_kids&&v.is_adult&&u.role!=='admin'&&u.age_verified!==true&&u.is_age_verified!==true)return Response.json({error:'Age verification required'},{status:403});
  // Paid titles must not bypass entitlement checks through the Kids endpoint.
  if(v.is_for_sale){
   const purchases=await db.VideoPurchase.filter({user_id:u.id,video_id:v.id,status:'completed'});
