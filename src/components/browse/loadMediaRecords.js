@@ -28,12 +28,17 @@ export function mediaCatalogueQuery(client, kind, kidsProfileId, pending = false
     queryKey: ["kids_catalogue", kidsProfileId, kind],
     queryFn: async () => {
       const rows = [];
+      const seen = new Set();
       for (let offset = 0; offset <= 500000; offset += 500) {
         const { data } = await client.functions.invoke("profilePlayback", {
           action: "catalogue", profile_id: kidsProfileId, kind, offset,
         });
         if (!Array.isArray(data?.rows) || data.rows.length > 500) throw new Error("Invalid catalogue page");
-        rows.push(...data.rows);
+        for (const row of data.rows) {
+          if (!row?.id || seen.has(row.id)) throw new Error('Repeated or invalid Kids catalogue record');
+          seen.add(row.id);
+          rows.push(row);
+        }
         if (data.next === null) return rows;
         if (data.next !== offset + 500) throw new Error("Invalid catalogue offset");
       }
