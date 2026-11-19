@@ -1,3 +1,4 @@
+import { ensurePushSubscription, removeLocalPushSubscription } from "@/lib/browserPushSubscription";
 import {deviceId,heartbeatDevice} from "@/lib/deviceSession";
 import React,{useEffect,useState,useRef} from "react";
 import {base44} from "@/api/base44Client";
@@ -34,8 +35,31 @@ export default function BrowserNotifications({userId}){
  const generation=useRef(0);
  const [background,setBackground]=useState(false),[busy,setBusy]=useState(false);
  useEffect(()=>{let active=true;const version=++generation.current;setBackground(false);setStatus("");if(userId&&supported&&"PushManager" in window){(async()=>{try{const reg=await navigator.serviceWorker.getRegistration();const sub=await reg?.pushManager?.getSubscription();const r=await base44.functions.invoke("browserPush",{action:"status",device_id:deviceId(),endpoint:sub?.endpoint});if(active&&version===generation.current)setBackground(!!sub&&r.data?.registered===true);}catch{}})();}return()=>{active=false;};},[userId,supported]);
- const enableBackground=async()=>{if(busy)return;++generation.current;setBusy(true);try{if(await Notification.requestPermission()!=="granted"){setStatus("Notification permission was not granted.");return;}const config=await base44.functions.invoke("browserPush",{action:"config"});if(!config.data?.enabled){setStatus("Background push is not configured yet.");return;}const reg=await navigator.serviceWorker.getRegistration();if(!reg?.active||!reg.pushManager){setStatus("Notification service is not ready. Reload and try again.");return;}if(await heartbeatDevice())throw Error("Revoked");const key=config.data.public_key.replace(/-/g,"+").replace(/_/g,"/");const bytes=Uint8Array.from(atob(key.padEnd(Math.ceil(key.length/4)*4,"=")),c=>c.charCodeAt(0));const sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes});const result=await base44.functions.invoke("browserPush",{action:"register",device_id:deviceId(),subscription:sub.toJSON()});if(result.data?.ok!==true)throw Error("Registration failed");setBackground(true);setStatus("Background subscription registered; delivery depends on server configuration.");}catch{setStatus("Background notification registration failed.");}finally{setBusy(false);}};
- const disableBackground=async()=>{if(busy)return;++generation.current;setBusy(true);try{const result=await base44.functions.invoke("browserPush",{action:"remove",device_id:deviceId()});if(result.data?.ok!==true)throw Error("Removal failed");const reg=await navigator.serviceWorker.getRegistration();await (await reg?.pushManager?.getSubscription())?.unsubscribe();setBackground(false);setStatus("Background notifications disabled.");}catch{setStatus("Unable to remove background notifications.");}finally{setBusy(false);}};
+ const enableBackground=async()=>{if(busy)return;++generation.current;setBusy(true);try{if(await Notification.requestPermission()!=="granted"){setStatus("Notification permission was not granted.");return;}const config=await base44.functions.invoke("browserPush",{action:"config"});if(!config.data?.enabled){setStatus("Background push is not configured yet.");return;}const reg=await navigator.serviceWorker.getRegistration();if(!reg?.active||!reg.pushManager){setStatus("Notification service is not ready. Reload and try again.");return;}if(await heartbeatDevice())throw Error("Revoked");const key=config.data.public_key.replace(/-/g,"+").replace(/_/g,"/");const bytes=Uint8Array.from(atob(key.padEnd(Math.ceil(key.length/4)*4,"=")),c=>c.charCodeAt(0));const sub=await ensurePushSubscription(reg.pushManager,bytes);const result=await base44.functions.invoke("browserPush",{action:"register",device_id:deviceId(),subscription:sub.toJSON()});if(result.data?.ok!==true)throw Error("Registration failed");setBackground(true);setStatus("Background subscription registered; delivery depends on server configuration.");}catch{setStatus("Background notification registration failed.");}finally{setBusy(false);}};
+ const disableBackground = async () => {
+   if (busy) return;
+   ++generation.current;
+   setBusy(true);
+   const [remote, local] = await Promise.allSettled([
+     (async () => {
+       const result = await base44.functions.invoke("browserPush", { action: "remove", device_id: deviceId() });
+       if (result.data?.ok !== true) throw new Error("Removal failed");
+     })(),
+     (async () => {
+       const registration = await navigator.serviceWorker.getRegistration();
+       await removeLocalPushSubscription(registration?.pushManager);
+     })(),
+   ]);
+   if (remote.status === "fulfilled" || local.status === "fulfilled") setBackground(false);
+   if (remote.status === "fulfilled" && local.status === "fulfilled") {
+     setStatus("Background notifications disabled.");
+   } else if (remote.status === "fulfilled" || local.status === "fulfilled") {
+     setStatus("Delivery is disabled. Retry to finish removing the subscription.");
+   } else {
+     setStatus("Unable to remove background notifications.");
+   }
+   setBusy(false);
+ };
  const toggle=async()=>{
  if(enabled){localStorage.removeItem(key(userId));setEnabled(false);return;}
  try{

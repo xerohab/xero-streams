@@ -41,6 +41,10 @@ def main():
     if not isinstance(rows,list) or any(not isinstance(r,dict) or not isinstance(r.get("id"),str) or not isinstance(r.get("url"),str) for r in rows): p.error("Invalid manifest")
     allowed={h.lower() for h in a.allow_host}
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        results=list(pool.map(lambda r:check(r,allowed),rows))
+        results=[]
+        for result in pool.map(lambda row: check(row, allowed), rows):
+            results.append(result)
+            if len(results) % 250 == 0 or len(results) == len(rows):
+                print(f"Checked {len(results)} of {len(rows)} stream links", flush=True)
     target=Path(a.output);tmp=target.with_suffix(".tmp");tmp.write_text(json.dumps(results,indent=2));tmp.replace(target)
 if __name__=="__main__":main()

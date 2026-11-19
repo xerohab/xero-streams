@@ -18,3 +18,5 @@ jobs:
       - run: npm run check:backend
       - run: npm test
       - run: npm run build
+      - name: Verify background notifications in Chrome
+        run: CHROMIUM_BIN=google-chrome timeout 50s node scripts/check-background-push.mjs
