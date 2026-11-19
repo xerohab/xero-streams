@@ -130,9 +130,13 @@ export function ProfileProvider({ children }) {
     const target=profiles.find(p=>p.id===profile?.id);
     if(!target||loading)return false;
     const version=++generation.current;
-    if(version!==generation.current)return false;
-    if(!(await authorizeProfile(target)))return false;
-    if(version!==generation.current)return false;
+    setLoading(true);
+    try {
+      if(!(await authorizeProfile(target)))return false;
+      if(version!==generation.current)return false;
+    } finally {
+      if(version===generation.current)setLoading(false);
+    }
     profile=target;
     setActiveProfileState(profile);
     localStorage.setItem(ACTIVE_KEY, profile.id);
