@@ -1,3 +1,4 @@
+import {issueProfileAccess} from '../../shared/profileAccess.ts';
 import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
 const hex=(a:Uint8Array)=>Array.from(a,x=>x.toString(16).padStart(2,'0')).join('');
 function equalDigest(a:string,b:string){
@@ -121,7 +122,8 @@ export default async function(req:Request){
   if(Number(row.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
   const {id,salt,digest:expectedDigest}=row;
   const valid=typeof b.pin==='string'&&/^\d{4,8}$/.test(b.pin)&&equalDigest(await digest(b.pin,salt),expectedDigest);
-  const current=(await db.ProfilePin.filter(scope))[0];
+  const currentRows=await db.ProfilePin.filter(scope);
+  const current=currentRows.length===1?currentRows[0]:null;
   if(!current||current.id!==id||current.salt!==salt||current.digest!==expectedDigest){
    return Response.json({error:'PIN changed. Try again.'},{status:409});
   }
@@ -155,7 +157,10 @@ export default async function(req:Request){
   const profile=await db.ViewingProfile.create({...data,user_id:u.id,is_kids,is_default:false});
   return Response.json({profile});
  }
- if(b.action==='verify')return Response.json({ok:true});
+ if(b.action==='verify'){
+  if(b.issue_access===true){const access=await issueProfileAccess(db,u.id,target.id,row?.digest||'');return Response.json({ok:true,...access},{headers:{'Cache-Control':'no-store'}});}
+  return Response.json({ok:true});
+ }
  if(b.action==='remove'){if(row)await db.ProfilePin.delete(row.id);return Response.json({ok:true});}
  if(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
  const salt=hex(crypto.getRandomValues(new Uint8Array(32))),data={salt,digest:await digest(b.new_pin,salt),failures:0,locked_until:0,recovery_digest:'',recovery_expires_at:0,recovery_salt:'',recovery_pin_digest:''};
