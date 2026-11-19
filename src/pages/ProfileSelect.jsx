@@ -25,12 +25,7 @@ export default function ProfileSelect({ manage = false }) {
     return () => { document.title = "Xero Streams"; };
   }, []);
 
-  // Redirect to home if only one profile and not in manage mode
-  useEffect(() => {
-    if (!loading && profiles.length <= 1 && !managing) {
-      if (activeProfile) navigate(destination, { replace: true });
-    }
-  }, [loading, profiles.length, managing, activeProfile, navigate,destination]);
+  // Keep explicit profile selection open even when only one profile exists.
 
   if (loading) {
     return (
@@ -43,7 +38,7 @@ export default function ProfileSelect({ manage = false }) {
   const handleSelect = async (profile) => {
     if (managing) return;
     if(!(await switchProfile(profile)))return;
-    navigate("/", { replace: true });
+    navigate(destination, { replace: true });
   };
 
   const startCreate = () => {
@@ -231,7 +226,7 @@ export default function ProfileSelect({ manage = false }) {
           ) : activeProfile&&!activeProfile.is_kids ? (
             <button onClick={() => setManaging(true)} className="rounded-lg border border-border px-6 py-2.5 text-sm font-bold text-muted-foreground hover:border-primary hover:text-foreground">Manage Profiles</button>
           ):null}
-          <button onClick={() => navigate("/")} className="flex items-center gap-1.5 rounded-lg border border-border px-6 py-2.5 text-sm font-bold text-muted-foreground hover:border-primary hover:text-foreground">
+          <button disabled={!activeProfile} onClick={() => navigate(destination)} className="flex items-center gap-1.5 rounded-lg border border-border px-6 py-2.5 text-sm font-bold text-muted-foreground hover:border-primary hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
         </div>
