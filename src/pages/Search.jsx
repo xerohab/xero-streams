@@ -46,9 +46,10 @@ export default function Search() {
   const { data: seriesList = [], isLoading: loadingSeries } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
   const { data: franchises = [] } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
-  const { data: books = [] } = useQuery({ queryKey: ["search_books"], queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
-  const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], queryFn: () => base44.entities.BookAuthor.list() });
+  const { data: books = [] } = useQuery({ queryKey: ["search_books"], enabled: !kids, queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
+  const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], enabled: !kids, queryFn: () => base44.entities.BookAuthor.list() });
 
+  useEffect(() => { if (kids && filterType === "books") setFilterType("all"); }, [kids, filterType]);
   useEffect(() => { document.title = "Search | Xero Streams"; return () => { document.title = "Xero Streams"; }; }, []);
   useEffect(() => setCurrentPage(1), [query, filterType, filterCategory, filterYear, filterCast]);
   const results = useMemo(() => {
@@ -59,7 +60,7 @@ export default function Search() {
     }
 
     let filteredVideos = kids? videos.filter(allowsKidsContent):videos;
-    let filteredSeries = kids?[]:seriesList;
+    let filteredSeries = kids ? seriesList.filter(allowsKidsContent) : seriesList;
     let filteredFranchises = kids?[]:franchises;
     let filteredBooks = kids?[]:books;
 
@@ -146,9 +147,10 @@ export default function Search() {
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
 
-        <header className="xero-page-header"><p className="xero-kicker">Xero Cinema / Discover</p><SectionHeader level={1} title="Search" subtitle="Find movies, series, collections and books in one library." className="mb-0" /></header>
+        <header className="xero-page-header"><p className="xero-kicker">Xero Cinema / Discover</p><SectionHeader level={1} title="Search" subtitle={kids ? "Find movies and TV series in the Kids catalogue." : "Find movies, series, collections and books in one library."} className="mb-0" /></header>
 
         <SearchFilters
+          includeBooks={!kids}
           query={query} onQuery={setQuery}
           filterType={filterType} onType={setFilterType}
           filterCategory={filterCategory} onCategory={setFilterCategory}
