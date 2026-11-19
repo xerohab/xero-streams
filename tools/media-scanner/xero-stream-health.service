@@ -5,6 +5,7 @@ Type=oneshot
 DynamicUser=yes
 StateDirectory=xero-stream-health
 WorkingDirectory=/var/lib/xero-stream-health
+EnvironmentFile=-/etc/xero-stream-health.env
 Environment=XERO_HEALTH_DIR=/var/lib/xero-stream-health
 ExecStart=/opt/xero-stream-health/run-health.sh
 NoNewPrivileges=yes
