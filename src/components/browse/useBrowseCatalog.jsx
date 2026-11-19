@@ -13,7 +13,9 @@ const MAX_GENRE_ROWS = 3;
 
 /** Movies / TV catalogue: reuses the shared cached catalogue queries and filters them in memory. */
 export default function useBrowseCatalog(type) {
-  const profile = useProfile()?.activeProfile;
+  const context = useProfile();
+  const profile = context?.activeProfile;
+  const pending = Boolean(context?.loading || (context?.user && !profile));
   const kids = Boolean(profile?.is_kids);
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
@@ -21,9 +23,9 @@ export default function useBrowseCatalog(type) {
   const [itemsPerPage, setSize] = useState(() => { const n = Number(localStorage.getItem("xero_page_size")); return [20, 30, 40, 50].includes(n) ? n : 20; });
   const genre = params.get("genre") || "all";
   const sort = params.get("sort") === "title" ? "title" : "latest";
-  const { data: videos = [], isLoading: lv } = useQuery(mediaCatalogueQuery(base44, "videos", kids ? profile.id : null));
-  const { data: series = [], isLoading: ls } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
-  const { data: franchises = [], isLoading: lf } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: lv } = useQuery({ ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null, pending), enabled: !pending });
+  const { data: series = [], isLoading: ls } = useQuery({ ...mediaCatalogueQuery(base44, "series", kids ? profile.id : null, pending), enabled: !pending });
+  const { data: franchises = [], isLoading: lf } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !pending && !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
 
   const { groups, genreIndex, genres } = useMemo(() => {
@@ -61,6 +63,6 @@ export default function useBrowseCatalog(type) {
   return {
     query, setQuery, genre, setGenre: (value) => updateParams({ genre: value }), sort, setSort: (value) => updateParams({ sort: value }), genres, genreRows, clearFilters,
     currentPage, setCurrentPage, itemsPerPage, onSize, totalItems: items.length, totalPages: Math.ceil(items.length / itemsPerPage) || 1,
-    items: items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), isLoading: lv || ls || lf,
+    items: items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), isLoading: pending || lv || ls || lf,
   };
 }
