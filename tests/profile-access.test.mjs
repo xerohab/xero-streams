@@ -12,3 +12,5 @@ test('access grants are hashed, scoped, expiring and invalidated by PIN changes'
  digest='pin-b';assert.equal(await verifyProfileAccess(db,'u','p',token),false);
  digest='pin-a';rows[0].expires_at=0;assert.equal(await verifyProfileAccess(db,'u','p',token),false);
 });
+
+test('malformed and duplicate grants fail closed',async()=>{const db={ProfileAccessSession:{filter:async()=>[{},{ }]}};assert.equal(await verifyProfileAccess(db,'u','p','invalid'),false);assert.equal(await verifyProfileAccess(db,'u','p','a'.repeat(64)),false);});
