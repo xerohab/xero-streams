@@ -9,7 +9,14 @@ async function request(path,method,token,body,key){
  const r=await fetch(api()+path,{method,headers,body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(12000)});
  if(!r.ok)throw Error('Payment unavailable');return r.json();
 }
+const queues=new Map();
+async function serialize(key,work){
+ const previous=queues.get(key)||Promise.resolve();let release;
+ const current=new Promise(resolve=>{release=resolve;});queues.set(key,current);
+ await previous;try{return await work();}finally{release();if(queues.get(key)===current)queues.delete(key);}
+}
 async function access(){
+ if(!secrets.get('PAYPAL_CLIENT_ID')||!secrets.get('PAYPAL_CLIENT_SECRET'))throw Error('Payment unavailable');
  const r=await fetch(api()+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+btoa(secrets.get('PAYPAL_CLIENT_ID')+':'+secrets.get('PAYPAL_CLIENT_SECRET')),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials',redirect:'error',signal:AbortSignal.timeout(12000)});
  if(!r.ok)throw Error('Payment unavailable');const data=await r.json();if(!data.access_token)throw Error('Payment unavailable');return data.access_token;
 }
@@ -39,6 +46,7 @@ export default async function(req:Request){
  return Response.json({orderId:order.id,approvalUrl:approval.href},{headers});
  }
  if(b.action!=='capture'||!valid(b.orderId))throw Error();
+ return await serialize(b.orderId,async()=>{
  const rows=await db.MediaPayment.filter({order_id:b.orderId});
  if(rows.length!==1||rows[0].user_id!==u.id)throw Error();
  const binding=rows[0];
@@ -56,5 +64,6 @@ export default async function(req:Request){
  if(!existing.length)await entity.create({user_id:u.id,[field]:binding.item_id,...(!video?{format:binding.format}:{}),status:'completed',paypal_order_id:b.orderId});
  await db.MediaPayment.update(binding.id,{status:'completed',capture_id:cap.id});
  return Response.json({success:true,kind:binding.kind},{headers});
+ });
  }catch{return Response.json({error:'Media payment could not be verified'},{status:409,headers});}
 }
