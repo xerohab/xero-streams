@@ -33,49 +33,19 @@ export default function PurchaseCallback() {
           setTimeout(() => navigate("/dashboard"), 2000);
           return;
         }
-        // Existing book, video, donation and in-flight legacy orders retain their flow.
-        if (localStorage.getItem("pending_plan_purchase") && !localStorage.getItem("pending_book_purchase") && !localStorage.getItem("pending_video_purchase")) throw new Error("Legacy premium order requires support verification before capture");
-        const res = await base44.functions.invoke("capturePaypalOrder", { orderId: token });
-        if (res.data?.success) {
-          // Check what we were buying
-          const pendingBook = localStorage.getItem("pending_book_purchase");
-          const pendingPlan = localStorage.getItem("pending_plan_purchase");
-          const pendingVideo = localStorage.getItem("pending_video_purchase");
-
-          if (pendingBook) {
-            const { book_id, format } = JSON.parse(pendingBook);
-            await base44.entities.BookPurchase.create({
-              user_id: user.id,
-              book_id,
-              format: format || "default",
-              status: "completed",
-              paypal_order_id: token
-            });
-            localStorage.removeItem("pending_book_purchase");
-            setStatus("completed");
-            setTimeout(() => navigate("/books"), 2000);
-          } else if (pendingVideo) {
-            const { video_id } = JSON.parse(pendingVideo);
-            await base44.entities.VideoPurchase.create({
-              user_id: user.id,
-              video_id,
-              status: "completed",
-              paypal_order_id: token
-            });
-            localStorage.removeItem("pending_video_purchase");
-            setStatus("completed");
-            setTimeout(() => navigate("/dashboard"), 2000);
-          } else if (pendingPlan) {
-            // Never activate premium from an unbound legacy order.
-            throw new Error("Legacy premium order requires support verification");
-          } else {
-            // Probably a donation
-            setStatus("completed");
-            setTimeout(() => navigate("/"), 2000);
-          }
-        } else {
-          throw new Error("Capture failed");
+        if (searchParams.get("media") === "true") {
+          const result = await base44.functions.invoke("mediaCheckout", { action: "capture", orderId: token });
+          if (!result.data?.success) throw new Error("Media payment verification failed");
+          setStatus("completed");
+          setTimeout(() => navigate(result.data.kind === "book" ? "/books" : "/dashboard"), 2000);
+          return;
         }
+        // Legacy paid entitlement orders require support verification.
+        if (["pending_plan_purchase","pending_book_purchase","pending_video_purchase"].some(key => localStorage.getItem(key))) throw new Error("Legacy order requires support verification");
+        const result = await base44.functions.invoke("capturePaypalOrder", { orderId: token });
+        if (!result.data?.success) throw new Error("Capture failed");
+        setStatus("completed");
+        setTimeout(() => navigate("/"), 2000);
       } catch (err) {
         console.error(err);
         setStatus("error");
