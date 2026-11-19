@@ -9,7 +9,7 @@ export default async function(req:Request){
  const b=await req.json().catch(()=>({}));
  if(b.action==='catalog'){
  const rows=await db.Video.filter({content_type:'episode'},'id',500,Math.max(0,Number(b.offset)||0));
- return Response.json({rows:rows.filter(v=>v.series_id&&!v.coming_soon&&v.video_url&&!v.is_adult).map(v=>({id:v.id,series_id:v.series_id,url:v.video_url,revision:v.updated_date})),next:rows.length===500?(Number(b.offset)||0)+500:null});
+ return Response.json({rows:rows.filter(v=>v.series_id&&!v.coming_soon&&v.video_url&&!v.is_adult).map(v=>({id:v.id,series_id:v.series_id,season_number:v.season_number,episode_number:v.episode_number,url:v.video_url,revision:v.updated_date})),next:rows.length===500?(Number(b.offset)||0)+500:null});
  }
  if(b.action==='approve'&&u?.role==='admin'&&!u.is_banned){
  const kind=b.kind??'intro';
