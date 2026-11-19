@@ -3,7 +3,7 @@ export default async function(req:Request){
 try{
  const base=createClientFromRequest(req),secret=Deno.env.get('XERO_SCANNER_TOKEN'),worker=!!secret&&req.headers.get('x-scanner-token')===secret;
  const u=await base.auth.me().catch(()=>null);
- if(!worker&&u?.role!=='admin')return Response.json({error:'Forbidden'},{status:403});
+ if(u?.is_banned||(!worker&&u?.role!=='admin'))return Response.json({error:'Forbidden'},{status:403});
  const b=await req.json(),db=base.asServiceRole.entities;
  const offset=Math.max(0,Math.floor(Number(b.offset)||0));
  if(b.action==='catalog'){
