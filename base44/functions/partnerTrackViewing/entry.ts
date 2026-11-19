@@ -38,7 +38,7 @@ async function handleRequest(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me().catch(() => null);
-    if (!user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user?.id || user.is_banned) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const videoId = String(body.video_id || "").trim();
@@ -68,8 +68,10 @@ async function handleRequest(req) {
       );
     }
 
+    const privateSources = !video.video_url && base44.asServiceRole.entities.ProtectedMediaSource ? pageItems(await base44.asServiceRole.entities.ProtectedMediaSource.filter({video_id:videoId})) : [];
+    const mediaUrl=video.video_url || (privateSources.length===1?privateSources[0].video_url:'');
     // Suppress YouTube content entirely — do not submit any event to Linux.
-    if (isYouTubeContent(video.video_url)) {
+    if (isYouTubeContent(mediaUrl)) {
       return Response.json({
         ok: true,
         suppressed: true,
@@ -86,7 +88,7 @@ async function handleRequest(req) {
       const p = policies[0];
       if(p.enabled === true && Number.isSafeInteger(p.duration_seconds) && p.duration_seconds > 0 && p.duration_seconds <= 86400 &&
         ["operator_media_probe","provider_api"].includes(p.source) && Number.isFinite(Date.parse(p.verified_at)) &&
-        p.media_url_sha256 === await sha256Hex(video.video_url)) playbackPolicy = p;
+        p.media_url_sha256 === await sha256Hex(mediaUrl)) playbackPolicy = p;
     }
 
     const connection = await currentPerkSphereLink(base44.asServiceRole,user.id);
