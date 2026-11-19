@@ -186,8 +186,8 @@ export default function Watch() {
   const franchises = kids ? [] : directFranchises;
 
   const profileAccess=profileContext?.profileAccess;
-  const guestSource=Boolean(!user && !profileContext?.user && !profilePending && video && !video.video_url && !video.coming_soon && !video.is_for_sale && !video.is_adult);
-  const useProtectedSource=Boolean(guestSource || kids || (playbackProfileId && !video?.video_url && !video?.coming_soon && profileAccess?.token));
+  const guestSource=Boolean(!user && !profileContext?.user && !profilePending && video && !video.coming_soon && !video.is_for_sale && !video.is_adult);
+  const useProtectedSource=Boolean(video && !video.coming_soon && (guestSource || kids || (playbackProfileId && profileAccess?.token)) && (!video.is_for_sale || isPurchased || user?.role === "admin"));
   const { data: approvedSource, isPending: isCheckingSource, isError: sourceError } = useQuery({
     queryKey: ["profile-watch-source", user?.id, playbackProfileId, videoId, profileAccess?.expiresAt],
     enabled: Boolean(useProtectedSource && video && (guestSource || playbackProfileId) && !profilePending),
@@ -202,8 +202,8 @@ export default function Watch() {
       return result.data;
     }
   });
-  const playbackSource = profilePending || (video?.is_for_sale && !isPurchased && user?.role !== 'admin') ? null : useProtectedSource ? approvedSource?.source : video?.video_url;
-  const playbackSubtitles = useProtectedSource ? approvedSource?.subtitles : video?.subtitles;
+  const playbackSource = profilePending || (video?.is_for_sale && !isPurchased && user?.role !== 'admin') ? null : useProtectedSource ? approvedSource?.source : null;
+  const playbackSubtitles = useProtectedSource ? approvedSource?.subtitles : [];
 
   // HLS hook — stop local playback when cast overlay is open
   const hlsSrc = (() => {
