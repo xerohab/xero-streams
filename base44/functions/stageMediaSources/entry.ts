@@ -18,13 +18,13 @@ export default async function(req:Request){
  if(matches.length>1){counts.conflicts++;continue;}
  if(matches.length===1){
  const existing=matches[0];
- if(existing.video_url===data.video_url&&existing.download_url===data.download_url&&JSON.stringify(existing.subtitles||[])===JSON.stringify(data.subtitles)){counts.unchanged++;counts.verified++;if(!b.dry_run&&db.Video.update)await db.Video.update(v.id,{has_playback:Boolean(data.video_url.trim())&&!v.coming_soon});}else counts.conflicts++;
+ if(existing.video_url===data.video_url&&existing.download_url===data.download_url&&JSON.stringify(existing.subtitles||[])===JSON.stringify(data.subtitles)){counts.unchanged++;counts.verified++;if(!b.dry_run)await db.Video.update(v.id,{has_playback:Boolean(data.video_url.trim())&&!v.coming_soon});}else counts.conflicts++;
  continue;
  }
  counts.missing++;
  if(!b.dry_run){await db.ProtectedMediaSource.create({...data,source_updated_at:new Date().toISOString()});counts.staged++;
  const check=await db.ProtectedMediaSource.filter({video_id:v.id});
- if(check.length===1&&check[0].video_url===data.video_url&&check[0].download_url===data.download_url&&JSON.stringify(check[0].subtitles||[])===JSON.stringify(data.subtitles)){counts.verified++;if(db.Video.update)await db.Video.update(v.id,{has_playback:Boolean(data.video_url.trim())&&!v.coming_soon});}else counts.conflicts++;}
+ if(check.length===1&&check[0].video_url===data.video_url&&check[0].download_url===data.download_url&&JSON.stringify(check[0].subtitles||[])===JSON.stringify(data.subtitles)){counts.verified++;await db.Video.update(v.id,{has_playback:Boolean(data.video_url.trim())&&!v.coming_soon});}else counts.conflicts++;}
  }
  return Response.json({counts,next:rows.length===100?b.offset+100:null},{headers});
  }catch{return Response.json({error:'Source staging failed'},{status:409,headers});}
