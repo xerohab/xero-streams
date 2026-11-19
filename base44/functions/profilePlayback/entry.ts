@@ -1,4 +1,12 @@
 import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
+const catalogueFields=[
+ 'id','title','description','thumbnail_url','cover_image','backdrop_url','series_id','franchise_id',
+ 'category','category_id','genres','episode_number','season_number','duration','quality','quality_notes',
+ 'is_featured','is_adult','content_type','sort_order','coming_soon','release_date','release_year',
+ 'cast','main_cast','guest_stars','director_or_creator','age_rating','runtime_or_episodes','views',
+ 'created_date','updated_date','content_updated_at','intro_start','intro_end','recap_start','recap_end',
+ 'credits_start','credits_end'
+];
 export default async function(req:Request){
 try{
 const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
@@ -35,8 +43,9 @@ if(b.action==='catalogue'){
   }
   visible.push(...rated.filter(video=>!video.series_id||approvedParents.has(video.series_id)));
  }
- const rowsWithoutSources=visible.map(({video_url,download_url,...entry})=>({
-  ...entry,has_playback:typeof video_url==='string'&&Boolean(video_url.trim())
+ const rowsWithoutSources=visible.map(row=>({
+  ...Object.fromEntries(catalogueFields.filter(field=>Object.hasOwn(row,field)).map(field=>[field,row[field]])),
+  has_playback:typeof row.video_url==='string'&&Boolean(row.video_url.trim())
  }));
  return Response.json({rows:rowsWithoutSources,next:rows.length===500?b.offset+500:null});
 }
@@ -46,7 +55,11 @@ if(b.action==='source'){
  const v=(await base.entities.Video.filter({id:b.video_id}))[0];
  if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
  const source=!v.coming_soon&&typeof v.video_url==='string'?v.video_url:null;
- return Response.json({source});
+ const subtitles=source&&Array.isArray(v.subtitles)
+  ? v.subtitles.filter(track=>typeof track?.url==='string'&&track.url)
+      .map(({url,language,label})=>({url,language,label}))
+  : [];
+ return Response.json({source,subtitles});
 }
 if(b.action==='list'){
 const rows=await db.ProfilePlayback.filter(scope,'-changed_at',200);

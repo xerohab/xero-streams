@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../base44/functions/profilePlayback/entry.ts';
 function setup({user={id:'u'},kids=true,owns=true}={}){
  const rows=[{id:'r',video_id:'adult',state:'progress',position:10,duration:100}];
- const videos=[{id:'adult',age_rating:'18',title:'Adult'},{id:'safe',age_rating:'PG',title:'Safe',video_url:'https://media.example.test/safe'}];
+ const videos=[{id:'adult',age_rating:'18',title:'Adult'},{id:'safe',age_rating:'PG',title:'Safe',video_url:'https://media.example.test/safe',subtitles:[{url:'https://media.example.test/en.vtt',language:'en',label:'English',internal:'private'}],internal_notes:'private'}];
  globalThis.__testClient={auth:{me:async()=>user},entities:{Video:{filter:async q=>videos.filter(v=>v.id===q.id),list:async (_sort,limit,offset)=>videos.slice(offset,offset+limit)}},asServiceRole:{entities:{
  ViewingProfile:{filter:async()=>owns?[{is_kids:kids}]:[]},
  ProfilePlayback:{filter:async q=>rows.filter(r=>!q.video_id||r.video_id===q.video_id),update:async(id,data)=>Object.assign(rows.find(r=>r.id===id),data),create:async data=>rows.push(data)}
@@ -21,7 +21,7 @@ test('reject empty identifiers and zero duration progress',async()=>{const rows=
 test('Kids Watch source uses the authoritative rating and profile ownership',async()=>{
  setup();
  assert.equal((await call({action:'source',video_id:'adult',age_rating:'PG'})).status,404);
- assert.deepEqual(await (await call({action:'source',video_id:'safe'})).json(),{source:'https://media.example.test/safe'});
+ assert.deepEqual(await (await call({action:'source',video_id:'safe'})).json(),{source:'https://media.example.test/safe',subtitles:[{url:'https://media.example.test/en.vtt',language:'en',label:'English'}]});
  setup({owns:false});
  assert.equal((await call({action:'source',video_id:'safe'})).status,403);
 });
@@ -35,6 +35,8 @@ test('Kids catalogue omits age-restricted records and enforces a Kids profile',a
  assert.equal(data.rows[0].has_playback,true);
  assert.equal(Object.hasOwn(data.rows[0],'video_url'),false);
  assert.equal(Object.hasOwn(data.rows[0],'download_url'),false);
+ assert.equal(Object.hasOwn(data.rows[0],'subtitles'),false);
+ assert.equal(Object.hasOwn(data.rows[0],'internal_notes'),false);
  assert.equal(data.next,null);
  assert.equal((await call({action:'catalogue',kind:'videos',offset:-1})).status,400);
  setup({kids:false});

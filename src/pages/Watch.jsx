@@ -197,10 +197,11 @@ export default function Watch() {
         action: "source", profile_id: playbackProfileId, video_id: videoId
       });
       if (!result.data || !Object.hasOwn(result.data, "source")) throw new Error("Source not available");
-      return result.data.source;
+      return result.data;
     }
   });
-  const playbackSource = kids ? approvedSource : video?.video_url;
+  const playbackSource = kids ? approvedSource?.source : video?.video_url;
+  const playbackSubtitles = kids ? approvedSource?.subtitles : video?.subtitles;
 
   // HLS hook — stop local playback when cast overlay is open
   const hlsSrc = (() => {
@@ -549,7 +550,7 @@ export default function Watch() {
                     });
                   }}
                 >
-                  {video.subtitles?.map((sub, i) => (
+                  {playbackSubtitles?.map((sub, i) => (
                     <track key={i} src={sub.url} kind="subtitles" srcLang={sub.language} label={sub.label} />
                   ))}
                 </video>
