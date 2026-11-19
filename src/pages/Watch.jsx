@@ -207,7 +207,29 @@ export default function Watch() {
     if (!url || isMobileCasting || getEmbedUrl(url)) return null;
     return url;
   })();
-  useHls(videoRef, hlsSrc);
+  const [playbackAttempt, setPlaybackAttempt] = useState(0);
+  const [playbackIssue, setPlaybackIssue] = useState(null);
+  useHls(videoRef, hlsSrc, playbackProfileId, playbackAttempt);
+
+  useEffect(() => {
+    setPlaybackIssue(null);
+    const player = videoRef.current;
+    if (!hlsSrc || !player) return;
+    const showIssue = () => setPlaybackIssue("The stream couldn't be loaded.");
+    const clearIssue = () => setPlaybackIssue(null);
+    const startupTimer = window.setTimeout(() => {
+      if (player.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+        setPlaybackIssue("The stream is taking too long to load.");
+      }
+    }, 20000);
+    player.addEventListener("error", showIssue);
+    player.addEventListener("canplay", clearIssue);
+    return () => {
+      window.clearTimeout(startupTimer);
+      player.removeEventListener("error", showIssue);
+      player.removeEventListener("canplay", clearIssue);
+    };
+  }, [hlsSrc, playbackProfileId, playbackAttempt]);
 
   const series = video?.series_id ? seriesList.find((s) => s.id === video.series_id) : null;
 
@@ -521,6 +543,13 @@ export default function Watch() {
                     <track key={i} src={sub.url} kind="subtitles" srcLang={sub.language} label={sub.label} />
                   ))}
                 </video>
+              )}
+
+              {hlsSrc && playbackIssue && (
+                <div className="absolute inset-x-0 top-0 z-20 flex flex-wrap items-center justify-center gap-3 bg-black/90 p-3 text-white" role="status">
+                  <span>{playbackIssue}</span>
+                  <Button variant="secondary" onClick={() => setPlaybackAttempt(attempt => attempt + 1)}>Retry playback</Button>
+                </div>
               )}
 
               {/* Skip Buttons */}
