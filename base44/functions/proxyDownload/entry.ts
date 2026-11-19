@@ -5,7 +5,7 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user?.id || user.is_banned) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Check subscription
     const subscriptions = await base44.entities.UserSubscription.filter({
@@ -13,9 +13,7 @@ export default async function(req) {
       status: 'active',
     });
     const isSubscribed = user.role === 'admin' || subscriptions.length > 0;
-    if (!isSubscribed) {
-      return Response.json({ error: 'Premium subscription required for downloads.' }, { status: 403 });
-    }
+
 
     // Get video_id from query string (GET) or request body (POST)
     let videoId;
@@ -34,11 +32,21 @@ export default async function(req) {
     if (!videoId) return Response.json({ error: 'Missing video_id' }, { status: 400 });
 
     // Get video
-    const [video] = await base44.entities.Video.filter({ id: videoId });
-    if (!video || !video.video_url) {
+    const db=base44.asServiceRole.entities;
+    const rows=await db.Video.filter({id:videoId});
+    const video=rows.length===1?rows[0]:null;
+    if (!video || video.coming_soon) {
       return Response.json({ error: 'Video not found' }, { status: 404 });
     }
 
+    if(video.is_adult&&user.age_verified!==true&&user.role!=='admin')return Response.json({error:'Age verification required'},{status:403});
+    if(video.series_id){const parents=await db.Series.filter({id:video.series_id});if(parents.length!==1||(parents[0].is_adult&&user.age_verified!==true&&user.role!=='admin'))return Response.json({error:'Unavailable title'},{status:403});}
+    if(video.is_for_sale){const purchases=await db.VideoPurchase.filter({user_id:user.id,video_id:video.id,status:'completed'});if(!purchases.length&&user.role!=='admin')return Response.json({error:'Purchase required'},{status:403});}
+    else if(!isSubscribed)return Response.json({error:'Premium subscription required for downloads.'},{status:403});
+    let media=video;
+    if(!video.video_url&&!video.download_url){const sources=await db.ProtectedMediaSource.filter({video_id:video.id});if(sources.length!==1)return Response.json({error:'Source unavailable'},{status:404});media=sources[0];}
+    const source=media.download_url||media.video_url;
+    if(typeof source!=='string'||!source.trim())return Response.json({error:'Source unavailable'},{status:404});
     // Build a safe filename
     const safeTitle = (video.title || 'download').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
     const filename = `${safeTitle}.mp4`;
@@ -59,9 +67,9 @@ export default async function(req) {
     // the origin, avoiding serverless function timeouts on large files.
     // The browser's native download manager shows a progress bar.
     return Response.json({
-      download_url: video.video_url,
+      download_url: source,
       filename,
-    });
+    },{headers:{'Cache-Control':'no-store'}});
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
