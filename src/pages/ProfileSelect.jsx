@@ -106,7 +106,7 @@ export default function ProfileSelect({ manage = false }) {
         const request = await base44.functions.invoke("profilePin", { action: "request_recovery", profile_id: profile.id, new_pin });
         if (request.data?.ok !== true) throw new Error();
       } catch {
-        window.alert("If you already requested a code, use it below. Otherwise, wait 15 minutes and try again.");
+        window.alert("If you already have a code, enter it below. If no code arrives, try requesting one again.");
       }
     }
     const code = await requestProfilePin("Enter the code from your account email", { recovery: true });

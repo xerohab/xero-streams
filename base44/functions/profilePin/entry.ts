@@ -62,10 +62,18 @@ try{
    };
    if(row)await db.ProfilePin.update(row.id,recovery);
    else await db.ProfilePin.create({...scope,salt:'',digest:'',...recovery});
-   await base.asServiceRole.integrations.Core.SendEmail({
-    to:u.email,subject:'XeroStreams profile PIN recovery',from_name:'XeroStreams',
-    body:'Enter this code on the XeroStreams profile selection page: '+code+'\n\nThe code expires in 15 minutes. Ignore this email if you did not request it.'
-   });
+   try{
+    await base.asServiceRole.integrations.Core.SendEmail({
+     to:u.email,subject:'XeroStreams profile PIN recovery',from_name:'XeroStreams',
+     body:'Enter this code on the XeroStreams profile selection page: '+code+'\n\nThe code expires in 15 minutes. Ignore this email if you did not request it.'
+    });
+   }catch{
+    const pending=(await db.ProfilePin.filter(scope))[0];
+    if(pending?.recovery_digest===recovery.recovery_digest){
+     await db.ProfilePin.update(pending.id,{recovery_digest:'',recovery_expires_at:0,recovery_salt:'',recovery_pin_digest:''});
+    }
+    return Response.json({error:'Could not send the recovery email. Try again.'},{status:503});
+   }
    return Response.json({ok:true});
   }
   if(!row||!(row.recovery_expires_at>now)||typeof b.code!=='string'||!/^([a-f0-9]{32})$/.test(b.code)||

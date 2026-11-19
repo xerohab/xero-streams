@@ -56,3 +56,18 @@ test('profile management requires the adult PIN and preserves the last adult pro
  assert.equal(profiles.find(p=>p.id==='created').is_kids,true);
  assert.equal((await call({action:'delete_profile',target_id:'created',pin:'1234'})).status,200);
 });
+
+
+test('a failed recovery email allows another request without changing the current PIN',async()=>{
+ const {rows,emails}=setup({user:{id:'u',email:'owner@example.test',email_verified:true}});
+ assert.equal((await call({action:'set',new_pin:'1234'})).status,200);
+ const mail=globalThis.__testClient.asServiceRole.integrations.Core;
+ const send=mail.SendEmail;
+ mail.SendEmail=async()=>{throw Error('mail unavailable');};
+ assert.equal((await call({action:'request_recovery',new_pin:'7654'})).status,503);
+ assert.equal(rows[0].recovery_expires_at,0);
+ assert.equal((await call({action:'verify',pin:'1234'})).status,200);
+ mail.SendEmail=send;
+ assert.equal((await call({action:'request_recovery',new_pin:'7654'})).status,200);
+ assert.equal(emails.length,1);
+});
