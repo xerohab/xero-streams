@@ -80,3 +80,23 @@ test('the server opens Kids profiles only when every adult profile has a PIN', a
  rows.push({id:'second-pin',profile_id:'second-adult',digest:'configured'});
  assert.equal((await call({action:'verify',profile_id:'k'})).status,200);
 });
+
+test('verification rejects a PIN replaced or locked while the request is in flight',async()=>{
+ for(const mode of ['replace','lock']){
+  const {rows}=setup();
+  assert.equal((await call({action:'set',new_pin:'1234'})).status,200);
+  const pinEntity=globalThis.__testClient.asServiceRole.entities.ProfilePin;
+  let reads=0;
+  pinEntity.filter=async()=>{
+   if(++reads===2){
+    if(mode==='replace')rows[0].digest='replacement';
+    else rows[0].locked_until=Date.now()+60000;
+   }
+   return rows;
+  };
+  const response=await call({action:'verify',pin:'1234'});
+  assert.equal(response.status,mode==='replace'?409:429);
+  if(mode==='replace')assert.equal(rows[0].digest,'replacement');
+  else assert.ok(rows[0].locked_until>Date.now());
+ }
+});

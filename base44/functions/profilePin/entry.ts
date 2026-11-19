@@ -98,10 +98,20 @@ try{
  if(!management&&!['verify','set','remove'].includes(b.action))return Response.json({error:'Unknown action'},{status:400});
  if(b.action==='set'&&(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin)))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
  if(enabled){
- if(Number(row.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
- const valid=typeof b.pin==='string'&&/^\d{4,8}$/.test(b.pin)&&equalDigest(await digest(b.pin,row.salt),row.digest);
- if(!valid){const failures=(row.failures||0)+1;await db.ProfilePin.update(row.id,{failures:failures>=5?0:failures,locked_until:failures>=5?Date.now()+900000:0});return Response.json({error:'Incorrect PIN'},{status:403});}
- await db.ProfilePin.update(row.id,{failures:0,locked_until:0});
+  if(Number(row.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
+  const {id,salt,digest:expectedDigest}=row;
+  const valid=typeof b.pin==='string'&&/^\d{4,8}$/.test(b.pin)&&equalDigest(await digest(b.pin,salt),expectedDigest);
+  const current=(await db.ProfilePin.filter(scope))[0];
+  if(!current||current.id!==id||current.salt!==salt||current.digest!==expectedDigest){
+   return Response.json({error:'PIN changed. Try again.'},{status:409});
+  }
+  if(Number(current.locked_until)>Date.now())return Response.json({error:'Try again in 15 minutes'},{status:429});
+  if(!valid){
+   const failures=(current.failures||0)+1;
+   await db.ProfilePin.update(id,{failures:failures>=5?0:failures,locked_until:failures>=5?Date.now()+900000:0});
+   return Response.json({error:'Incorrect PIN'},{status:403});
+  }
+  if(current.failures||current.locked_until)await db.ProfilePin.update(id,{failures:0,locked_until:0});
  }
  if(management){
   if(b.action==='delete_profile'){
