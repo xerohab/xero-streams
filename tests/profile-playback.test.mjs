@@ -116,3 +116,13 @@ test('ambiguous parent ratings and duplicate video identities fail closed',async
  assert.equal((await call({action:'source',video_id:'safe'})).status,404);
  assert.equal((await handler(new Request('https://example.test'))).status,405);
 });
+
+test('private source fallback preserves Kids rating checks and rejects duplicates',async()=>{
+ setup();const c=globalThis.__testClient;
+ c.entities.Video.filter=async()=>[{id:'safe',age_rating:'PG'}];
+ const sources=[{video_id:'safe',video_url:'https://example.test/private'}];
+ c.asServiceRole.entities.ProtectedMediaSource={filter:async()=>sources};
+ const result=await call({action:'source',video_id:'safe'});assert.equal(result.status,200);assert.equal((await result.json()).source,sources[0].video_url);
+ sources.push({...sources[0]});assert.equal((await call({action:'source',video_id:'safe'})).status,409);
+ c.entities.Video.filter=async()=>[{id:'safe',age_rating:'18'}];assert.equal((await call({action:'source',video_id:'safe'})).status,404);
+});
