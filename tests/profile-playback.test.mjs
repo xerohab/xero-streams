@@ -37,3 +37,27 @@ test('Kids catalogue omits age-restricted records and enforces a Kids profile',a
  setup({kids:false});
  assert.equal((await call({action:'catalogue',kind:'videos',offset:0})).status,403);
 });
+
+test('Kids profiles exclude episodes whose parent series is restricted or missing',async()=>{
+ setup();
+ const episodes=[
+  {id:'e1',series_id:'restricted',age_rating:'PG',video_url:'https://media.example.test/e1'},
+  {id:'e2',series_id:'restricted',age_rating:'PG'},
+  {id:'e3',series_id:'missing',age_rating:'PG'},
+  {id:'e4',series_id:'safe',age_rating:'PG'}
+ ];
+ const calls=[];
+ const entities=globalThis.__testClient.entities;
+ entities.Video.list=async()=>episodes;
+ entities.Video.filter=async q=>episodes.filter(item=>item.id===q.id);
+ entities.Series={filter:async({id})=>{
+  calls.push(id);
+  return id==='missing'?[]:[{id,age_rating:id==='restricted'?'18':'PG'}];
+ }};
+ const response=await call({action:'catalogue',kind:'videos',offset:0});
+ assert.equal(response.status,200);
+ assert.deepEqual((await response.json()).rows.map(row=>row.id),['e4']);
+ assert.equal(calls.filter(id=>id==='restricted').length,1);
+ assert.equal((await call({action:'source',video_id:'e1'})).status,404);
+ assert.equal((await call({action:'save',video_id:'e3',state:'completed'})).status,404);
+});

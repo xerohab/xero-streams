@@ -8,29 +8,45 @@ const profile=typeof b.profile_id==='string'?(await db.ViewingProfile.filter({id
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
 const scope={user_id:u.id,profile_id:b.profile_id};
 const allowed=(v:any)=>!!v&&(!profile.is_kids||(!v.is_adult&&['U','G','PG','TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','BBFC U','BBFC PG'].includes(String(v.age_rating||'').trim().toUpperCase())));
+const seriesAccess=new Map<string,Promise<boolean>>();
+const allowedVideo=async(v:any)=>{
+ if(!allowed(v))return false;
+ if(!profile.is_kids||!v.series_id)return true;
+ if(!seriesAccess.has(v.series_id)){
+  seriesAccess.set(v.series_id,base.entities.Series.filter({id:v.series_id}).then(rows=>allowed(rows[0])));
+ }
+ return seriesAccess.get(v.series_id);
+};
 if(b.action==='catalogue'){
  if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
  if(!['videos','series'].includes(b.kind)||!Number.isSafeInteger(b.offset)||b.offset<0||b.offset>500000)return Response.json({error:'Invalid catalogue page'},{status:400});
  const entity=b.kind==='videos'?base.entities.Video:base.entities.Series;
  const rows=await entity.list('id',500,b.offset);
- return Response.json({rows:rows.filter(allowed),next:rows.length===500?b.offset+500:null});
+ const visible=[];
+ if(b.kind==='series')visible.push(...rows.filter(allowed));
+ else for(let i=0;i<rows.length;i+=12){
+  const batch=rows.slice(i,i+12);
+  const approved=await Promise.all(batch.map(allowedVideo));
+  visible.push(...batch.filter((_,index)=>approved[index]));
+ }
+ return Response.json({rows:visible,next:rows.length===500?b.offset+500:null});
 }
 if(b.action==='source'){
  if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
  const v=(await base.entities.Video.filter({id:b.video_id}))[0];
- if(!allowed(v))return Response.json({error:'Unavailable title'},{status:404});
+ if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
  const source=!v.coming_soon&&typeof v.video_url==='string'?v.video_url:null;
  return Response.json({source});
 }
 if(b.action==='list'){
 const rows=await db.ProfilePlayback.filter(scope,'-changed_at',200);
 const output=[];
-for(let i=0;i<rows.length;i+=8){const batch=await Promise.all(rows.slice(i,i+8).map(async r=>{const v=(await base.entities.Video.filter({id:r.video_id}))[0];return allowed(v)?{id:r.video_id,title:v.title,thumbnail_url:v.thumbnail_url,is_adult:!!v.is_adult,position:r.position,duration:r.duration,state:r.state,changed_at:r.changed_at}:null;}));output.push(...batch.filter(Boolean));}
+for(let i=0;i<rows.length;i+=8){const batch=await Promise.all(rows.slice(i,i+8).map(async r=>{const v=(await base.entities.Video.filter({id:r.video_id}))[0];return await allowedVideo(v)?{id:r.video_id,title:v.title,thumbnail_url:v.thumbnail_url,is_adult:!!v.is_adult,position:r.position,duration:r.duration,state:r.state,changed_at:r.changed_at}:null;}));output.push(...batch.filter(Boolean));}
 return Response.json({rows:output});
 }
 if(b.action!=='save'||typeof b.video_id!=='string'||!b.video_id.trim()||b.video_id.length>256||!['progress','completed','removed'].includes(b.state))return Response.json({error:'Invalid operation'},{status:400});
-if(b.state!=='removed'&&!allowed((await base.entities.Video.filter({id:b.video_id}))[0]))return Response.json({error:'Unavailable title'},{status:404});
+if(b.state!=='removed'&&!(await allowedVideo((await base.entities.Video.filter({id:b.video_id}))[0])))return Response.json({error:'Unavailable title'},{status:404});
 const position=b.position??0,duration=b.duration??0;
 if(!Number.isFinite(position)||!Number.isFinite(duration)||position<0||duration<0||position>duration||duration>604800||(b.state==='progress'&&duration<=0))return Response.json({error:'Invalid progress'},{status:400});
 const key={...scope,video_id:b.video_id};
