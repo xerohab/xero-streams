@@ -13,7 +13,7 @@ test('staging preserves public records, supports dry runs and reports conflicts'
  user={id:'other',role:'user'};assert.equal((await call(false)).status,403);
  user={id:'admin',role:'admin'};assert.equal((await call(false,-1)).status,400);
  assert.equal((await (await call(true)).json()).counts.missing,1);assert.equal(writes,0);
- assert.equal((await (await call(false)).json()).counts.staged,1);assert.equal(writes,1);
+ const staged=(await (await call(false)).json()).counts;assert.equal(staged.staged,1);assert.equal(staged.verified,1);assert.equal(writes,1);
  assert.equal((await (await call(false)).json()).counts.unchanged,1);assert.equal(writes,1);
  assert.equal(video.video_url,'https://example.test/video');
  sources[0].video_url='different';assert.equal((await (await call(false)).json()).counts.conflicts,1);assert.equal(writes,1);
