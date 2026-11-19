@@ -13,6 +13,9 @@ while IFS= read -r host || [ -n "$host" ]; do
 done < health-hosts.txt
 [ "${#args[@]}" -gt 0 ] || exit 0
 if [[ -n "${XERO_HEALTH_ENDPOINT:-}" && -n "${XERO_SCANNER_TOKEN:-}" ]]; then
+ if [[ -s health-results.json ]]; then
+  python3 "$script_dir/health_sync.py" push
+ fi
  python3 "$script_dir/health_sync.py" pull
 fi
 [ -s health-manifest.json ] || exit 0

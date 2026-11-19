@@ -9,10 +9,15 @@ export async function ensurePushSubscription(pushManager, applicationServerKey) 
       bytes.every((byte, index) => byte === applicationServerKey[index])) {
       return existing;
     }
-    const removed = await existing.unsubscribe();
-    if (!removed && await pushManager.getSubscription()) {
-      throw new Error("Could not replace the previous push subscription");
-    }
+    await removeLocalPushSubscription(pushManager, existing);
   }
   return pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+}
+
+export async function removeLocalPushSubscription(pushManager, subscription) {
+  if (!pushManager) return;
+  const current = subscription ?? await pushManager.getSubscription();
+  if (current && !await current.unsubscribe() && await pushManager.getSubscription()) {
+    throw new Error("Could not remove the browser push subscription");
+  }
 }

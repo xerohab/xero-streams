@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ensurePushSubscription } from '../src/lib/browserPushSubscription.js';
+import { ensurePushSubscription, removeLocalPushSubscription } from '../src/lib/browserPushSubscription.js';
 
 test('push registration reuses the current key and replaces a subscription on key rotation', async () => {
   const key = new Uint8Array([1, 2, 3]);
@@ -52,4 +52,12 @@ test('the service worker displays a private release notification without an open
   assert.equal(title, 'XeroStreams');
   assert.equal(options.data.link, '/dashboard');
   assert.equal(options.body.includes('Private title'), false);
+});
+
+
+test('browser push removal checks whether an unsuccessful unsubscribe left a subscription', async () => {
+  const subscription = { unsubscribe: async () => false };
+  await assert.rejects(removeLocalPushSubscription({ getSubscription: async () => subscription }), /Could not remove/);
+  const removedByBrowser = { getSubscription: async () => null };
+  await removeLocalPushSubscription(removedByBrowser, subscription);
 });
