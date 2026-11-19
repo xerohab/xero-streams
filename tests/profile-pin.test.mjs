@@ -117,3 +117,23 @@ test('simultaneous recovery requests send one email in a warm runtime',async()=>
  assert.deepEqual(results.map(r=>r.status).sort(),[200,429]);
  assert.equal(emails.length,1);
 });
+
+
+test('duplicate PIN records fail closed instead of choosing an arbitrary credential',async()=>{
+ const {rows}=setup();
+ assert.equal((await call({action:'set',new_pin:'1234'})).status,200);
+ rows.push({...rows[0],id:'duplicate'});
+ for(const action of ['verify','set','remove','request_recovery','status']){
+  assert.equal((await call({action,pin:'1234',new_pin:'5678'})).status,409);
+ }
+ assert.equal(rows.length,2);
+});
+
+test('concurrent redemption consumes a recovery code once in a warm runtime',async()=>{
+ const {emails}=setup({user:{id:'u',email:'owner@example.test',email_verified:true}});
+ assert.equal((await call({action:'request_recovery',new_pin:'1234'})).status,200);
+ const [code]=emails[0].body.match(/[a-f0-9]{32}/);
+ const results=await Promise.all([call({action:'recover',code}),call({action:'recover',code})]);
+ assert.deepEqual(results.map(r=>r.status).sort(),[200,403]);
+ assert.equal((await call({action:'verify',pin:'1234'})).status,200);
+});
