@@ -5,23 +5,27 @@ const MAX = 20;
 let queue=Promise.resolve();
 const last=new Map();
 let verifiedProfile=null;
-export function setPlaybackProfile(id){if(verifiedProfile!==id)last.clear();verifiedProfile=id;}
+let profileGeneration=0;
+export function setPlaybackProfile(id){if(verifiedProfile!==id){last.clear();profileGeneration++;}verifiedProfile=id;}
 function push(videoId,state,position=0,duration=0){
  const id=localStorage.getItem("xero_active_profile");
  if(!id||id!==verifiedProfile)return;
+ const generation=profileGeneration;
  const key=id+":"+videoId,now=Date.now();
  const previous=last.get(key);
  if(previous?.state===state&&(state!=="progress"||now-previous.time<10000))return;
  const marker={state,time:now};last.set(key,marker);
  if(last.size>1000)last.delete(last.keys().next().value);
- queue=queue.catch(()=>{}).then(async()=>{if(verifiedProfile!==id)return;const result=await base44.functions.invoke("profilePlayback",{action:"save",profile_id:id,video_id:videoId,state,position,duration});if(result.data?.ok!==true)throw Error("Sync rejected");}).catch(()=>{if(last.get(key)===marker)last.delete(key);});
+ queue=queue.catch(()=>{}).then(async()=>{if(verifiedProfile!==id||generation!==profileGeneration||localStorage.getItem('xero_active_profile')!==id)return;const result=await base44.functions.invoke("profilePlayback",{action:"save",profile_id:id,video_id:videoId,state,position,duration});if(result.data?.ok!==true)throw Error("Sync rejected");}).catch(()=>{if(last.get(key)===marker)last.delete(key);});
 }
 export async function syncPlayback(profileId=verifiedProfile){
  if(!profileId||profileId!==verifiedProfile)return;
+ const generation=profileGeneration;
  try{
  await queue;
+ if(generation!==profileGeneration||profileId!==verifiedProfile)return;
  const r=await base44.functions.invoke("profilePlayback",{action:"list",profile_id:profileId});
- if(profileId!==verifiedProfile||localStorage.getItem("xero_active_profile")!==profileId||!Array.isArray(r.data?.rows))return;
+ if(generation!==profileGeneration||profileId!==verifiedProfile||localStorage.getItem("xero_active_profile")!==profileId||!Array.isArray(r.data?.rows))return;
  const local=new Map(getAll().map(v=>[v.id,v])),watched=new Set(getWatched());
  for(const row of r.data.rows){
  const old=local.get(row.id);
@@ -90,6 +94,7 @@ export function removeProgress(videoId,expectedProfile) {
 export function addWatched(videoId,expectedProfile) {
   if(!matchesProfile(expectedProfile))return;
   if (!videoId) return;
+  localStorage.setItem(getCurrentKey(),JSON.stringify(getAll().filter(v=>v.id!==videoId)));
   push(videoId,"completed");
   const list = getWatched();
   if (!list.includes(videoId)) {
