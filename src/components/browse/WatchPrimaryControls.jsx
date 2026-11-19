@@ -5,7 +5,7 @@ import WatchlistButton from "@/components/browse/WatchlistButton";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
 import toast from "react-hot-toast";
 
-export default function WatchPrimaryControls({ video, series, isComingSoon, isPremium, isPurchased, isFavourited, onFavourite, prevVideo, nextVideo, prevLabel, nextLabel, onNavigate, onPurchase, purchasing }) {
+export default function WatchPrimaryControls({ video, series, isComingSoon, isPremium, allowTransactions = true, isPurchased, isFavourited, onFavourite, prevVideo, nextVideo, prevLabel, nextLabel, onNavigate, onPurchase, purchasing }) {
   const [progress, setProgress] = useState(null);
   const download = async () => {
     setProgress(0);
@@ -24,8 +24,8 @@ export default function WatchPrimaryControls({ video, series, isComingSoon, isPr
       <WatchlistButton videoId={video.id} className="xero-action" label="My List" />
       {!isComingSoon && <Button variant="outline" className="xero-action" onClick={onFavourite}><Heart className={isFavourited ? "fill-current text-primary" : ""} />{isFavourited ? "Favourited" : "Favourite"}</Button>}
       <Button variant="outline" className="xero-action" onClick={() => onNavigate(series ? `/series?id=${series.id}` : `/movie?id=${video.id}`)}><Info />More Info</Button>
-      {video.is_for_sale && (isPurchased ? <Button variant="outline" className="xero-action text-primary" onClick={ownedDownload}><Download />Download</Button> : <Button className="h-11 gap-2 rounded-lg" onClick={onPurchase} disabled={purchasing}>{purchasing ? <Loader2 className="animate-spin" /> : <ShoppingCart />}Buy to Download (${video.price})</Button>)}
-      {!video.is_for_sale && isPremium && !isComingSoon && <Button variant="outline" className="xero-action text-primary" onClick={download} disabled={progress !== null}>{progress !== null ? <Loader2 className="animate-spin" /> : <Download />}{progress !== null ? `Downloading ${progress}%` : "Download"}</Button>}
+      {allowTransactions && video.is_for_sale && (isPurchased ? <Button variant="outline" className="xero-action text-primary" onClick={ownedDownload}><Download />Download</Button> : <Button className="h-11 gap-2 rounded-lg" onClick={onPurchase} disabled={purchasing}>{purchasing ? <Loader2 className="animate-spin" /> : <ShoppingCart />}Buy to Download (${video.price})</Button>)}
+      {allowTransactions && !video.is_for_sale && isPremium && !isComingSoon && <Button variant="outline" className="xero-action text-primary" onClick={download} disabled={progress !== null}>{progress !== null ? <Loader2 className="animate-spin" /> : <Download />}{progress !== null ? `Downloading ${progress}%` : "Download"}</Button>}
     </div>
   );
 }

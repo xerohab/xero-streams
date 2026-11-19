@@ -12,7 +12,7 @@ const GENRES = [
 /** Xero Cinema search bar + filters. State lives in the Search page. */
 export default function SearchFilters({
   query, onQuery, filterType, onType, filterCategory, onCategory,
-  filterYear, onYear, filterCast, onCast, showAdvanced, onToggleAdvanced, categories,
+  filterYear, onYear, filterCast, onCast, showAdvanced, onToggleAdvanced, categories, includeBooks = true,
 }) {
   return (
     <div className="xero-filter-bar mb-6 max-w-5xl">
@@ -23,7 +23,7 @@ export default function SearchFilters({
             autoFocus
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="Search movies, TV shows, collections, books..."
+            placeholder={includeBooks ? "Search movies, TV shows, collections, books..." : "Search movies and TV shows..."}
             className="h-9 w-full rounded-lg bg-background pl-10 text-sm focus-visible:ring-primary"
           />
         </div>
@@ -32,7 +32,7 @@ export default function SearchFilters({
             <option value="all">All Types</option>
             <option value="movies">Movies</option>
             <option value="series">TV Series</option>
-            <option value="books">Books</option>
+            {includeBooks && <option value="books">Books</option>}
           </select>
           <select value={filterCategory} onChange={(e) => onCategory(e.target.value)} className="xero-filter-select flex-1">
             <option value="all">All Genres</option>

@@ -1,5 +1,6 @@
+import { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 import {useProfile} from "@/lib/ProfileContext";
-import {allowsKidsContent} from "@/lib/parentalControls";
+import {allowsKidsContent, hasPlaybackSource} from "@/lib/parentalControls";
 import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -28,7 +29,8 @@ import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 const OUTLINE_BTN = "xero-action px-5";
 
 export default function SeriesDetail() {
-  const kids=!!useProfile()?.activeProfile?.is_kids;
+  const profile = useProfile()?.activeProfile;
+  const kids = Boolean(profile?.is_kids);
   const [searchParams] = useSearchParams();
   const seriesId = searchParams.get("id");
   const from = searchParams.get("from") || "/";
@@ -65,30 +67,42 @@ export default function SeriesDetail() {
     await profileFavourites.toggle(seriesId);
   };
 
-  const { data: series, isLoading: loadingSeries } = useQuery({
+  const { data: kidsSeries = [], isLoading: kidsSeriesLoading } = useQuery({
+    ...mediaCatalogueQuery(base44, "series", kids ? profile.id : null), enabled: kids,
+  });
+  const { data: kidsVideos = [], isLoading: kidsVideosLoading } = useQuery({
+    ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null), enabled: kids,
+  });
+  const { data: directSeries, isLoading: directSeriesLoading } = useQuery({
     queryKey: ["series", seriesId],
     queryFn: async () => {
       const list = await base44.entities.Series.filter({ id: seriesId });
       return list[0];
     },
-    enabled: !!seriesId,
+    enabled: !kids && !!seriesId,
   });
+
+  const series = kids ? kidsSeries.find(item => item.id === seriesId) : directSeries;
+  const loadingSeries = kids ? kidsSeriesLoading : directSeriesLoading;
 
   useEffect(() => {
     if (series && (!kids||allowsKidsContent(series))) document.title = `${series.title} | Xero Streams`;
     return () => { document.title = "Xero Streams"; };
   }, [series,kids]);
 
-  const { data: episodes = [], isLoading: loadingEpisodes } = useQuery({
+  const { data: directEpisodes = [], isLoading: directEpisodesLoading } = useQuery({
     queryKey: ["episodes", seriesId],
     queryFn: () => base44.entities.Video.filter({ series_id: seriesId }, "sort_order", 2000),
-    enabled: !!seriesId,
+    enabled: !kids && !!seriesId,
   });
+
+  const episodes = kids && series ? kidsVideos.filter(item => item.series_id === seriesId) : kids ? [] : directEpisodes;
+  const loadingEpisodes = kids ? kidsVideosLoading : directEpisodesLoading;
 
   const { data: images = [], isLoading: loadingImages } = useQuery({
     queryKey: ["series-images", seriesId],
     queryFn: () => base44.entities.Image.filter({ series_id: seriesId }, "-created_date"),
-    enabled: !!seriesId,
+    enabled: !!seriesId && (!kids || Boolean(series)),
   });
 
   const { data: premiumSubs = [] } = useQuery({
@@ -96,20 +110,26 @@ export default function SeriesDetail() {
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
     enabled: !!user
   });
-  const { data: franchise } = useQuery({ queryKey: ["franchise", series?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: series.franchise_id}); return res[0]; }, enabled: !!series?.franchise_id });
+  const { data: directFranchise } = useQuery({ queryKey: ["franchise", series?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: series.franchise_id}); return res[0]; }, enabled: !kids && !!series?.franchise_id });
+
+  const franchise = kids ? null : directFranchise;
 
   // Seasons = the sibling series inside the same collection
-  const { data: siblings = [] } = useQuery({
+  const { data: directSiblings = [] } = useQuery({
     queryKey: ["series_siblings", series?.franchise_id],
     queryFn: () => base44.entities.Series.filter({ franchise_id: series.franchise_id }, "sort_order", 500),
-    enabled: !!series?.franchise_id,
+    enabled: !kids && !!series?.franchise_id,
   });
 
-  const { data: recentSeries = [] } = useQuery({
+  const siblings = kids ? kidsSeries.filter(item => series?.franchise_id && item.franchise_id === series.franchise_id) : directSiblings;
+
+  const { data: directRecentSeries = [] } = useQuery({
     queryKey: ["series_recommendations"],
+    enabled: !kids,
     queryFn: () => base44.entities.Series.filter({ is_adult: false }, "-updated_date", 60),
   });
 
+  const recentSeries = kids ? kidsSeries : directRecentSeries;
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   const sortedEpisodes = episodes.filter(ep=>!kids||allowsKidsContent(ep)).sort((a, b) => {
@@ -147,15 +167,15 @@ export default function SeriesDetail() {
     );
   }
 
-  const firstPlayable = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url);
-  const resumeEntry = getAll().find((entry) => sortedEpisodes.some((ep) => ep.id === entry.id && ep.video_url && !ep.coming_soon));
+  const firstPlayable = sortedEpisodes.find((ep) => !ep.coming_soon && hasPlaybackSource(ep));
+  const resumeEntry = getAll().find((entry) => sortedEpisodes.some((ep) => ep.id === entry.id && hasPlaybackSource(ep) && !ep.coming_soon));
   const playEpisode = resumeEntry ? sortedEpisodes.find((ep) => ep.id === resumeEntry.id) : firstPlayable;
   const isUpdated = isRecentlyUpdated(getItemActivityAt(series, [], [series], episodes));
 
   // Episode search + quick actions
   const watchedIds = new Set(getWatched());
-  const latestEpisode = [...sortedEpisodes].reverse().find((ep) => !ep.coming_soon && ep.video_url);
-  const nextUnwatched = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url && !watchedIds.has(ep.id) && !getAll().some((p) => p.id === ep.id));
+  const latestEpisode = [...sortedEpisodes].reverse().find((ep) => !ep.coming_soon && hasPlaybackSource(ep));
+  const nextUnwatched = sortedEpisodes.find((ep) => !ep.coming_soon && hasPlaybackSource(ep) && !watchedIds.has(ep.id) && !getAll().some((p) => p.id === ep.id));
   const filteredEpisodes = (() => {
     const q = epSearch.trim().toLowerCase();
     if (!q) return sortedEpisodes;
@@ -225,7 +245,7 @@ export default function SeriesDetail() {
               subtitle={`${sortedEpisodes.length} episode${sortedEpisodes.length !== 1 ? "s" : ""}`}
             />
             {/* Quick episode actions */}
-            {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+            {sortedEpisodes.some((ep) => !ep.coming_soon && hasPlaybackSource(ep)) && (
               <div className="mb-4 flex flex-wrap gap-2">
                 {resumeEntry && (
                   <Button asChild variant="default" className="h-9 gap-2 rounded-lg px-4 text-xs font-bold">
@@ -262,7 +282,7 @@ export default function SeriesDetail() {
                 />
               </div>
             )}
-            {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+            {!kids && sortedEpisodes.some((ep) => !ep.coming_soon && hasPlaybackSource(ep)) && (
               <p className="mb-5 flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">
                 <DownloadIcon className="h-5 w-5 shrink-0 text-primary" />
                 <span>

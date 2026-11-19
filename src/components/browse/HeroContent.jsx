@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Play, Info, Layers, Tv } from "lucide-react";
@@ -14,7 +15,7 @@ export default function HeroContent({ slide, active, reducedMotion }) {
 
   const title = collection ? data.title : series ? data.title : data.title;
   const info = collection ? `/franchise?id=${data.id}` : series ? `/series?id=${data.id}` : `/movie?id=${data.id}`;
-  const playable = movie && data.video_url && !data.coming_soon;
+  const playable = movie && hasPlaybackSource(data) && !data.coming_soon;
   const watchHref = movie && playable ? `/watch?id=${data.id}` : info;
 
   const synopsis = data.description;

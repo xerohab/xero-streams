@@ -5,8 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 const sw=await readFile(new URL("../public/sw.js",import.meta.url));
+const recoveryPrompt=await readFile(new URL("../src/lib/requestProfilePin.js",import.meta.url));
 const server=createServer((req,res)=>{
  if(req.url==='/sw.js'){res.setHeader('Content-Type','application/javascript');res.end(sw);}
+ else if(req.url==='/requestProfilePin.js'){res.setHeader('Content-Type','application/javascript');res.end(recoveryPrompt);}
  else {res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>XeroStreams local worker test</title>');}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -47,6 +49,33 @@ try {
  const session=await attach(target);
  await call('ServiceWorker.enable',{},session);
  for(let i=0;i<50;i++){if(await evaluate(session,'location.origin')===origin)break;await sleep(100);}
+ const promptChecks=await evaluate(session,`(async()=>{
+  const { requestProfilePin, cancelProfilePin } = await import('/requestProfilePin.js');
+  const first = requestProfilePin('Enter profile PIN');
+  const input = document.querySelector('dialog input');
+  input.value = '1abc';
+  const rejectsInvalidPin = !input.checkValidity();
+  const pinMasked = input.type === 'password';
+  const concurrent = await requestProfilePin('Duplicate prompt');
+  cancelProfilePin();
+  const cancelled = await first;
+  const recovery = requestProfilePin('Enter recovery code', { recovery: true });
+  const code = 'abcdef0123456789'.repeat(2);
+  const codeInput = document.querySelector('dialog input');
+  codeInput.value = code;
+  const acceptsRecoveryCode = codeInput.checkValidity() && codeInput.maxLength === 32 && codeInput.type === 'password';
+  codeInput.form.requestSubmit();
+  return {
+   rejectsInvalidPin, pinMasked, concurrent, cancelled, acceptsRecoveryCode,
+   submitted: await recovery === code,
+   cleaned: !document.querySelector('dialog') && codeInput.value === ''
+  };
+ })()`);
+ assert.deepEqual(promptChecks,{
+  rejectsInvalidPin:true,pinMasked:true,concurrent:null,cancelled:null,
+  acceptsRecoveryCode:true,submitted:true,cleaned:true
+ });
+ console.log('Chromium verified PIN validation, masked recovery code entry, cancellation, and cleanup.');
  await call('Browser.setPermission',{permission:{name:'notifications'},setting:'granted',origin});
  await evaluate(session,'navigator.serviceWorker.register("/sw.js").then(()=>navigator.serviceWorker.ready).then(()=>true)');
  for(let i=0;i<50&&!registrations.has(origin+'/');i++)await sleep(100);

@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Clock } from "lucide-react";
@@ -12,7 +13,7 @@ export default function WatchInfo({ video, series }) {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {series ? <Link to={`/series?id=${series.id}`} className="text-xs font-bold uppercase tracking-widest text-primary">{series.title}{video.episode_number > 0 && ` · Episode ${video.episode_number}`}</Link> : <StatusBadge status="Movie" />}
         {updated && <StatusBadge status="UPDATED" />}
-        {(video.coming_soon || !video.video_url) && <StatusBadge status="Coming Soon" />}
+        {(video.coming_soon || !hasPlaybackSource(video)) && <StatusBadge status="Coming Soon" />}
       </div>
       <h1 className="text-3xl font-black tracking-tight md:text-4xl">{video.title}</h1>
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

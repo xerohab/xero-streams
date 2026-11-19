@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Film, Play } from "lucide-react";
@@ -10,7 +11,7 @@ export default function VideoCard({ video, isUpdated }) {
   const navigate = useNavigate();
 
   if (!video) return null;
-  const isComingSoon = video.coming_soon || !video.video_url;
+  const isComingSoon = video.coming_soon || !hasPlaybackSource(video);
   const href = video.series_id ? `/watch?id=${video.id}` : `/movie?id=${video.id}`;
 
   const handleClick = (e) => {

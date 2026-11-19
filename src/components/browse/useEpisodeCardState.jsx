@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import { useState, useEffect } from "react";
 import { getProgress, getWatched } from "@/hooks/useContinueWatching";
 import { downloadSingleVideo } from "@/lib/downloadUtils";
@@ -17,7 +18,7 @@ export default function useEpisodeCardState(video, { watched, playable, hrefProp
   const watchedPct = saved?.duration ? Math.min(100, Math.round(saved.currentTime / saved.duration * 100)) : 0;
   const isWatched = watched || playback.finished || watchedPct > 90;
   const inProgress = !!saved && !isWatched;
-  const isComingSoon = playable === undefined ? video?.coming_soon || !video?.video_url : !playable;
+  const isComingSoon = playable === undefined ? video?.coming_soon || !hasPlaybackSource(video) : !playable;
   const href = hrefProp || `/watch?id=${video?.id}${inProgress ? `&t=${Math.floor(saved.currentTime)}` : ""}`;
   const durationLabel = typeof video?.duration === "number" ? `${Math.round(video.duration / 60)} min` : video?.duration;
   const isNew = isRecentlyUpdated(toActivityTimestamp(video?.created_date));

@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React from "react";
 import { Film, Layers, Play, Tv } from "lucide-react";
 import MediaCard from "@/components/browse/MediaCard";
@@ -26,7 +27,7 @@ export default function HomeMediaCard({ item }) {
       HoverIcon={collection ? Layers : series ? Tv : Play}
       meta={metadata}
       className="home-media-card"
-      badges={<>{updated && <StatusBadge status={fresh ? "NEW" : "UPDATED"} />}{collection && <StatusBadge status="COLLECTION" />}{!collection && !series && (data.coming_soon || !data.video_url) && <StatusBadge status="Coming Soon" />}</>}
+      badges={<>{updated && <StatusBadge status={fresh ? "NEW" : "UPDATED"} />}{collection && <StatusBadge status="COLLECTION" />}{!collection && !series && (data.coming_soon || !hasPlaybackSource(data)) && <StatusBadge status="Coming Soon" />}</>}
       popover={{ item: data, type, isUpdated: updated, cinema: true, itemCount: item.items }}
     />
   );

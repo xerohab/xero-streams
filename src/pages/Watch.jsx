@@ -1,5 +1,5 @@
 import {useProfile} from "@/lib/ProfileContext";
-import {allowsKidsContent} from "@/lib/parentalControls";
+import {allowsKidsContent, hasPlaybackSource} from "@/lib/parentalControls";
 import PlaybackReport from "@/components/browse/PlaybackReport";
 import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -17,7 +17,7 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import WatchPartyControls from "@/components/browse/WatchPartyControls";
 import WatchPrimaryControls from "@/components/browse/WatchPrimaryControls";
 import WatchInfo from "@/components/browse/WatchInfo";
-import loadMediaRecords from "@/components/browse/loadMediaRecords";
+import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
@@ -128,9 +128,11 @@ export default function Watch() {
   });
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
+  const playbackProfile=useProfile()?.activeProfile;
+  const playbackProfileId=playbackProfile?.id||null;
+  const kids=playbackProfile?.is_kids;
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
-    queryKey: ["cinema_catalog", "videos"],
-    queryFn: () => loadMediaRecords(base44.entities.Video),
+    ...mediaCatalogueQuery(base44, "videos", kids ? playbackProfileId : null),
     staleTime: Infinity,
   });
 
@@ -142,15 +144,12 @@ export default function Watch() {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
     },
-    enabled: !!videoId && !videoFromAll,
+    enabled: !kids && !!videoId && !videoFromAll,
     staleTime: Infinity,
     gcTime: Infinity,
   });
 
-  const playbackProfile=useProfile()?.activeProfile;
-  const playbackProfileId=playbackProfile?.id||null;
-  const kids=playbackProfile?.is_kids;
-  const candidateVideo = videoFromAll || fetchedVideo;
+  const candidateVideo = videoFromAll || (!kids ? fetchedVideo : null);
   const video=kids&&!allowsKidsContent(candidateVideo)?null:candidateVideo;
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
   const isLoading = !video && (isFetchingVideo || isLoadingAll);
@@ -174,20 +173,39 @@ export default function Watch() {
   }, [video?.id]);
 
   const { data: seriesList = [] } = useQuery({
-    queryKey: ["cinema_catalog", "series"],
-    queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000),
+    ...mediaCatalogueQuery(base44, "series", kids ? playbackProfileId : null),
     staleTime: Infinity,
   });
 
-  const { data: franchises = [] } = useQuery({
+  const { data: directFranchises = [] } = useQuery({
     queryKey: ["cinema_catalog", "franchises"],
+    enabled: !kids,
     queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
     staleTime: Infinity,
   });
 
+  const franchises = kids ? [] : directFranchises;
+
+  const { data: approvedSource, isPending: isCheckingSource, isError: sourceError } = useQuery({
+    queryKey: ["kids-watch-source", user?.id, playbackProfileId, videoId],
+    enabled: Boolean(kids && video && playbackProfileId),
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    queryFn: async () => {
+      const result = await base44.functions.invoke("profilePlayback", {
+        action: "source", profile_id: playbackProfileId, video_id: videoId
+      });
+      if (!result.data || !Object.hasOwn(result.data, "source")) throw new Error("Source not available");
+      return result.data;
+    }
+  });
+  const playbackSource = kids ? approvedSource?.source : video?.video_url;
+  const playbackSubtitles = kids ? approvedSource?.subtitles : video?.subtitles;
+
   // HLS hook — stop local playback when cast overlay is open
   const hlsSrc = (() => {
-    const url = video?.video_url;
+    const url = playbackSource;
     if (!url || isMobileCasting || getEmbedUrl(url)) return null;
     return url;
   })();
@@ -278,7 +296,7 @@ export default function Watch() {
     : null;
 
   const candidate = nextEpisode || nextFranchiseMovie;
-  const nextVideo = candidate?.video_url && !candidate.coming_soon && !candidate.is_adult && (!kids||allowsKidsContent(candidate)) ? candidate : null;
+  const nextVideo = hasPlaybackSource(candidate) && !candidate.coming_soon && !candidate.is_adult && (!kids||allowsKidsContent(candidate)) ? candidate : null;
   const previousCandidate = prevSeriesEpisode || prevEpisode || prevFranchiseMovie;
   const prevVideo = !kids||allowsKidsContent(previousCandidate)?previousCandidate:null;
 
@@ -458,8 +476,13 @@ export default function Watch() {
     );
   }
 
-  const isComingSoon = video.coming_soon || !video.video_url;
-  const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
+  if (kids && (isCheckingSource || sourceError)) {
+    return <div className="min-h-screen flex items-center justify-center p-6 text-center">
+      {sourceError ? "Playback is unavailable on this profile." : "Checking playback availability…"}
+    </div>;
+  }
+  const isComingSoon = video.coming_soon || !playbackSource;
+  const embedUrl = !isComingSoon ? getEmbedUrl(playbackSource) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -527,7 +550,7 @@ export default function Watch() {
                     });
                   }}
                 >
-                  {video.subtitles?.map((sub, i) => (
+                  {playbackSubtitles?.map((sub, i) => (
                     <track key={i} src={sub.url} kind="subtitles" srcLang={sub.language} label={sub.label} />
                   ))}
                 </video>
@@ -608,7 +631,7 @@ export default function Watch() {
         <div className="xero-container">
           {user && !isComingSoon && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
           {!isComingSoon&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
-          <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
+          <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} allowTransactions={!kids} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
           <WatchInfo video={video} series={series} />
           {user&&<PlaybackReport key={videoId} videoId={videoId}/>}
         </div>

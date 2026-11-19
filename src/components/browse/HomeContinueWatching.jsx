@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React, { useEffect, useState } from "react";
 import { getAll, removeProgress } from "@/hooks/useContinueWatching";
 import EpisodeCard from "@/components/browse/EpisodeCard";
@@ -15,14 +16,15 @@ export default function HomeContinueWatching({ videos, series }) {
     window.addEventListener("xero-profile-changed", refresh);
     return () => { window.removeEventListener("xero-progress-updated", refresh); window.removeEventListener("storage", refresh); window.removeEventListener("focus", refresh); window.removeEventListener("xero-profile-changed", refresh); };
   }, []);
-  const visible=items.filter(item=>videos.some(v=>v.id===item.id));
+  const playable = new Map(videos.filter(video => !video.coming_soon && hasPlaybackSource(video)).map(video => [video.id, video]));
+  const visible = items.filter(item => playable.has(item.id));
   if (!visible.length) return null;
   return (
     <section className="home-section" id="home-continue">
       <HomeSectionHeader title="Continue Watching" />
       <EpisodeGrid landscape>
         {visible.slice(0, 7).map((saved) => {
-          const video = videos.find((item) => item.id === saved.id);
+          const video = playable.get(saved.id);
           const season = series.find((item) => item.id === video?.series_id);
           const display = { ...video, ...saved, title: season ? `${season.title} · ${video.title}` : video.title };
           return <EpisodeCard key={saved.id} video={display} landscape playable href={`/watch?id=${saved.id}&t=${Math.floor(saved.currentTime)}`} onRemove={removeProgress} />;

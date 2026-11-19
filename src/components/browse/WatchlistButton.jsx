@@ -1,3 +1,4 @@
+import { loadProfileWatchlists } from "@/lib/profileWatchlists";
 import { useProfile } from "@/lib/ProfileContext";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
@@ -26,7 +27,7 @@ export default function WatchlistButton({ videoId, seriesId, variant = "outline"
 
   const { data: watchlists = [], isLoading: isLoadingWatchlists } = useQuery({
     queryKey: ["watchlists", user?.id, activeProfile?.id],
-    queryFn: async () => (await base44.entities.Watchlist.filter({ user_id: user.id })).filter(w=>w.profile_id===activeProfile?.id || (!w.profile_id && activeProfile?.is_default)),
+    queryFn: () => loadProfileWatchlists(base44.entities.Watchlist, user.id, activeProfile),
     enabled: !!user && !!activeProfile && !profileLoading,
   });
 
