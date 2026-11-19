@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mediaCatalogueQuery } from '../src/components/browse/loadMediaRecords.js';
+import loadMediaRecords, { mediaCatalogueQuery } from '../src/components/browse/loadMediaRecords.js';
 
 test('Kids catalogue continues through empty filtered pages and uses a profile-scoped cache key', async () => {
   const calls = [];
@@ -26,4 +26,12 @@ test('Kids catalogue continues through empty filtered pages and uses a profile-s
 test('Kids catalogue refuses a repeated page offset', async () => {
   const client = { entities: {}, functions: { invoke: async () => ({ data: { rows: [], next: 0 } }) } };
   await assert.rejects(mediaCatalogueQuery(client, 'videos', 'kid').queryFn, /Invalid catalogue offset/);
+});
+
+
+test('full catalogue reads all pages and rejects a repeated page', async () => {
+ const records=[{id:'a'},{id:'b'},{id:'c'}];
+ assert.deepEqual(await loadMediaRecords({list:async(_sort,limit,offset)=>records.slice(offset,offset+limit)},'id',2),records);
+ await assert.rejects(loadMediaRecords({list:async()=>records.slice(0,2)},'id',2),/Repeated or invalid/);
+ await assert.rejects(loadMediaRecords({list:async()=>null},'id',2),/Invalid catalogue page/);
 });
