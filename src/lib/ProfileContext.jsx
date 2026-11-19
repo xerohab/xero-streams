@@ -54,6 +54,15 @@ async function authorizeProfile(profile, allowSetup=false){
  return false;
 }
 
+async function manageProfile(active, action, payload) {
+  const { data: status } = await base44.functions.invoke("profilePin", { action: "status", profile_id: active.id });
+  if (status?.requires_setup || typeof status?.enabled !== "boolean") return null;
+  const pin = status.enabled ? await requestProfilePin("Enter PIN for " + active.name) : undefined;
+  if (pin === null) return null;
+  const result = await base44.functions.invoke("profilePin", { ...payload, action, profile_id: active.id, pin });
+  return result.data;
+}
+
 export function ProfileProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profiles, setProfiles] = useState([]);
@@ -73,13 +82,9 @@ export function ProfileProvider({ children }) {
       // Migration: if no profiles exist, create a default one
       if (list.length === 0 && !migratedRef.current) {
         migratedRef.current = true;
-        const defaultProfile = await base44.entities.ViewingProfile.create({
-          user_id: u.id,
-          name: u.full_name || "Main Profile",
-          avatar: "popcorn",
-          is_default: true,
-          is_kids: false,
-        });
+        const { data } = await base44.functions.invoke("profilePin", { action: "bootstrap" });
+        const defaultProfile = data?.profile;
+        if (!defaultProfile) return;
         if(version!==generation.current)return;
         // Copy existing localStorage continue-watching to the default profile's namespace
         migrateLocalStorageData(defaultProfile.id);
@@ -102,7 +107,7 @@ export function ProfileProvider({ children }) {
         setPlaybackProfile(active.id); syncPlayback(active.id);
         window.dispatchEvent(new Event("xero-profile-changed"));
         // Update last_used_date in background
-        base44.entities.ViewingProfile.update(active.id, { last_used_date: new Date().toISOString() }).catch(() => {});
+        base44.functions.invoke("profilePin", { action: "touch", profile_id: active.id }).catch(() => {});
       } else {setActiveProfileState(null);localStorage.removeItem(ACTIVE_KEY);setPlaybackProfile(null);}
     } catch (err) {
       console.error("Profile load error:", err);
@@ -139,7 +144,7 @@ export function ProfileProvider({ children }) {
     // Notify continue-watching system to reload profile-scoped data
     window.dispatchEvent(new Event("xero-profile-changed"));
     // Update last_used_date
-    base44.entities.ViewingProfile.update(profile.id, { last_used_date: new Date().toISOString() }).catch(() => {});
+    base44.functions.invoke("profilePin", { action: "touch", profile_id: profile.id }).catch(() => {});
     return true;
   }, [profiles, loading]);
 
@@ -149,14 +154,12 @@ export function ProfileProvider({ children }) {
     if (profiles.length >= MAX_PROFILES) return null;
     if(!data.is_kids&&profiles.some(p=>p.is_kids)){window.alert("Remove Kids profiles before adding an unprotected adult profile.");return null;}
     if(data.is_kids){for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before creating a Kids profile.");return null;}}}
-    const profile = await base44.entities.ViewingProfile.create({
-      user_id: user.id,
-      name: data.name || "New Profile",
-      avatar: data.avatar || "popcorn",
-      accent_color: data.accent_color || null,
-      is_kids: data.is_kids || false,
-      is_default: false,
-    });
+    const result = await manageProfile(activeProfile, "create_profile", { data: {
+      name: data.name || "New Profile", avatar: data.avatar || "popcorn",
+      accent_color: data.accent_color || null, is_kids: Boolean(data.is_kids)
+    } });
+    const profile = result?.profile;
+    if (!profile) return null;
     setProfiles((prev) => [...prev, profile]);
     return profile;
   }, [user, profiles, activeProfile]);
@@ -170,7 +173,22 @@ export function ProfileProvider({ children }) {
     if(Object.keys(data).some(k=>!allowed.has(k)&&k!=='is_kids'))return null;
     data=Object.fromEntries(Object.entries(data).filter(([k])=>allowed.has(k)));
     const version=generation.current;
-    const updated = await base44.entities.ViewingProfile.update(id, data);
+    const fields = new Set(["name", "avatar", "accent_color"]);
+    const preferences = Object.fromEntries(Object.entries(data).filter(([key]) => !fields.has(key)));
+    let updated;
+    if (Object.keys(data).some(key => fields.has(key))) {
+      const record = { ...profile, ...data };
+      const result = await manageProfile(activeProfile, "edit_profile", {
+        target_id: id, data: { name: record.name, avatar: record.avatar || "popcorn", accent_color: record.accent_color }
+      });
+      updated = result?.profile;
+      if (!updated) return null;
+    }
+    if (Object.keys(preferences).length) {
+      const result = await base44.functions.invoke("profilePin", { action: "favourites", profile_id: id, data: preferences });
+      updated = result.data?.profile;
+    }
+    if (!updated) return null;
     if(version!==generation.current)return null;
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
     if (activeProfile?.id === id) {
@@ -184,9 +202,10 @@ export function ProfileProvider({ children }) {
     // Don't allow deleting if it's the only profile
     if (profiles.length <= 1 || !activeProfile || activeProfile.is_kids) return false;
     const profile=profiles.find(p=>p.id===id);
-    if(!profile||(!profile.is_kids&&profiles.filter(p=>!p.is_kids).length<=1)||!(await authorizeProfile(profile)))return false;
+    if(!profile||(!profile.is_kids&&profiles.filter(p=>!p.is_kids).length<=1))return false;
     // Clear profile-scoped localStorage data
-    await base44.entities.ViewingProfile.delete(id);
+    const result = await manageProfile(activeProfile, "delete_profile", { target_id: id });
+    if (!result?.ok) return false;
     clearProfileStorage(id);
     const remaining = profiles.filter((p) => p.id !== id);
     setProfiles(remaining);

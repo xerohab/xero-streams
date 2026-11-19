@@ -4,8 +4,13 @@ import handler from '../base44/functions/profilePin/entry.ts';
 function setup({kids=false,user={id:'u'},owns=true}={}){
  const profiles=[{id:'p',is_kids:false},...(kids?[{id:'k',is_kids:true}]:[])],rows=[],emails=[];
  globalThis.__testClient={auth:{me:async()=>user},asServiceRole:{integrations:{Core:{SendEmail:async message=>emails.push(message)}},entities:{
- ViewingProfile:{filter:async q=>owns?profiles.filter(p=>!q.id||p.id===q.id):[]},
- ProfilePin:{filter:async()=>rows,create:async data=>rows.push({...data,id:'r'}),update:async(id,data)=>Object.assign(rows[0],data),delete:async()=>rows.pop()}
+ ViewingProfile:{
+  filter:async q=>owns&&q.user_id===user.id?[...profiles]:[],
+  create:async data=>{const p={...data,id:'created'};profiles.push(p);return p;},
+  update:async(id,data)=>Object.assign(profiles.find(p=>p.id===id),data),
+  delete:async id=>profiles.splice(profiles.findIndex(p=>p.id===id),1)
+ },
+ ProfilePin:{filter:async q=>rows.filter(row=>!q.profile_id||row.profile_id===q.profile_id),create:async data=>rows.push({...data,id:'r'}),update:async(id,data)=>Object.assign(rows[0],data),delete:async()=>rows.pop()}
  }}};
  return {rows,profiles,emails};
 }
@@ -37,4 +42,17 @@ test('recovery rejects expired codes and explicitly unverified email',async()=>{
  assert.equal((await call({action:'recover',code,new_pin:'7654'})).status,403);
  setup({user:{id:'u',email:'owner@example.test',email_verified:false}});
  assert.equal((await call({action:'request_recovery',new_pin:'7654'})).status,403);
+});
+
+test('profile management requires the adult PIN and preserves the last adult profile',async()=>{
+ const {profiles}=setup();
+ assert.equal((await call({action:'set',new_pin:'1234'})).status,200);
+ const data={name:'Kids',avatar:'popcorn',is_kids:true};
+ assert.equal((await call({action:'create_profile',data})).status,403);
+ assert.equal((await call({action:'create_profile',data,pin:'1234'})).status,200);
+ assert.equal((await call({profile_id:'created',action:'delete_profile',target_id:'p'})).status,403);
+ assert.equal((await call({action:'delete_profile',target_id:'p',pin:'1234'})).status,403);
+ assert.equal((await call({action:'edit_profile',target_id:'created',pin:'1234',data:{...data,is_kids:false}})).status,200);
+ assert.equal(profiles.find(p=>p.id==='created').is_kids,true);
+ assert.equal((await call({action:'delete_profile',target_id:'created',pin:'1234'})).status,200);
 });
