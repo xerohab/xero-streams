@@ -185,22 +185,24 @@ export default function Watch() {
 
   const franchises = kids ? [] : directFranchises;
 
+  const profileAccess=profileContext?.profileAccess;
+  const useProtectedSource=Boolean(kids || (playbackProfileId && !video?.video_url && !video?.coming_soon && profileAccess?.token));
   const { data: approvedSource, isPending: isCheckingSource, isError: sourceError } = useQuery({
-    queryKey: ["kids-watch-source", user?.id, playbackProfileId, videoId],
-    enabled: Boolean(kids && video && playbackProfileId),
+    queryKey: ["profile-watch-source", user?.id, playbackProfileId, videoId, profileAccess?.expiresAt],
+    enabled: Boolean(useProtectedSource && video && playbackProfileId && !profilePending),
     retry: false,
     staleTime: 0,
     gcTime: 0,
     queryFn: async () => {
       const result = await base44.functions.invoke("profilePlayback", {
-        action: "source", profile_id: playbackProfileId, video_id: videoId
+        action: "source", profile_id: playbackProfileId, video_id: videoId, access_token: profileAccess?.token
       });
       if (!result.data || !Object.hasOwn(result.data, "source")) throw new Error("Source not available");
       return result.data;
     }
   });
-  const playbackSource = profilePending || (video?.is_for_sale && !isPurchased && user?.role !== 'admin') ? null : kids ? approvedSource?.source : video?.video_url;
-  const playbackSubtitles = kids ? approvedSource?.subtitles : video?.subtitles;
+  const playbackSource = profilePending || (video?.is_for_sale && !isPurchased && user?.role !== 'admin') ? null : useProtectedSource ? approvedSource?.source : video?.video_url;
+  const playbackSubtitles = useProtectedSource ? approvedSource?.subtitles : video?.subtitles;
 
   // HLS hook — stop local playback when cast overlay is open
   const hlsSrc = (() => {
@@ -475,7 +477,7 @@ export default function Watch() {
     );
   }
 
-  if (kids && (isCheckingSource || sourceError)) {
+  if (useProtectedSource && (isCheckingSource || sourceError)) {
     return <div className="min-h-screen flex items-center justify-center p-6 text-center">
       {sourceError ? "Playback is unavailable on this profile." : "Checking playback availability…"}
     </div>;
