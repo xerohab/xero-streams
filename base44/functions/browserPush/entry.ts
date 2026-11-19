@@ -9,6 +9,7 @@ if(typeof b.device_id!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9
 const scope={user_id:u.id,device_id:b.device_id};
 const rows=await db.BrowserPushSubscription.filter(scope);
 if(b.action==='remove'){for(const row of rows)await db.BrowserPushSubscription.delete(row.id);return Response.json({ok:true});}
+if(b.action==='status'){const device=(await db.StreamingDevice.filter(scope))[0];return Response.json({registered:!!device&&!device.revoked&&rows.length>0});}
 if(b.action!=='register')return Response.json({error:'Invalid action'},{status:400});
 const device=(await db.StreamingDevice.filter(scope))[0];
 if(!device||device.revoked)return Response.json({error:'Device unavailable'},{status:403});
