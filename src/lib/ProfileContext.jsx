@@ -43,8 +43,8 @@ async function authorizeProfile(profile) {
     if (typeof status?.enabled !== "boolean") throw new Error("PIN status unavailable");
     const pin = status.enabled ? await requestProfilePin("Enter PIN for " + profile.name) : undefined;
     if (pin === null) return false;
-    const result = await base44.functions.invoke("profilePin", { action: "verify", profile_id: profile.id, pin });
-    if (result.data?.ok === true) return true;
+    const result = await base44.functions.invoke("profilePin", { action: "verify", profile_id: profile.id, pin, issue_access: true });
+    if (result.data?.ok === true && /^[a-f0-9]{64}$/.test(result.data.token || "") && result.data.expires_at > Date.now()) return {token:result.data.token,expiresAt:result.data.expires_at};
   } catch {}
   window.alert(profile.is_kids
     ? "This profile couldn't be opened. Check that every adult profile has a PIN and try again."
@@ -66,6 +66,7 @@ export function ProfileProvider({ children }) {
   const [profiles, setProfiles] = useState([]);
   const [activeProfile, setActiveProfileState] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileAccess, setProfileAccess] = useState(null);
   const migratedRef = useRef(false);
   const generation = useRef(0);
 
@@ -99,13 +100,14 @@ export function ProfileProvider({ children }) {
       const authorized=active && await authorizeProfile(active);
       if(version!==generation.current)return;
       if (authorized) {
+        setProfileAccess(authorized);
         setActiveProfileState(active);
         localStorage.setItem(ACTIVE_KEY, active.id);
         setPlaybackProfile(active.id); syncPlayback(active.id);
         window.dispatchEvent(new Event("xero-profile-changed"));
         // Update last_used_date in background
         base44.functions.invoke("profilePin", { action: "touch", profile_id: active.id }).catch(() => {});
-      } else {setActiveProfileState(null);localStorage.removeItem(ACTIVE_KEY);setPlaybackProfile(null);}
+      } else {setProfileAccess(null);setActiveProfileState(null);localStorage.removeItem(ACTIVE_KEY);setPlaybackProfile(null);}
     } catch (err) {
       console.error("Profile load error:", err);
     } finally {
@@ -132,8 +134,9 @@ export function ProfileProvider({ children }) {
     const version=++generation.current;
     setLoading(true);
     try {
-      if(!(await authorizeProfile(target)))return false;
-      if(version!==generation.current)return false;
+      const access=await authorizeProfile(target);
+      if(!access||version!==generation.current)return false;
+      setProfileAccess(access);
     } finally {
       if(version===generation.current)setLoading(false);
     }
@@ -212,6 +215,7 @@ export function ProfileProvider({ children }) {
     // If deleting active, switch to first remaining
     if (activeProfile?.id === id && remaining.length > 0) {
       setActiveProfileState(null);
+      setProfileAccess(null);
       localStorage.removeItem(ACTIVE_KEY);
       setPlaybackProfile(null);
       window.dispatchEvent(new Event("xero-profile-changed"));
@@ -224,6 +228,7 @@ export function ProfileProvider({ children }) {
     generation.current++;
     setLoading(false);
     setActiveProfileState(null);
+      setProfileAccess(null);
     localStorage.removeItem(ACTIVE_KEY);
     setPlaybackProfile(null);
   }, []);
@@ -232,6 +237,7 @@ export function ProfileProvider({ children }) {
     user,
     profiles,
     activeProfile,
+    profileAccess,
     loading,
     maxProfiles: MAX_PROFILES,
     avatarOptions: AVATAR_OPTIONS,
