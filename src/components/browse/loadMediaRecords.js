@@ -1,12 +1,19 @@
 /** Read every hierarchy page; a full 2,000-record batch is not the end of the catalog. */
 export default async function loadMediaRecords(entity, sort = "-created_date", pageSize = 2000) {
   const records = [];
-  let page;
-  do {
-    page = await entity.list(sort, pageSize, records.length);
-    records.push(...page);
-  } while (page.length === pageSize);
-  return records;
+  if (!Number.isSafeInteger(pageSize) || pageSize <= 0) throw new Error("Invalid catalogue page size");
+  const seen = new Set();
+  for (let offset = 0; offset <= 500000; offset += pageSize) {
+    const page = await entity.list(sort, pageSize, offset);
+    if (!Array.isArray(page) || page.length > pageSize) throw new Error("Invalid catalogue page");
+    for (const record of page) {
+      if (!record?.id || seen.has(record.id)) throw new Error("Repeated or invalid catalogue record");
+      seen.add(record.id);
+      records.push(record);
+    }
+    if (page.length < pageSize) return records;
+  }
+  throw new Error("Catalogue page limit exceeded");
 }
 export function mediaCatalogueQuery(client, kind, kidsProfileId) {
   const entity = kind === "videos" ? client.entities.Video : client.entities.Series;
