@@ -192,14 +192,7 @@ export default function MovieDetail() {
 
         {!kids && video.is_for_sale && (
           isPurchased ? (
-            <Button variant="outline" className={`${OUTLINE_BTN} border-primary/40 text-primary`} onClick={() => {
-              const a = document.createElement("a");
-              a.href = video.download_url;
-              a.download = "";
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }}>
+            <Button variant="outline" className={`${OUTLINE_BTN} border-primary/40 text-primary`} disabled={downloadProgress !== null} onClick={async () => {setDownloadProgress(0);try{await downloadSingleVideo(video.id,setDownloadProgress);}catch(error){alert(error.message);}finally{setDownloadProgress(null);}}}>
               <DownloadIcon className="w-4 h-4" /> Download
             </Button>
           ) : (
