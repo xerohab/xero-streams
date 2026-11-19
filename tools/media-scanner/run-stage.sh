@@ -12,4 +12,5 @@ fi
 [ -s remote.json ]
 python3 /opt/xero-media-scan/stage_media.py remote.json --root /srv/xero-media-scan --output staged.json --offset "$offset" --max-files 3 --max-bytes 2147483648 --authorized
 python3 -c 'import json; assert len(json.load(open("staged.json"))) >= 1, "No staged episodes"'
-echo "Staged manifest ready for administrator review and isolated scan"
+python3 /opt/xero-media-scan/merge-staged.py remote.json staged.json accumulated.json --root /srv/xero-media-scan
+echo "Accumulated manifest ready for administrator review and isolated scan"
