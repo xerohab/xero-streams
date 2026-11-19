@@ -1,0 +1,61 @@
+{
+  "name": "MediaScanControl",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "paused": {
+      "type": "boolean"
+    },
+    "automatic": {
+      "type": "boolean"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string"
+    },
+    "heartbeat": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "total": {
+      "type": "number"
+    },
+    "processed": {
+      "type": "number"
+    },
+    "completed_request": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    }
+  }
+}
