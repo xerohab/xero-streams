@@ -104,13 +104,9 @@ export default function Watch() {
     base44.analytics.track({ eventName: "video_purchase_initiated", properties: { video_id: video.id, price: video.price } });
     setPurchasing(true);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: video.price,
-        return_url: window.location.origin + "/callback?success=true",
-        cancel_url: window.location.origin + "/callback?cancelled=true"
-      });
+      const res = await base44.functions.invoke("mediaCheckout", { action: "create", kind: "video", item_id: video.id });
       if (res.data?.approvalUrl) {
-        localStorage.setItem("pending_video_purchase", JSON.stringify({ video_id: video.id }));
+
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to checkout");
