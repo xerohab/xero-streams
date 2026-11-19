@@ -55,13 +55,9 @@ export default function Books() {
     base44.analytics.track({ eventName: "book_purchase_initiated", properties: { book_id: book.id, price, format } });
     setPurchasing(book.id + format);
     try {
-      const res = await base44.functions.invoke("createPaypalOrder", { 
-        amount: price,
-        return_url: window.location.origin + "/callback?success=true",
-        cancel_url: window.location.origin + "/callback?cancelled=true"
-      });
+      const res = await base44.functions.invoke("mediaCheckout", { action: "create", kind: "book", item_id: book.id, format });
       if (res.data?.approvalUrl) {
-        localStorage.setItem("pending_book_purchase", JSON.stringify({ book_id: book.id, format }));
+
         window.location.href = res.data.approvalUrl;
       } else {
         throw new Error(res.data?.error || "Failed to start checkout");
