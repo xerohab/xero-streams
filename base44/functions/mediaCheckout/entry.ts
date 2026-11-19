@@ -20,6 +20,7 @@ export default async function(req:Request){
  const c=createClientFromRequest(req),u=await c.auth.me().catch(()=>null);
  if(!u?.id||u.is_banned)return Response.json({error:'Unauthorized'},{status:401,headers});
  const b=await req.json(),db=c.asServiceRole.entities;
+ if(!b||typeof b!=='object'||Array.isArray(b))throw Error();
  if(b.action==='create'){
  if(!valid(b.item_id)||!['video','book'].includes(b.kind))throw Error();
  const format=b.kind==='video'?'default':b.format;
@@ -40,7 +41,9 @@ export default async function(req:Request){
  if(b.action!=='capture'||!valid(b.orderId))throw Error();
  const rows=await db.MediaPayment.filter({order_id:b.orderId});
  if(rows.length!==1||rows[0].user_id!==u.id)throw Error();
- const binding=rows[0],token=await access(),path='/v2/checkout/orders/'+b.orderId;
+ const binding=rows[0];
+ if(!valid(binding.id)||!valid(binding.item_id)||!valid(binding.request_reference)||!['video','book'].includes(binding.kind)||!['default','word','ebook'].includes(binding.format)||(binding.kind==='video'&&binding.format!=='default')||!/^\d+\.\d{2}$/.test(binding.amount)||!['created','completed'].includes(binding.status))throw Error();
+ const token=await access(),path='/v2/checkout/orders/'+b.orderId;
  const check=order=>{const unit=order.purchase_units?.[0];if(order.id!==b.orderId||order.purchase_units?.length!==1||unit?.custom_id!=='XEROMEDIA:'+binding.id||unit.amount?.currency_code!=='GBP'||unit.amount?.value!==binding.amount)throw Error();return unit;};
  let order=await request(path,'GET',token);check(order);
  if(order.status==='APPROVED'){await request(path+'/capture','POST',token,{},'capture-'+binding.request_reference);order=await request(path,'GET',token);}
@@ -49,6 +52,7 @@ export default async function(req:Request){
  const video=binding.kind==='video',entity=video?db.VideoPurchase:db.BookPurchase,field=video?'video_id':'book_id';
  const existing=await entity.filter({paypal_order_id:b.orderId});
  if(existing.length>1||existing.some(r=>r.user_id!==u.id||r[field]!==binding.item_id||(!video&&r.format!==binding.format)))throw Error();
+ if(binding.capture_id&&binding.capture_id!==cap.id)throw Error();
  if(!existing.length)await entity.create({user_id:u.id,[field]:binding.item_id,...(!video?{format:binding.format}:{}),status:'completed',paypal_order_id:b.orderId});
  await db.MediaPayment.update(binding.id,{status:'completed',capture_id:cap.id});
  return Response.json({success:true,kind:binding.kind},{headers});
