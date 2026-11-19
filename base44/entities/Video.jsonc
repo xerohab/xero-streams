@@ -8,6 +8,7 @@
     "description": {
       "type": "string"
     },
+    "has_playback": {"type":"boolean","default":false},
     "video_url": {
       "type": "string"
     },
