@@ -13,6 +13,8 @@ import { base44 } from "@/api/base44Client";
  */
 
 const ProfileContext = createContext(null);
+let downloadAccess=null;
+export const getDownloadAccess=()=>downloadAccess;
 export const useProfile = () => useContext(ProfileContext);
 
 const ACTIVE_KEY = "xero_active_profile";
@@ -249,6 +251,8 @@ export function ProfileProvider({ children }) {
     window.dispatchEvent(new Event('xero-profile-changed'));
   }, []);
 
+  downloadAccess=activeProfile&&!loading&&profileAccess&&!activeProfile.is_kids?{profile_id:activeProfile.id,access_token:profileAccess.token}:null;
+  useEffect(()=>()=>{downloadAccess=null},[]);
   const value = {
     user,
     profiles,
