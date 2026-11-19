@@ -11,7 +11,7 @@ export default async function(req:Request){
  if(!v||v.is_adult||v.is_for_sale||v.coming_soon)return Response.json({error:'Unavailable title'},{status:404,headers});
  if(v.series_id){const parents=await db.Series.filter({id:v.series_id});if(parents.length!==1||parents[0].is_adult)return Response.json({error:'Unavailable title'},{status:404,headers});}
  let media=v;
- if(!v.video_url){const sources=await db.ProtectedMediaSource.filter({video_id:v.id});if(sources.length!==1)return Response.json({error:'Unavailable title'},{status:404,headers});media=sources[0];}
+ if(db.ProtectedMediaSource){const sources=await db.ProtectedMediaSource.filter({video_id:v.id});if(sources.length>1)return Response.json({error:'Conflicting sources'},{status:409,headers});if(sources.length===1)media=sources[0];}
  const source=typeof media.video_url==='string'&&media.video_url.trim()?media.video_url:null;
  const subtitles=source&&Array.isArray(media.subtitles)?media.subtitles.filter(t=>typeof t?.url==='string'&&t.url).map(({url,language,label})=>({url,language,label})):[];
  return Response.json({source,subtitles},{headers});
