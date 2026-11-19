@@ -35,8 +35,21 @@ def credits_candidate(a, peers, duration):
     start=max(0,duration-len(a)/10+statistics.median(v[0] for v in group))
     return {'kind':'credits','status':'review','matches':len(group),'credits_start':start,'credits_end':duration} if duration-start>=15 else None
 
+def recap_candidate(a, previous, intro_start):
+    # Compare the opening to the previous episode's ending, not recurring theme music.
+    if not math.isfinite(intro_start) or intro_start<15:return None
+    opening=a[:min(900,int(intro_start*10))]
+    # Align against overlapping 90-second windows of the preceding episode.
+    hits=[]
+    for pos in range(0,len(previous),600):
+        hit=match(opening,previous[pos:pos+1200])
+        if hit and hit[0]<=5 and hit[1]<=intro_start:hits.append(hit)
+    if not hits:return None
+    start,end,_=max(hits,key=lambda v:v[1]-v[0])
+    return {'kind':'recap','status':'review','matches':1,'recap_start':start,'recap_end':end}
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument('manifest');p.add_argument('--db',default=str(ROOT/'scan.sqlite'));p.add_argument('--media-root',required=True);p.add_argument('--credits',action='store_true');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('manifest');p.add_argument('--db',default=str(ROOT/'scan.sqlite'));p.add_argument('--media-root',required=True);p.add_argument('--credits',action='store_true');p.add_argument('--recaps',action='store_true');args=p.parse_args()
     media_root=Path(args.media_root).resolve(strict=True)
     if not media_root.is_dir():raise ValueError('Invalid media directory')
     db=sqlite3.connect(args.db);db.execute('create table if not exists fingerprints(id text primary key, revision text, series text, data text)');db.execute('create table if not exists results(id text primary key, data text)')
@@ -70,7 +83,7 @@ def main():
         if len(group)>=2:result.update(intro_start=statistics.median(v[0] for v in group),intro_end=statistics.median(v[1] for v in group))
         db.execute('insert or replace into results values(?,?)',(r['id'],json.dumps(result)));db.commit()
     credits=[]
-    if args.credits:
+    if args.credits or args.recaps:
         tails={}
         for r in rows:
             if (ROOT/'pause').exists():return
@@ -85,6 +98,21 @@ def main():
             if r['id'] not in tails:continue
             a,duration=tails[r['id']];peers=[tails[v['id']][0] for v in rows if v['id']!=r['id'] and v['series_id']==r['series_id'] and v['id'] in tails][:8]
             candidate=credits_candidate(a,peers,duration)
-            if candidate:credits.append({'id':r['id'],'revision':r['revision'],**candidate})
-    print(json.dumps([{'id':r['id'],'revision':r['revision'],**json.loads(row[0])} for r in rows if (row:=db.execute('select data from results where id=?',(r['id'],)).fetchone())]+credits))
+            if args.credits and candidate:credits.append({'id':r['id'],'revision':r['revision'],**candidate})
+    recaps=[]
+    if args.recaps:
+        for r in rows:
+            if (ROOT/'pause').exists():return
+            season,episode=r.get('season_number'),r.get('episode_number')
+            if type(season) is not int or type(episode) is not int or episode<2:continue
+            prev=[v for v in rows if v['series_id']==r['series_id'] and v.get('season_number')==season and v.get('episode_number')==episode-1]
+            if len(prev)!=1 or prev[0]['id'] not in tails:continue
+            cur=db.execute('select data from fingerprints where id=? and revision=?',(r['id'],r['revision'])).fetchone()
+            result=db.execute('select data from results where id=?',(r['id'],)).fetchone()
+            if not cur or not result:continue
+            intro=json.loads(result[0]).get('intro_start')
+            if intro is None:continue
+            candidate=recap_candidate(json.loads(cur[0]),tails[prev[0]['id']][0],intro)
+            if candidate:recaps.append({'id':r['id'],'revision':r['revision'],**candidate})
+    print(json.dumps([{'id':r['id'],'revision':r['revision'],**json.loads(row[0])} for r in rows if (row:=db.execute('select data from results where id=?',(r['id'],)).fetchone())]+credits+recaps))
 if __name__=='__main__':main()
