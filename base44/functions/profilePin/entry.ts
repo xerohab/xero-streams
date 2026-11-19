@@ -12,10 +12,22 @@ async function digest(pin:string,salt:string){
 async function hashCode(code:string,email:string){
  return hex(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(code+'\n'+email))));
 }
+// Serialize profile mutations per account within a warm runtime. Distributed
+// invocations still require datastore-level atomicity.
+const accountLocks=new Map<string,Promise<void>>();
 export default async function(req:Request){
-try{
+ let release: (()=>void)|undefined;
+ let lock: Promise<void>|undefined;
+ let accountId: string|undefined;
+ try{
  const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
  if(!u||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
+ accountId=String(u.id);
+ const previous=accountLocks.get(accountId)||Promise.resolve();
+ const gate=new Promise<void>(resolve=>{release=resolve;});
+ lock=previous.then(()=>gate);
+ accountLocks.set(accountId,lock);
+ await previous;
  const b=await req.json(),db=base.asServiceRole.entities;
  const profiles=await db.ViewingProfile.filter({user_id:u.id});
  if(b.action==='bootstrap'){
@@ -142,4 +154,5 @@ try{
  if(row)await db.ProfilePin.update(row.id,data);else await db.ProfilePin.create({...scope,...data});
  return Response.json({ok:true});
 }catch{return Response.json({error:'PIN service unavailable'},{status:500});}
+ finally{release?.();if(accountId&&accountLocks.get(accountId)===lock)accountLocks.delete(accountId);}
 }
