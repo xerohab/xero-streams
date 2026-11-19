@@ -6,7 +6,7 @@ const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-primary focu
 
 /** Play / Resume plus the Premium download button. Always visible: nothing depends on hover. */
 export default function EpisodeActions({ video, state, isPremium }) {
-  const canDownload = isPremium && !state.isComingSoon && video.video_url;
+  const canDownload = isPremium && !state.isComingSoon && (video.has_playback || video.video_url);
   return (
     <div className="mt-1 flex min-h-5 items-center justify-between gap-1">
       {state.isComingSoon
