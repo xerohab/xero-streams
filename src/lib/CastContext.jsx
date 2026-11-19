@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import CastOverlay from "@/components/cast/CastOverlay";
 
 const CastContext = createContext(null);
@@ -13,6 +13,11 @@ export function CastProvider({ children }) {
   const closeCast = useCallback(() => {
     setCastData(null);
   }, []);
+
+  useEffect(() => {
+    window.addEventListener('xero-profile-changed', closeCast);
+    return () => window.removeEventListener('xero-profile-changed', closeCast);
+  }, [closeCast]);
 
   return (
     <CastContext.Provider value={{ openCast, closeCast, isCasting: !!castData }}>
