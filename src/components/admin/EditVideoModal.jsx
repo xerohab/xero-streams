@@ -1,3 +1,4 @@
+import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -216,7 +217,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.entities.Video.update(video.id, {
+    await updateAdminVideo(video.id, {
       ...form,
       content_updated_at: new Date().toISOString(),
       episode_number: form.episode_number ? Number(form.episode_number) : null,
