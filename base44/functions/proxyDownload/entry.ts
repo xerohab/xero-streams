@@ -1,3 +1,4 @@
+import {verifyProfileAccess} from '../../shared/profileAccess.ts';
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { waitUntil } from 'base44:runtime';
 
@@ -16,7 +17,8 @@ export default async function(req) {
 
 
     // Get video_id from query string (GET) or request body (POST)
-    let videoId;
+    if(req.method!=="POST")return Response.json({error:"Method not allowed"},{status:405});
+    let videoId,profileId,token;
     if (req.method === 'GET') {
       const url = new URL(req.url);
       videoId = url.searchParams.get('video_id');
@@ -27,12 +29,15 @@ export default async function(req) {
       } catch {
         return Response.json({ error: 'Invalid request body' }, { status: 400 });
       }
-      videoId = body.video_id;
+      videoId = body.video_id;profileId=body.profile_id;token=body.access_token;
     }
     if (!videoId) return Response.json({ error: 'Missing video_id' }, { status: 400 });
 
     // Get video
     const db=base44.asServiceRole.entities;
+    if(typeof profileId!=="string"||!profileId||profileId.length>256)return Response.json({error:"Unlock an adult profile"},{status:403});
+    const profiles=await db.ViewingProfile.filter({id:profileId,user_id:user.id});
+    if(profiles.length!==1||profiles[0].is_kids||!(await verifyProfileAccess(db,user.id,profileId,token)))return Response.json({error:"Unlock an adult profile"},{status:403});
     const rows=await db.Video.filter({id:videoId});
     const video=rows.length===1?rows[0]:null;
     if (!video || video.coming_soon) {
