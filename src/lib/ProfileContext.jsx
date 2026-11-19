@@ -151,6 +151,20 @@ export function ProfileProvider({ children }) {
     return true;
   }, [profiles, loading]);
 
+  // Expired grants require a fresh unlock; never persist tokens on disk.
+  useEffect(() => {
+    if (!profileAccess || !activeProfile) return;
+    const timer = window.setTimeout(() => {
+      generation.current++;
+      setProfileAccess(null);
+      setActiveProfileState(null);
+      setPlaybackProfile(null);
+      localStorage.removeItem(ACTIVE_KEY);
+      window.dispatchEvent(new Event('xero-profile-changed'));
+    }, Math.max(0, profileAccess.expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [profileAccess, activeProfile?.id]);
+
   // Create a new profile
   const createProfile = useCallback(async (data) => {
     if (!user || !activeProfile || activeProfile.is_kids) return null;
