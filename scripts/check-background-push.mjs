@@ -17,7 +17,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let ws;
 try {
  let port;
- for(let i=0;i<50&&!port;i++){try{port=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];}catch{await sleep(100);}}
+ for(let i=0;i<200&&!port;i++){try{port=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];}catch{await sleep(100);}}
  assert.ok(port, 'Chromium did not expose its local debugging port');
  const endpoint=await (await fetch('http://127.0.0.1:'+port+'/json/version')).json();
  ws=new WebSocket(endpoint.webSocketDebuggerUrl);
