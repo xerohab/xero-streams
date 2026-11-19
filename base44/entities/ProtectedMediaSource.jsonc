@@ -1,0 +1,53 @@
+{
+  "name": "ProtectedMediaSource",
+  "type": "object",
+  "properties": {
+    "video_id": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "download_url": {
+      "type": "string"
+    },
+    "subtitles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "source_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "video_id"
+  ],
+  "rls": {
+    "create": {
+      "service_role_only": true
+    },
+    "read": {
+      "service_role_only": true
+    },
+    "update": {
+      "service_role_only": true
+    },
+    "delete": {
+      "service_role_only": true
+    }
+  }
+}
