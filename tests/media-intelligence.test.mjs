@@ -12,3 +12,5 @@ test('intro approval rejects ineligible titles and invalid timestamps',async()=>
 test('valid approval updates only intro timestamps',async()=>{const updates=setup();assert.equal((await call()).status,200);assert.deepEqual(updates,[['v',{intro_start:10,intro_end:45}]]);});
 
 test('stale scanner results cannot overwrite current metadata',async()=>{const updates=setup();assert.equal((await call({revision:'old'})).status,409);assert.equal(updates.length,0);});
+
+test('reviewed recap and credits update only their own segment',async()=>{const updates=setup();assert.equal((await call({kind:'recap',recap_start:0,recap_end:30})).status,200);assert.equal((await call({kind:'credits',credits_start:1800,credits_end:1900})).status,200);assert.equal((await call({kind:'unknown'})).status,400);assert.deepEqual(updates,[['v',{recap_start:0,recap_end:30}],['v',{credits_start:1800,credits_end:1900}]]);});
