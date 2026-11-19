@@ -17,16 +17,45 @@ try{
  return Response.json({rows:rows.filter(v=>!v.is_adult&&!v.coming_soon&&typeof v.video_url==='string'&&v.video_url.startsWith('https://')).map(v=>({id:v.id,url:v.video_url,revision:v.updated_date||''})),next:rows.length===500?offset+500:null});
  }
  if(b.action==='results'&&Array.isArray(b.rows)&&b.rows.length<=100){
- let saved=0,skipped=0;const seen=new Set<string>();
- for(const r of b.rows){
- if(!r||typeof r.id!=='string'||!['reachable','review','missing','skipped','error'].includes(r.status)||(!Number.isFinite(Date.parse(r.checked_at))||Date.parse(r.checked_at)>Date.now()+300000)){skipped++;continue;}
- if(seen.has(r.id)||!r.id||r.id.length>256){skipped++;continue;}seen.add(r.id);
- const v=(await db.Video.filter({id:r.id}))[0];
- if(!v||v.is_adult||v.coming_soon||(v.updated_date||'')!==r.revision){skipped++;continue;}
- const old=(await db.StreamHealthResult.filter({video_id:r.id}))[0];
- if(old&&Date.parse(old.checked_at)>Date.parse(r.checked_at)){skipped++;continue;}
- const data={video_id:r.id,revision:r.revision,status:r.status,checked_at:r.checked_at,http_status:Number.isInteger(r.http_status)&&r.http_status>=100&&r.http_status<=599?r.http_status:0};
- if(old)await db.StreamHealthResult.update(old.id,data);else await db.StreamHealthResult.create(data);saved++;
+ let saved=0,skipped=0;
+ const seen=new Set<string>();
+ const candidates=[];
+ const latestCheckTime=Date.now()+300000;
+ for(const row of b.rows){
+  const checkedAt=Date.parse(row?.checked_at);
+  if(typeof row?.id!=='string'||!row.id||row.id.length>256||seen.has(row.id)||
+     !['reachable','review','missing','skipped','error'].includes(row.status)||
+     !Number.isFinite(checkedAt)||checkedAt>latestCheckTime){
+   skipped++;
+   continue;
+  }
+  seen.add(row.id);
+  candidates.push(row);
+ }
+ const videos=new Map();
+ if(seen.size){
+  const batch=await db.Video.filter({id:{$in:[...seen]}},'id',seen.size);
+  for(const video of batch)videos.set(video.id,video);
+ }
+ for(const row of candidates){
+  const video=videos.get(row.id);
+  if(!video||video.is_adult||video.coming_soon||(video.updated_date||'')!==row.revision){
+   skipped++;
+   continue;
+  }
+  const old=(await db.StreamHealthResult.filter({video_id:row.id}))[0];
+  const data={
+   video_id:row.id,revision:row.revision,status:row.status,checked_at:row.checked_at,
+   http_status:Number.isInteger(row.http_status)&&row.http_status>=100&&row.http_status<=599?row.http_status:0
+  };
+  if(old&&(Date.parse(old.checked_at)>Date.parse(row.checked_at)||
+     (old.checked_at===data.checked_at&&old.revision===data.revision&&old.status===data.status&&old.http_status===data.http_status))){
+   skipped++;
+   continue;
+  }
+  if(old)await db.StreamHealthResult.update(old.id,data);
+  else await db.StreamHealthResult.create(data);
+  saved++;
  }
  return Response.json({saved,skipped});
  }
