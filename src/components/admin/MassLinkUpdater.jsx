@@ -1,3 +1,4 @@
+import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,7 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
     for (let i = 0; i < preview.length; i += chunkSize) {
       const chunk = preview.slice(i, i + chunkSize);
       await Promise.all(chunk.map((item) => {
-        return base44.entities[item.entityName].update(item.id, { [item.field]: item.new });
+        return item.entityName==='Video'?updateAdminVideo(item.id,{[item.field]:item.new}):base44.entities[item.entityName].update(item.id,{[item.field]:item.new});
       }));
       updated += chunk.length;
       if (i + chunkSize < preview.length) {
