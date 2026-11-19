@@ -46,13 +46,15 @@ function getWatchedKey(profile) {
   return profile ? `${WATCHED_BASE}_${profile.id}` : WATCHED_BASE;
 }
 
-export function saveProgress(video, currentTime, duration) {
+function matchesProfile(expected){return expected===undefined||(expected===verifiedProfile&&expected===(localStorage.getItem('xero_active_profile')||null));}
+export function saveProgress(video, currentTime, duration, expectedProfile) {
+  if(!matchesProfile(expectedProfile))return;
   if (!video?.id || !Number.isFinite(currentTime)||!Number.isFinite(duration)||currentTime<0||currentTime>duration||duration < 60) return;
   const progress = Math.floor((currentTime / duration) * 100);
   if (progress < 2 || progress > 95) {
     if (progress > 95) {
       localStorage.setItem(getCurrentKey(),JSON.stringify(getAll().filter(v=>v.id!==video.id)));
-      addWatched(video.id);
+      addWatched(video.id,expectedProfile);
       notify();
     }
     return;
@@ -76,7 +78,8 @@ export function saveProgress(video, currentTime, duration) {
   notify();
 }
 
-export function removeProgress(videoId) {
+export function removeProgress(videoId,expectedProfile) {
+  if(!matchesProfile(expectedProfile))return;
   push(videoId,"removed");
   localStorage.setItem(getCurrentWatchedKey(),JSON.stringify(getWatched().filter(id=>id!==videoId)));
   const list = getAll().filter((v) => v.id !== videoId);
@@ -84,7 +87,8 @@ export function removeProgress(videoId) {
   notify();
 }
 
-export function addWatched(videoId) {
+export function addWatched(videoId,expectedProfile) {
+  if(!matchesProfile(expectedProfile))return;
   if (!videoId) return;
   push(videoId,"completed");
   const list = getWatched();
