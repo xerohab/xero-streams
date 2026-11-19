@@ -1,0 +1,55 @@
+{
+  "name": "MediaScanResult",
+  "type": "object",
+  "properties": {
+    "video_id": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "start": {
+      "type": "number"
+    },
+    "end": {
+      "type": "number"
+    },
+    "matches": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "video_id",
+    "revision",
+    "kind",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "service_only"
+      }
+    }
+  }
+}
