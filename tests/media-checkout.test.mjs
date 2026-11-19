@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import handler from '../base44/functions/mediaCheckout/entry.ts';
 test('media checkout grants only the bound item after verified capture and supports retries',async()=>{
  const binding={id:'binding',user_id:'u',item_id:'video',kind:'video',format:'default',amount:'4.99',status:'created',request_reference:'request',order_id:'order'};
- const purchases=[];let user={id:'u'},amount='4.99',custom='XEROMEDIA:binding',calls=0;
+ const purchases=[];let user={id:'u'},amount='4.99',custom='XEROMEDIA:binding',calls=0,reused=false;
  globalThis.__testSecrets={PAYPAL_CLIENT_ID:'test',PAYPAL_CLIENT_SECRET:'test',PAYPAL_ENVIRONMENT:'sandbox'};
  globalThis.__testClient={auth:{me:async()=>user},asServiceRole:{entities:{
- MediaPayment:{filter:async()=>[binding],update:async(id,data)=>Object.assign(binding,data)},
+ MediaPayment:{filter:async q=>q.capture_id?(reused?[{id:'another'}]:binding.capture_id===q.capture_id?[binding]:[]):[binding],update:async(id,data)=>Object.assign(binding,data)},
  VideoPurchase:{filter:async()=>purchases,create:async data=>purchases.push(data)}
  }}};
  const original=globalThis.fetch;
@@ -17,7 +17,7 @@ test('media checkout grants only the bound item after verified capture and suppo
  user={id:'other'};assert.equal((await call()).status,409);assert.equal(calls,0);
  user={id:'u'};amount='0.01';assert.equal((await call()).status,409);assert.equal(purchases.length,0);
  amount='4.99';custom='wrong';assert.equal((await call()).status,409);assert.equal(purchases.length,0);
- custom='XEROMEDIA:binding';assert.deepEqual((await Promise.all([call(),call()])).map(r=>r.status),[200,200]);
+ custom='XEROMEDIA:binding';reused=true;assert.equal((await call()).status,409);assert.equal(purchases.length,0);reused=false;assert.deepEqual((await Promise.all([call(),call()])).map(r=>r.status),[200,200]);
  assert.equal(purchases.length,1);assert.equal(purchases[0].video_id,'video');assert.equal(purchases[0].user_id,'u');
  }finally{globalThis.fetch=original;}
 });
