@@ -38,7 +38,10 @@ export default async function(req:Request){
  }
  const target=profiles.find(p=>p.id===b.profile_id);
  if(!target)return Response.json({error:'Invalid profile'},{status:403});
- const scope={profile_id:b.profile_id,user_id:u.id},row=(await db.ProfilePin.filter(scope))[0];
+ const scope={profile_id:b.profile_id,user_id:u.id};
+ const matchingPins=await db.ProfilePin.filter(scope);
+ if(matchingPins.length>1)return Response.json({error:'Profile security records require reconciliation'},{status:409});
+ const row=matchingPins[0];
  const kidsExist=profiles.some(p=>p.is_kids);
  const management=['create_profile','delete_profile','edit_profile'].includes(b.action);
  if(management&&(target.is_kids||(kidsExist&&!row?.digest)))return Response.json({error:'Adult PIN required'},{status:403});
