@@ -36,7 +36,8 @@ export default async function(req:Request){
   const profile=await db.ViewingProfile.create({user_id:u.id,name,avatar:'popcorn',is_default:true,is_kids:false});
   return Response.json({profile});
  }
- const target=profiles.find(p=>p.id===b.profile_id);
+ const targets=profiles.filter(p=>p.id===b.profile_id);
+ const target=targets.length===1?targets[0]:null;
  if(!target)return Response.json({error:'Invalid profile'},{status:403});
  const scope={profile_id:b.profile_id,user_id:u.id};
  const matchingPins=await db.ProfilePin.filter(scope);
@@ -93,7 +94,8 @@ export default async function(req:Request){
   }
   if(!row||!(row.recovery_expires_at>now)||typeof b.code!=='string'||!/^([a-f0-9]{32})$/.test(b.code)||
      !equalDigest(await hashCode(b.code,email),row.recovery_digest))return Response.json({error:'Invalid or expired recovery code'},{status:403});
-  const current=(await db.ProfilePin.filter(scope))[0];
+  const currentRows=await db.ProfilePin.filter(scope);
+  const current=currentRows.length===1?currentRows[0]:null;
   if(current?.id!==row.id||current.recovery_digest!==row.recovery_digest||!(current.recovery_expires_at>Date.now())||!current.recovery_salt||!current.recovery_pin_digest)return Response.json({error:'Invalid or expired recovery code'},{status:403});
   await db.ProfilePin.update(row.id,{salt:current.recovery_salt,digest:current.recovery_pin_digest,failures:0,locked_until:0,recovery_digest:'',recovery_expires_at:0,recovery_salt:'',recovery_pin_digest:''});
   return Response.json({ok:true});
@@ -106,7 +108,7 @@ export default async function(req:Request){
  if(b.action==='verify'&&target.is_kids){
   const adults=profiles.filter(profile=>!profile.is_kids);
   const pins=await db.ProfilePin.filter({user_id:u.id});
-  if(!adults.length||adults.some(adult=>!pins.some(pin=>pin.profile_id===adult.id&&pin.digest))){
+  if(!adults.length||adults.some(adult=>pins.filter(pin=>pin.profile_id===adult.id).length!==1||!pins.some(pin=>pin.profile_id===adult.id&&pin.digest))){
    return Response.json({error:'Set a PIN on every adult profile before entering Kids mode'},{status:403});
   }
  }
@@ -145,7 +147,7 @@ export default async function(req:Request){
   if(profiles.length>=5||typeof is_kids!=='boolean'||(!is_kids&&kidsExist))return Response.json({error:'Cannot add profile'},{status:403});
   if(is_kids){
    const pins=await db.ProfilePin.filter({user_id:u.id});
-   if(profiles.some(p=>!p.is_kids&&!pins.some(pin=>pin.profile_id===p.id&&pin.digest)))return Response.json({error:'Set a PIN on every adult profile first'},{status:403});
+   if(profiles.some(p=>!p.is_kids&&(pins.filter(pin=>pin.profile_id===p.id).length!==1||!pins.some(pin=>pin.profile_id===p.id&&pin.digest))))return Response.json({error:'Set a PIN on every adult profile first'},{status:403});
   }
   const profile=await db.ViewingProfile.create({...data,user_id:u.id,is_kids,is_default:false});
   return Response.json({profile});
