@@ -5,7 +5,7 @@ import loadMediaRecords from "@/components/browse/loadMediaRecords";
 function validLink(value){try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password;}catch{return false;}}
 function issues(v){
  const a=[];
- if(!v.coming_soon&&!v.video_url)a.push("Missing playback link");
+ if(!v.coming_soon&&!v.has_playback&&!v.video_url)a.push("Missing playback link");
  else if(v.video_url&&!validLink(v.video_url))a.push("Invalid or insecure playback URL");
  if(!v.thumbnail_url)a.push("Missing poster");
  if(!v.description?.trim())a.push("Missing description");
@@ -19,7 +19,7 @@ export default function CatalogHealth(){
  const [rows,setRows]=useState([]),[count,setCount]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(""),[filter,setFilter]=useState("all"),[page,setPage]=useState(0);
  const scan=async()=>{setBusy(true);setError("");try{const me=await base44.auth.me();if(me.role!=="admin")throw new Error();const videos=await loadMediaRecords(base44.entities.Video);setRows(videos.map(v=>({id:v.id,title:v.title,issues:issues(v)})).filter(v=>v.issues.length));setCount(videos.length);setPage(0);}catch{setError("Catalog audit failed.");}finally{setBusy(false);}};
  const [health,setHealth]=useState([]);
- const exportManifest=async()=>{setBusy(true);try{const me=await base44.auth.me();if(me.role!=="admin")throw new Error();const videos=await loadMediaRecords(base44.entities.Video);const url=URL.createObjectURL(new Blob([JSON.stringify(videos.filter(v=>!v.coming_soon&&!v.is_adult&&validLink(v.video_url)).map(v=>({id:v.id,url:v.video_url,revision:v.updated_date||""})))],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="xero-link-manifest.json";a.click();URL.revokeObjectURL(url);}catch{setError("Manifest export failed.");}finally{setBusy(false);}};
+ const exportManifest=async()=>{setBusy(true);try{const me=await base44.auth.me();if(me.role!=="admin")throw new Error();let offset=0,rows=[];do{const r=await base44.functions.invoke('streamHealth',{action:'catalog',offset});if(!Array.isArray(r.data?.rows))throw Error('Manifest unavailable');rows.push(...r.data.rows);offset=r.data.next;}while(offset!==null);const url=URL.createObjectURL(new Blob([JSON.stringify(rows)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="xero-link-manifest.json";a.click();URL.revokeObjectURL(url);}catch{setError("Manifest export failed.");}finally{setBusy(false);}};
  const importHealth=async(e)=>{try{const file=e.target.files[0];if(!file)return;const result=JSON.parse(await file.text());if(!Array.isArray(result)||result.some(r=>typeof r.id!=="string"||!["reachable","review","missing","skipped","error"].includes(r.status)))throw new Error();setHealth(result);setError("");}catch{setError("Invalid health report.");}finally{e.target.value="";}};
  const shown=rows.filter(r=>filter==="all"||r.issues.includes(filter));
  const exportReport=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({scanned:count,issues:shown},null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="xero-catalog-audit.json";a.click();URL.revokeObjectURL(url);};
