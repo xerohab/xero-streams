@@ -7,7 +7,7 @@ import { encodeVideoUrl } from "@/lib/encodeVideoUrl";
  * Falls back to native for mp4, mkv, webm, and other formats.
  * Tuned for large files (up to 3GB+) with generous buffer settings.
  */
-export default function useHls(videoRef, src) {
+export default function useHls(videoRef, src, playerKey, attempt) {
   const hlsRef = useRef(null);
 
   useEffect(() => {
@@ -90,17 +90,8 @@ export default function useHls(videoRef, src) {
       const safeSrc = encodeVideoUrl(src);
       console.log("[useHls] Native playback for:", safeSrc);
       video.src = safeSrc;
+      video.load();
       video.play().catch(() => {});
-      video.addEventListener("error", () => {
-        const e = video.error;
-        console.error("[Video Error] Native playback error", {
-          code: e?.code,
-          message: e?.message,
-          src: safeSrc,
-          // code meanings: 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
-          meaning: ["", "ABORTED", "NETWORK_ERROR", "DECODE_ERROR", "SRC_NOT_SUPPORTED"][e?.code] || "UNKNOWN",
-        });
-      }, { once: false });
     }
 
     return () => {
@@ -109,7 +100,7 @@ export default function useHls(videoRef, src) {
         hlsRef.current = null;
       }
     };
-  }, [src]);
+  }, [videoRef, src, playerKey, attempt]);
 
   return hlsRef;
 }
