@@ -39,17 +39,18 @@ def stage(row,root,limit):
         conn.close()
         if tmp:os.unlink(tmp)
 def main():
-    p=argparse.ArgumentParser();p.add_argument("manifest");p.add_argument("--root",required=True);p.add_argument("--output",required=True);p.add_argument("--max-files",type=int,default=3);p.add_argument("--max-bytes",type=int,default=2147483648);p.add_argument("--authorized",action="store_true");a=p.parse_args()
-    if not a.authorized or not 1<=a.max_files<=100 or not 1<=a.max_bytes<=107374182400:p.error("Explicit authorization and bounded budget required")
+    p=argparse.ArgumentParser();p.add_argument("manifest");p.add_argument("--root",required=True);p.add_argument("--output",required=True);p.add_argument("--max-files",type=int,default=3);p.add_argument("--max-bytes",type=int,default=2147483648);p.add_argument("--offset",type=int,default=0);p.add_argument("--authorized",action="store_true");a=p.parse_args()
+    if not a.authorized or a.offset<0 or not 1<=a.max_files<=100 or not 1<=a.max_bytes<=107374182400:p.error("Explicit authorization and bounded budget required")
     rows=json.loads(Path(a.manifest).read_text())
     if not isinstance(rows,list) or any(not isinstance(r,dict) or not all(isinstance(r.get(k),str) and r[k] for k in ("id","series_id","revision","url")) for r in rows):p.error("Invalid manifest")
     if len({r["id"] for r in rows})!=len(rows):p.error("Duplicate identifiers")
     root=Path(a.root).resolve(strict=True);out=[];remaining=a.max_bytes
-    for r in rows[:a.max_files]:
+    batch=rows[a.offset:a.offset+a.max_files]
+    for r in batch:
         try:
             if remaining<=0:break
             staged,size=stage(r,root,remaining);out.append(staged);remaining-=size
         except Exception as e:print("Skipped:",type(e).__name__,file=__import__("sys").stderr)
     target=Path(a.output);tmp=target.with_suffix(".tmp");tmp.write_text(json.dumps(out));tmp.replace(target)
-    print("Staged",len(out),"of",min(len(rows),a.max_files),"files")
+    print("Staged",len(out),"of",len(batch),"files; next offset:",min(len(rows),a.offset+len(batch)))
 if __name__=="__main__":main()
