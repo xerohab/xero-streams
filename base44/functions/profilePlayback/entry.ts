@@ -4,7 +4,7 @@ const catalogueFields=[
  'category','category_id','genres','episode_number','season_number','duration','quality','quality_notes',
  'is_featured','is_adult','content_type','sort_order','coming_soon','release_date','release_year',
  'cast','main_cast','guest_stars','director_or_creator','age_rating','runtime_or_episodes','views',
- 'created_date','updated_date','content_updated_at','intro_start','intro_end','recap_start','recap_end',
+ 'created_date','updated_date','content_updated_at','is_for_sale','price','intro_start','intro_end','recap_start','recap_end',
  'credits_start','credits_end'
 ];
 export default async function(req:Request){
@@ -54,6 +54,11 @@ if(b.action==='source'){
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
  const v=(await base.entities.Video.filter({id:b.video_id}))[0];
  if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
+ // Paid titles must not bypass entitlement checks through the Kids endpoint.
+ if(v.is_for_sale){
+  const purchases=await db.VideoPurchase.filter({user_id:u.id,video_id:v.id,status:'completed'});
+  if(!purchases.length&&u.role!=='admin')return Response.json({error:'Purchase required'},{status:403});
+ }
  const source=!v.coming_soon&&typeof v.video_url==='string'?v.video_url:null;
  const subtitles=source&&Array.isArray(v.subtitles)
   ? v.subtitles.filter(track=>typeof track?.url==='string'&&track.url)
