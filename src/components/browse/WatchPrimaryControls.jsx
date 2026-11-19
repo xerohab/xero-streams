@@ -13,10 +13,7 @@ export default function WatchPrimaryControls({ video, series, isComingSoon, isPr
     catch (err) { toast.error(err.message); }
     finally { setProgress(null); }
   };
-  const ownedDownload = () => {
-    const a = document.createElement("a"); a.href = video.download_url; a.download = "";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  };
+  const ownedDownload = download;
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border py-5">
       {prevVideo && <Button variant="secondary" className="xero-action" onClick={() => onNavigate(`/watch?id=${prevVideo.id}`)}><SkipBack />{prevLabel}</Button>}
@@ -24,7 +21,7 @@ export default function WatchPrimaryControls({ video, series, isComingSoon, isPr
       <WatchlistButton videoId={video.id} className="xero-action" label="My List" />
       {!isComingSoon && <Button variant="outline" className="xero-action" onClick={onFavourite}><Heart className={isFavourited ? "fill-current text-primary" : ""} />{isFavourited ? "Favourited" : "Favourite"}</Button>}
       <Button variant="outline" className="xero-action" onClick={() => onNavigate(series ? `/series?id=${series.id}` : `/movie?id=${video.id}`)}><Info />More Info</Button>
-      {allowTransactions && video.is_for_sale && (isPurchased ? <Button variant="outline" className="xero-action text-primary" onClick={ownedDownload}><Download />Download</Button> : <Button className="h-11 gap-2 rounded-lg" onClick={onPurchase} disabled={purchasing}>{purchasing ? <Loader2 className="animate-spin" /> : <ShoppingCart />}Buy to Download (${video.price})</Button>)}
+      {allowTransactions && video.is_for_sale && (isPurchased ? <Button variant="outline" className="xero-action text-primary" onClick={ownedDownload} disabled={progress !== null}><Download />Download</Button> : <Button className="h-11 gap-2 rounded-lg" onClick={onPurchase} disabled={purchasing}>{purchasing ? <Loader2 className="animate-spin" /> : <ShoppingCart />}Buy to Download (${video.price})</Button>)}
       {allowTransactions && !video.is_for_sale && isPremium && !isComingSoon && <Button variant="outline" className="xero-action text-primary" onClick={download} disabled={progress !== null}>{progress !== null ? <Loader2 className="animate-spin" /> : <Download />}{progress !== null ? `Downloading ${progress}%` : "Download"}</Button>}
     </div>
   );
