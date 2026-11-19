@@ -24,7 +24,8 @@ const allowed=(v:any)=>!!v&&(!profile.is_kids||(!v.is_adult&&['U','G','PG','TV-Y
 const seriesAccess=new Map<string,Promise<boolean>>();
 const allowedVideo=async(v:any)=>{
  if(!allowed(v))return false;
- if(!profile.is_kids||!v.series_id)return true;
+ if(!v.series_id)return true;
+ if(!profile.is_kids){const parents=await base.entities.Series.filter({id:v.series_id});return parents.length===1&&(!parents[0].is_adult||u.age_verified===true||u.role==='admin');}
  if(!seriesAccess.has(v.series_id)){
   seriesAccess.set(v.series_id,base.entities.Series.filter({id:v.series_id}).then(rows=>rows.length===1&&allowed(rows[0])));
  }
@@ -60,7 +61,7 @@ if(b.action==='source'){
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
  const v=await findVideo(b.video_id);
  if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
- if(!profile.is_kids&&v.is_adult&&u.role!=='admin'&&u.age_verified!==true&&u.is_age_verified!==true)return Response.json({error:'Age verification required'},{status:403});
+ if(!profile.is_kids&&v.is_adult&&u.role!=='admin'&&u.age_verified!==true)return Response.json({error:'Age verification required'},{status:403});
  // Paid titles must not bypass entitlement checks through the Kids endpoint.
  if(v.is_for_sale){
   const purchases=await db.VideoPurchase.filter({user_id:u.id,video_id:v.id,status:'completed'});
