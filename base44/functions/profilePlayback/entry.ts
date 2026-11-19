@@ -64,12 +64,19 @@ if(b.action==='source'){
   const purchases=await db.VideoPurchase.filter({user_id:u.id,video_id:v.id,status:'completed'});
   if(!purchases.length&&u.role!=='admin')return Response.json({error:'Purchase required'},{status:403});
  }
- const source=!v.coming_soon&&typeof v.video_url==='string'&&v.video_url.trim()?v.video_url:null;
- const subtitles=source&&Array.isArray(v.subtitles)
-  ? v.subtitles.filter(track=>typeof track?.url==='string'&&track.url)
+ // During staging, existing catalogue sources remain authoritative until cleared.
+ let media=v;
+ if(!v.video_url&&!v.coming_soon&&db.ProtectedMediaSource){
+  const matches=await db.ProtectedMediaSource.filter({video_id:v.id});
+  if(matches.length>1)return Response.json({error:'Conflicting media sources'},{status:409});
+  if(matches.length===1)media=matches[0];
+ }
+ const source=!v.coming_soon&&typeof media.video_url==='string'&&media.video_url.trim()?media.video_url:null;
+ const subtitles=source&&Array.isArray(media.subtitles)
+  ? media.subtitles.filter(track=>typeof track?.url==='string'&&track.url)
       .map(({url,language,label})=>({url,language,label}))
   : [];
- return Response.json({source,subtitles});
+ return Response.json({source,subtitles},{headers:{'Cache-Control':'no-store'}});
 }
 if(b.action==='list'){
 const rows=await db.ProfilePlayback.filter(scope,'-changed_at',200);
