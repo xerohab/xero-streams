@@ -1,0 +1,4 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import handler from '../base44/functions/adminMediaSource/entry.ts';
+test('verified source saves synchronize availability',async()=>{const rows=[];let updates=0;globalThis.__testClient={auth:{me:async()=>({id:'admin',role:'admin'})},asServiceRole:{entities:{Video:{filter:async()=>[{id:'v'}],update:async(id,data)=>{assert.equal(id,'v');assert.equal(data.has_playback,true);updates++;}},ProtectedMediaSource:{filter:async()=>rows,create:async data=>rows.push(data)}}}};const response=await handler(new Request('https://example.test',{method:'POST',body:JSON.stringify({action:'save',video_id:'v',video_url:'https://example.test/video',download_url:'',subtitles:[]})}));assert.equal(response.status,200);assert.equal(updates,1);});
