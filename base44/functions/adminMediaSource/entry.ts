@@ -16,6 +16,8 @@ export default async function(req:Request){
  if(!validUrl(b.video_url)||!validUrl(b.download_url)||!Array.isArray(b.subtitles)||b.subtitles.length>100||b.subtitles.some(t=>!t||!t.url||!validUrl(t.url)||typeof t.language!=='string'||typeof t.label!=='string'))return Response.json({error:'Invalid source links'},{status:400,headers});
  const data={video_id:v.id,video_url:b.video_url,download_url:b.download_url,subtitles:b.subtitles.map(({url,language,label})=>({url,language,label})),source_updated_at:new Date().toISOString()};
  if(old)await db.ProtectedMediaSource.update(old.id,data);else await db.ProtectedMediaSource.create(data);
+ const saved=await db.ProtectedMediaSource.filter({video_id:v.id});
+ if(saved.length!==1||saved[0].video_url!==data.video_url||saved[0].download_url!==data.download_url||JSON.stringify(saved[0].subtitles||[])!==JSON.stringify(data.subtitles))return Response.json({error:'Source verification failed'},{status:409,headers});
  await db.Video.update(v.id,{has_playback:Boolean(data.video_url)&&!v.coming_soon});
  return Response.json({ok:true},{headers});
  }catch{return Response.json({error:'Source management unavailable'},{status:500,headers});}
