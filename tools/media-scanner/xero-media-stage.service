@@ -1,0 +1,18 @@
+[Unit]
+Description=XeroStreams bounded authorized media staging
+ConditionPathExists=/etc/xero-media-stage.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/xero-media-stage.env
+ExecStart=/opt/xero-media-scan/run-stage.sh auto
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/lib/xero-media-staging /srv/xero-media-scan
+UMask=0077
+MemoryMax=512M
+CPUQuota=50%
+TimeoutStartSec=3h
