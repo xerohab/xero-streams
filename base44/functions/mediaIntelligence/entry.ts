@@ -4,12 +4,14 @@ export default async function(req:Request){
  const u=await base.auth.me().catch(()=>null);
  const secret=Deno.env.get('XERO_SCANNER_TOKEN');
  const worker=!!secret&&req.headers.get('x-scanner-token')===secret;
- if(!worker&&(u?.role!=='admin'||u.is_banned))return Response.json({error:'Forbidden'},{status:403});
+ if(u?.is_banned||(!worker&&u?.role!=='admin'))return Response.json({error:'Forbidden'},{status:403});
  const db=base.asServiceRole.entities;
  const b=await req.json().catch(()=>({}));
  if(b.action==='catalog'){
- const rows=await db.Video.filter({content_type:'episode'},'id',500,Math.max(0,Number(b.offset)||0));
- return Response.json({rows:rows.filter(v=>v.series_id&&!v.coming_soon&&v.video_url&&!v.is_adult).map(v=>({id:v.id,series_id:v.series_id,season_number:v.season_number,episode_number:v.episode_number,url:v.video_url,revision:v.updated_date})),next:rows.length===500?(Number(b.offset)||0)+500:null});
+ const offset=b.offset??0;
+ if(!Number.isSafeInteger(offset)||offset<0||offset>500000)return Response.json({error:'Invalid offset'},{status:400});
+ const rows=await db.Video.filter({content_type:'episode'},'id',500,offset);
+ return Response.json({rows:rows.filter(v=>v.series_id&&!v.coming_soon&&v.video_url&&!v.is_adult).map(v=>({id:v.id,series_id:v.series_id,season_number:v.season_number,episode_number:v.episode_number,url:v.video_url,revision:v.updated_date})),next:rows.length===500?offset+500:null});
  }
  if(b.action==='approve'&&u?.role==='admin'&&!u.is_banned){
  const segments=b.segments===undefined?[{kind:b.kind??'intro',start:b[(b.kind??'intro')+'_start'],end:b[(b.kind??'intro')+'_end']}]:b.segments;
