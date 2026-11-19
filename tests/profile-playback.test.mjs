@@ -83,3 +83,22 @@ test('Kids source does not disclose paid playback without a completed purchase',
  purchased=true;
  assert.equal((await (await call({action:'source',video_id:'safe'})).json()).source,video.video_url);
 });
+
+
+test('ambiguous profile ownership is rejected',async()=>{
+ setup();
+ globalThis.__testClient.asServiceRole.entities.ViewingProfile.filter=async()=>[{is_kids:true},{is_kids:false}];
+ assert.equal((await call({action:'source',video_id:'safe'})).status,403);
+});
+test('coming soon titles never advertise an available source',async()=>{
+ setup();
+ const v={id:'safe',age_rating:'PG',coming_soon:true,video_url:'https://media.example.test/safe'};
+ globalThis.__testClient.entities.Video.list=async()=>[v];
+ globalThis.__testClient.entities.Video.filter=async()=>[v];
+ assert.equal((await (await call({action:'catalogue',kind:'videos',offset:0})).json()).rows[0].has_playback,false);
+ assert.equal((await (await call({action:'source',video_id:'safe'})).json()).source,null);
+});
+test('duplicate progress rows do not permit ambiguous writes',async()=>{
+ const rows=setup();rows.push({...rows[0],id:'duplicate'});
+ assert.equal((await call({action:'save',video_id:'adult',state:'removed'})).status,409);
+});
