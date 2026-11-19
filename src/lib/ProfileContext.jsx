@@ -63,7 +63,7 @@ async function manageProfile(active, action, payload) {
   return result.data;
 }
 
-export function ProfileProvider({ children }) {
+export function ProfileProvider({ children, authenticatedUser }) {
   const [user, setUser] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [activeProfile, setActiveProfileState] = useState(null);
@@ -120,14 +120,14 @@ export function ProfileProvider({ children }) {
   // Initialise
   useEffect(() => {
     const version=++generation.current;
-    base44.auth.me().then((u) => {
+    (authenticatedUser !== undefined ? Promise.resolve(authenticatedUser) : base44.auth.me()).then((u) => {
       if(version!==generation.current)return;
       setUser(u&&!u.is_banned?u:null);
       if (u&&!u.is_banned) loadProfiles(u,version);
       else setLoading(false);
     }).catch(() => {if(version===generation.current)setLoading(false);});
     return()=>{generation.current++;};
-  }, [loadProfiles]);
+  }, [loadProfiles, authenticatedUser?.id, authenticatedUser?.is_banned]);
 
   // Switch active profile
   const switchProfile = useCallback(async (profile) => {
