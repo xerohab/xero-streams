@@ -49,7 +49,7 @@ export default async function(req) {
     if(video.is_for_sale){const purchases=await db.VideoPurchase.filter({user_id:user.id,video_id:video.id,status:'completed'});if(!purchases.length&&user.role!=='admin')return Response.json({error:'Purchase required'},{status:403});}
     else if(!isSubscribed)return Response.json({error:'Premium subscription required for downloads.'},{status:403});
     let media=video;
-    if(!video.video_url&&!video.download_url){const sources=await db.ProtectedMediaSource.filter({video_id:video.id});if(sources.length!==1)return Response.json({error:'Source unavailable'},{status:404});media=sources[0];}
+    if(db.ProtectedMediaSource){const sources=await db.ProtectedMediaSource.filter({video_id:video.id});if(sources.length>1)return Response.json({error:'Conflicting sources'},{status:409});if(sources.length===1)media=sources[0];}
     const source=media.download_url||media.video_url;
     if(typeof source!=='string'||!source.trim())return Response.json({error:'Source unavailable'},{status:404});
     // Build a safe filename
