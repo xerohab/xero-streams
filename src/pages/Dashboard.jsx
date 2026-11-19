@@ -215,8 +215,13 @@ export default function Dashboard() {
 
   const handleCancelSub = async (subId) => {
     if (confirm("Are you sure you want to cancel your subscription?")) {
-      await base44.entities.UserSubscription.update(subId, { status: "cancelled" });
-      refetchSubscriptions();
+      try {
+        const result = await base44.functions.invoke("cancelSubscription", { subscription_id: subId });
+        if (!result.data?.ok) throw new Error("Cancellation failed");
+        await refetchSubscriptions();
+      } catch {
+        window.alert("Subscription could not be cancelled. Please try again.");
+      }
     }
   };
 
