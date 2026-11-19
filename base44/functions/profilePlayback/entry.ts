@@ -8,6 +8,14 @@ const profile=typeof b.profile_id==='string'?(await db.ViewingProfile.filter({id
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
 const scope={user_id:u.id,profile_id:b.profile_id};
 const allowed=(v:any)=>!!v&&(!profile.is_kids||(!v.is_adult&&['U','G','PG','TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','BBFC U','BBFC PG'].includes(String(v.age_rating||'').trim().toUpperCase())));
+if(b.action==='source'){
+ if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
+ if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
+ const v=(await base.entities.Video.filter({id:b.video_id}))[0];
+ if(!allowed(v))return Response.json({error:'Unavailable title'},{status:404});
+ const source=!v.coming_soon&&typeof v.video_url==='string'?v.video_url:null;
+ return Response.json({source});
+}
 if(b.action==='list'){
 const rows=await db.ProfilePlayback.filter(scope,'-changed_at',200);
 const output=[];

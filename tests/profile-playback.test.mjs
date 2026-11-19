@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import handler from '../base44/functions/profilePlayback/entry.ts';
 function setup({user={id:'u'},kids=true,owns=true}={}){
  const rows=[{id:'r',video_id:'adult',state:'progress',position:10,duration:100}];
- const videos=[{id:'adult',age_rating:'18',title:'Adult'},{id:'safe',age_rating:'PG',title:'Safe'}];
+ const videos=[{id:'adult',age_rating:'18',title:'Adult'},{id:'safe',age_rating:'PG',title:'Safe',video_url:'https://media.example.test/safe'}];
  globalThis.__testClient={auth:{me:async()=>user},entities:{Video:{filter:async q=>videos.filter(v=>v.id===q.id)}},asServiceRole:{entities:{
  ViewingProfile:{filter:async()=>owns?[{is_kids:kids}]:[]},
  ProfilePlayback:{filter:async q=>rows.filter(r=>!q.video_id||r.video_id===q.video_id),update:async(id,data)=>Object.assign(rows.find(r=>r.id===id),data),create:async data=>rows.push(data)}
@@ -17,3 +17,11 @@ test('invalid numeric progress is rejected',async()=>{setup();for(const position
 test('scoped removal can clear unavailable titles without creating rows',async()=>{const rows=setup();assert.equal((await call({action:'save',video_id:'adult',state:'removed'})).status,200);assert.equal(rows[0].state,'removed');assert.equal((await call({action:'save',video_id:'missing',state:'removed'})).status,200);assert.equal(rows.length,1);});
 
 test('reject empty identifiers and zero duration progress',async()=>{const rows=setup();for(const b of [{video_id:'',state:'removed'},{video_id:' ',state:'removed'},{video_id:'safe',state:'progress',position:0,duration:0}])assert.equal((await call({action:'save',...b})).status,400);assert.equal(rows.length,1);});
+
+test('Kids Watch source uses the authoritative rating and profile ownership',async()=>{
+ setup();
+ assert.equal((await call({action:'source',video_id:'adult',age_rating:'PG'})).status,404);
+ assert.deepEqual(await (await call({action:'source',video_id:'safe'})).json(),{source:'https://media.example.test/safe'});
+ setup({owns:false});
+ assert.equal((await call({action:'source',video_id:'safe'})).status,403);
+});

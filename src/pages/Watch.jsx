@@ -185,9 +185,25 @@ export default function Watch() {
     staleTime: Infinity,
   });
 
+  const { data: approvedSource, isPending: isCheckingSource, isError: sourceError } = useQuery({
+    queryKey: ["kids-watch-source", user?.id, playbackProfileId, videoId],
+    enabled: Boolean(kids && video && playbackProfileId),
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    queryFn: async () => {
+      const result = await base44.functions.invoke("profilePlayback", {
+        action: "source", profile_id: playbackProfileId, video_id: videoId
+      });
+      if (!result.data || !Object.hasOwn(result.data, "source")) throw new Error("Source not available");
+      return result.data.source;
+    }
+  });
+  const playbackSource = kids ? approvedSource : video?.video_url;
+
   // HLS hook — stop local playback when cast overlay is open
   const hlsSrc = (() => {
-    const url = video?.video_url;
+    const url = playbackSource;
     if (!url || isMobileCasting || getEmbedUrl(url)) return null;
     return url;
   })();
@@ -427,8 +443,13 @@ export default function Watch() {
     );
   }
 
-  const isComingSoon = video.coming_soon || !video.video_url;
-  const embedUrl = !isComingSoon ? getEmbedUrl(video.video_url) : null;
+  if (kids && (isCheckingSource || sourceError)) {
+    return <div className="min-h-screen flex items-center justify-center p-6 text-center">
+      {sourceError ? "Playback is unavailable on this profile." : "Checking playback availability…"}
+    </div>;
+  }
+  const isComingSoon = video.coming_soon || !playbackSource;
+  const embedUrl = !isComingSoon ? getEmbedUrl(playbackSource) : null;
 
   return (
     <div className="min-h-screen bg-background">
