@@ -1,5 +1,6 @@
 import {cancelProfilePin} from "@/lib/requestProfilePin";
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import {setPlaybackProfile} from '@/hooks/useContinueWatching';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import {heartbeatDevice,deviceId} from "@/lib/deviceSession";
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
@@ -8,6 +9,7 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const authGeneration=useRef(0),loggingOut=useRef(false);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
@@ -26,7 +28,7 @@ export const AuthProvider = ({ children }) => {
     const check=async()=>{
       if(busy||!active)return;
       busy=true;
-      try{if(await heartbeatDevice()&&active){setUser(null);setIsAuthenticated(false);cancelProfilePin();localStorage.removeItem("xero_active_profile");localStorage.setItem("xero_device_revoked","1");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
+      try{if(await heartbeatDevice()&&active){authGeneration.current++;setPlaybackProfile(null);setUser(null);setIsAuthenticated(false);cancelProfilePin();localStorage.removeItem("xero_active_profile");localStorage.setItem("xero_device_revoked","1");base44.auth.logout();window.location.replace("/");}}catch{}finally{busy=false;}
     };
     check();
     const timer=setInterval(check,60000);
@@ -106,15 +108,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const checkUserAuth = async () => {
+    if(loggingOut.current)return;
+    const version=++authGeneration.current;
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      if(version!==authGeneration.current)return;
+      if(!currentUser||currentUser.is_banned)throw Object.assign(new Error('Authentication required'),{status:403});
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
+      if(version!==authGeneration.current)return;
+      setPlaybackProfile(null);
       console.error('User auth check failed:', error);
       setUser(null);
       cancelProfilePin();localStorage.removeItem("xero_active_profile");
@@ -133,12 +141,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async (shouldRedirect = true) => {
-    // Remove the local push endpoint before clearing the account token.
+    if(loggingOut.current)return;
+    loggingOut.current=true;authGeneration.current++;setPlaybackProfile(null);
+    cancelProfilePin();
+    // Start both cleanup operations before token removal.
+    const removeRemote=async()=>{try{if(localStorage.getItem('xero_device_id'))await base44.functions.invoke('browserPush',{action:'remove',device_id:deviceId()});}catch{}};
     const cleanup=async()=>{
       try{const reg=await navigator.serviceWorker?.getRegistration();const sub=await reg?.pushManager?.getSubscription();if(sub)await sub.unsubscribe();}catch{}
-      try{if(localStorage.getItem("xero_device_id"))await base44.functions.invoke("browserPush",{action:"remove",device_id:deviceId()});}catch{}
     };
-    await Promise.race([cleanup(),new Promise(resolve=>setTimeout(resolve,2500))]);
+    await Promise.race([Promise.allSettled([removeRemote(),cleanup()]),new Promise(resolve=>setTimeout(resolve,2500))]);
     cancelProfilePin();localStorage.removeItem("xero_active_profile");
     setUser(null);
     setIsAuthenticated(false);
@@ -150,6 +161,7 @@ export const AuthProvider = ({ children }) => {
       // Just remove the token without redirect
       base44.auth.logout();
     }
+    loggingOut.current=false;
   };
 
   const navigateToLogin = () => {
