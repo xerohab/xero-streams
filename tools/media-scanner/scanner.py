@@ -33,6 +33,8 @@ def main():
     db=sqlite3.connect(args.db);db.execute('create table if not exists fingerprints(id text primary key, revision text, series text, data text)');db.execute('create table if not exists results(id text primary key, data text)')
     rows=json.loads(Path(args.manifest).read_text())
     if not isinstance(rows,list) or any(not isinstance(r,dict) or not all(isinstance(r.get(k),str) and r[k] for k in ('id','series_id','url','revision')) for r in rows):raise ValueError('Invalid manifest')
+    if len({r['id'] for r in rows})!=len(rows):raise ValueError('Duplicate episode IDs')
+    current={r['id']:r for r in rows}
     os.nice(15)
     for r in rows:
         if (ROOT/'pause').exists():return
@@ -47,12 +49,16 @@ def main():
         if (ROOT/'pause').exists():return
         cur=db.execute('select data from fingerprints where id=? and revision=?',(r['id'],r['revision'])).fetchone()
         if not cur:continue
-        a=json.loads(cur[0]);peers=db.execute('select data from fingerprints where series=? and id!=? limit 8',(r['series_id'],r['id'])).fetchall()
+        a=json.loads(cur[0]);peers=[]
+        for peer_id,revision,data in db.execute('select id,revision,data from fingerprints where series=? and id!=? order by id',(r['series_id'],r['id'])):
+            if peer_id in current and current[peer_id]['revision']==revision:
+                peers.append((data,))
+                if len(peers)>=8:break
         hits=[m for peer in peers if (m:=match(a,json.loads(peer[0])))]
         groups=[ [v for v in hits if abs(v[0]-h[0])<=3 and abs(v[1]-h[1])<=5] for h in hits]
         group=max(groups,key=len,default=[])
-        result={'status':'review' if group else 'no_match','matches':len(group)}
-        if group:result.update(intro_start=statistics.median(v[0] for v in group),intro_end=statistics.median(v[1] for v in group))
+        result={'status':'review' if len(group)>=2 else 'no_match','matches':len(group)}
+        if len(group)>=2:result.update(intro_start=statistics.median(v[0] for v in group),intro_end=statistics.median(v[1] for v in group))
         db.execute('insert or replace into results values(?,?)',(r['id'],json.dumps(result)));db.commit()
     print(json.dumps([{'id':r['id'],'revision':r['revision'],**json.loads(row[0])} for r in rows if (row:=db.execute('select data from results where id=?',(r['id'],)).fetchone())]))
 if __name__=='__main__':main()
