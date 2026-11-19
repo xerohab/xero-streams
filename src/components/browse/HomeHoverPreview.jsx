@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Info, Layers, Play, Tv } from "lucide-react";
@@ -10,7 +11,7 @@ export default function HomeHoverPreview({ item, type, isUpdated, itemCount }) {
   const collection = type === "franchise";
   const series = type === "series";
   const episode = !collection && !series && (type === "episode" || item.content_type === "episode" || !!item.series_id);
-  const playable = !collection && !series && item.video_url && !item.coming_soon;
+  const playable = !collection && !series && hasPlaybackSource(item) && !item.coming_soon;
   const info = collection ? `/franchise?id=${item.id}` : series ? `/series?id=${item.id}` : episode ? `/watch?id=${item.id}` : `/movie?id=${item.id}`;
   const image = item.backdrop_url || item.cover_image || item.thumbnail_url;
   const Icon = collection ? Layers : series ? Tv : Play;

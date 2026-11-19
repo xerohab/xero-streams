@@ -1,3 +1,4 @@
+import { hasPlaybackSource } from "@/lib/parentalControls";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Play, Info, Layers, Tv, Download, Loader2 } from "lucide-react";
@@ -10,7 +11,7 @@ export default function MediaPreview({ item, type, isUpdated, isPremium, onDownl
   const collection = type === "franchise";
   const series = type === "series";
   const episode = !collection && !series && (type === "episode" || item.content_type === "episode" || !!item.series_id);
-  const playable = canPlay ?? (!!item.video_url && !item.coming_soon);
+  const playable = canPlay ?? (!!hasPlaybackSource(item) && !item.coming_soon);
   const info = collection ? `/franchise?id=${item.id}` : series ? `/series?id=${item.id}` : episode ? `/watch?id=${item.id}` : `/movie?id=${item.id}`;
   const Icon = collection ? Layers : series ? Tv : Play;
   const genres = genreString(item, "category", 4);

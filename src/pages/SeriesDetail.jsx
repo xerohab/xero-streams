@@ -1,6 +1,6 @@
 import { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 import {useProfile} from "@/lib/ProfileContext";
-import {allowsKidsContent} from "@/lib/parentalControls";
+import {allowsKidsContent, hasPlaybackSource} from "@/lib/parentalControls";
 import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
@@ -167,15 +167,15 @@ export default function SeriesDetail() {
     );
   }
 
-  const firstPlayable = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url);
-  const resumeEntry = getAll().find((entry) => sortedEpisodes.some((ep) => ep.id === entry.id && ep.video_url && !ep.coming_soon));
+  const firstPlayable = sortedEpisodes.find((ep) => !ep.coming_soon && hasPlaybackSource(ep));
+  const resumeEntry = getAll().find((entry) => sortedEpisodes.some((ep) => ep.id === entry.id && hasPlaybackSource(ep) && !ep.coming_soon));
   const playEpisode = resumeEntry ? sortedEpisodes.find((ep) => ep.id === resumeEntry.id) : firstPlayable;
   const isUpdated = isRecentlyUpdated(getItemActivityAt(series, [], [series], episodes));
 
   // Episode search + quick actions
   const watchedIds = new Set(getWatched());
-  const latestEpisode = [...sortedEpisodes].reverse().find((ep) => !ep.coming_soon && ep.video_url);
-  const nextUnwatched = sortedEpisodes.find((ep) => !ep.coming_soon && ep.video_url && !watchedIds.has(ep.id) && !getAll().some((p) => p.id === ep.id));
+  const latestEpisode = [...sortedEpisodes].reverse().find((ep) => !ep.coming_soon && hasPlaybackSource(ep));
+  const nextUnwatched = sortedEpisodes.find((ep) => !ep.coming_soon && hasPlaybackSource(ep) && !watchedIds.has(ep.id) && !getAll().some((p) => p.id === ep.id));
   const filteredEpisodes = (() => {
     const q = epSearch.trim().toLowerCase();
     if (!q) return sortedEpisodes;
@@ -245,7 +245,7 @@ export default function SeriesDetail() {
               subtitle={`${sortedEpisodes.length} episode${sortedEpisodes.length !== 1 ? "s" : ""}`}
             />
             {/* Quick episode actions */}
-            {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+            {sortedEpisodes.some((ep) => !ep.coming_soon && hasPlaybackSource(ep)) && (
               <div className="mb-4 flex flex-wrap gap-2">
                 {resumeEntry && (
                   <Button asChild variant="default" className="h-9 gap-2 rounded-lg px-4 text-xs font-bold">
@@ -282,7 +282,7 @@ export default function SeriesDetail() {
                 />
               </div>
             )}
-            {sortedEpisodes.some((ep) => !ep.coming_soon && ep.video_url) && (
+            {!kids && sortedEpisodes.some((ep) => !ep.coming_soon && hasPlaybackSource(ep)) && (
               <p className="mb-5 flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">
                 <DownloadIcon className="h-5 w-5 shrink-0 text-primary" />
                 <span>

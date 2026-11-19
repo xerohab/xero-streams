@@ -1,6 +1,6 @@
 import { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 import {useProfile} from "@/lib/ProfileContext";
-import {allowsKidsContent} from "@/lib/parentalControls";
+import {allowsKidsContent, hasPlaybackSource} from "@/lib/parentalControls";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -174,7 +174,7 @@ export default function MovieDetail() {
         }
         description={video.description}
       >
-        {(video.coming_soon || !video.video_url) ? (
+        {(video.coming_soon || !hasPlaybackSource(video)) ? (
           <Button disabled className="gap-2 font-bold h-12 px-6 rounded-full bg-secondary text-secondary-foreground">
             <CalendarClock className="w-5 h-5" /> Coming Soon
           </Button>
@@ -188,7 +188,7 @@ export default function MovieDetail() {
         )}
         <WatchlistButton videoId={video.id} variant="outline" className={OUTLINE_BTN} label="My List" />
 
-        {video.is_for_sale && (
+        {!kids && video.is_for_sale && (
           isPurchased ? (
             <Button variant="outline" className={`${OUTLINE_BTN} border-primary/40 text-primary`} onClick={() => {
               const a = document.createElement("a");
@@ -207,7 +207,7 @@ export default function MovieDetail() {
           )
         )}
 
-        {!video.is_for_sale && isPremium && !(video.coming_soon || !video.video_url) && (
+        {!kids && !video.is_for_sale && isPremium && !(video.coming_soon || !hasPlaybackSource(video)) && (
           <Button
             variant="outline"
             className={`${OUTLINE_BTN} border-primary/40 text-primary hover:bg-primary/15`}

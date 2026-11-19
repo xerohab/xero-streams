@@ -1,5 +1,5 @@
 import {useProfile} from "@/lib/ProfileContext";
-import {allowsKidsContent} from "@/lib/parentalControls";
+import {allowsKidsContent, hasPlaybackSource} from "@/lib/parentalControls";
 import PlaybackReport from "@/components/browse/PlaybackReport";
 import {useProfileFavourites} from "@/lib/useProfileFavourites";
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -295,7 +295,7 @@ export default function Watch() {
     : null;
 
   const candidate = nextEpisode || nextFranchiseMovie;
-  const nextVideo = candidate?.video_url && !candidate.coming_soon && !candidate.is_adult && (!kids||allowsKidsContent(candidate)) ? candidate : null;
+  const nextVideo = hasPlaybackSource(candidate) && !candidate.coming_soon && !candidate.is_adult && (!kids||allowsKidsContent(candidate)) ? candidate : null;
   const previousCandidate = prevSeriesEpisode || prevEpisode || prevFranchiseMovie;
   const prevVideo = !kids||allowsKidsContent(previousCandidate)?previousCandidate:null;
 
@@ -630,7 +630,7 @@ export default function Watch() {
         <div className="xero-container">
           {user && !isComingSoon && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
           {!isComingSoon&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
-          <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
+          <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} allowTransactions={!kids} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
           <WatchInfo video={video} series={series} />
           {user&&<PlaybackReport key={videoId} videoId={videoId}/>}
         </div>

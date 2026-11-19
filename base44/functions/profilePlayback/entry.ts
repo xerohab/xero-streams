@@ -35,7 +35,10 @@ if(b.action==='catalogue'){
   }
   visible.push(...rated.filter(video=>!video.series_id||approvedParents.has(video.series_id)));
  }
- return Response.json({rows:visible,next:rows.length===500?b.offset+500:null});
+ const rowsWithoutSources=visible.map(({video_url,download_url,...entry})=>({
+  ...entry,has_playback:typeof video_url==='string'&&Boolean(video_url.trim())
+ }));
+ return Response.json({rows:rowsWithoutSources,next:rows.length===500?b.offset+500:null});
 }
 if(b.action==='source'){
  if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});

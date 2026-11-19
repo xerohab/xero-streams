@@ -32,6 +32,9 @@ test('Kids catalogue omits age-restricted records and enforces a Kids profile',a
  assert.equal(result.status,200);
  const data=await result.json();
  assert.deepEqual(data.rows.map(row=>row.id),['safe']);
+ assert.equal(data.rows[0].has_playback,true);
+ assert.equal(Object.hasOwn(data.rows[0],'video_url'),false);
+ assert.equal(Object.hasOwn(data.rows[0],'download_url'),false);
  assert.equal(data.next,null);
  assert.equal((await call({action:'catalogue',kind:'videos',offset:-1})).status,400);
  setup({kids:false});
