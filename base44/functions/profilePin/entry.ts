@@ -20,8 +20,9 @@ export default async function(req:Request){
  let lock: Promise<void>|undefined;
  let accountId: string|undefined;
  try{
+ if(req.method!=='POST')return Response.json({error:'Method not allowed'},{status:405});
  const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
- if(!u||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
+ if(!u?.id||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
  accountId=String(u.id);
  const previous=accountLocks.get(accountId)||Promise.resolve();
  const gate=new Promise<void>(resolve=>{release=resolve;});
@@ -29,7 +30,9 @@ export default async function(req:Request){
  accountLocks.set(accountId,lock);
  await previous;
  const b=await req.json(),db=base.asServiceRole.entities;
+ if(!b||typeof b!=='object'||Array.isArray(b))return Response.json({error:'Invalid operation'},{status:400});
  const profiles=await db.ViewingProfile.filter({user_id:u.id});
+ if(new Set(profiles.map(p=>p.id)).size!==profiles.length)return Response.json({error:'Conflicting profiles'},{status:409});
  if(b.action==='bootstrap'){
   if(profiles.length)return Response.json({profile:profiles.find(p=>p.is_default)||profiles[0]});
   const name=(typeof u.full_name==='string'&&u.full_name.trim().slice(0,30))||'Main Profile';
