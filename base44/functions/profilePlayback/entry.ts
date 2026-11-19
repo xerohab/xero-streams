@@ -12,7 +12,8 @@ try{
 const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
 if(!u||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
 const b=await req.json(),db=base.asServiceRole.entities;
-const profile=typeof b.profile_id==='string'?(await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}))[0]:null;
+const profiles=typeof b.profile_id==='string'&&b.profile_id.length<=256?await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}):[];
+const profile=profiles.length===1?profiles[0]:null;
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
 const scope={user_id:u.id,profile_id:b.profile_id};
 const allowed=(v:any)=>!!v&&(!profile.is_kids||(!v.is_adult&&['U','G','PG','TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','BBFC U','BBFC PG'].includes(String(v.age_rating||'').trim().toUpperCase())));
@@ -45,7 +46,7 @@ if(b.action==='catalogue'){
  }
  const rowsWithoutSources=visible.map(row=>({
   ...Object.fromEntries(catalogueFields.filter(field=>Object.hasOwn(row,field)).map(field=>[field,row[field]])),
-  has_playback:typeof row.video_url==='string'&&Boolean(row.video_url.trim())
+  has_playback:!row.coming_soon&&typeof row.video_url==='string'&&Boolean(row.video_url.trim())
  }));
  return Response.json({rows:rowsWithoutSources,next:rows.length===500?b.offset+500:null});
 }
@@ -59,7 +60,7 @@ if(b.action==='source'){
   const purchases=await db.VideoPurchase.filter({user_id:u.id,video_id:v.id,status:'completed'});
   if(!purchases.length&&u.role!=='admin')return Response.json({error:'Purchase required'},{status:403});
  }
- const source=!v.coming_soon&&typeof v.video_url==='string'?v.video_url:null;
+ const source=!v.coming_soon&&typeof v.video_url==='string'&&v.video_url.trim()?v.video_url:null;
  const subtitles=source&&Array.isArray(v.subtitles)
   ? v.subtitles.filter(track=>typeof track?.url==='string'&&track.url)
       .map(({url,language,label})=>({url,language,label}))
@@ -77,7 +78,9 @@ if(b.state!=='removed'&&!(await allowedVideo((await base.entities.Video.filter({
 const position=b.position??0,duration=b.duration??0;
 if(!Number.isFinite(position)||!Number.isFinite(duration)||position<0||duration<0||position>duration||duration>604800||(b.state==='progress'&&duration<=0))return Response.json({error:'Invalid progress'},{status:400});
 const key={...scope,video_id:b.video_id};
-const row=(await db.ProfilePlayback.filter(key))[0];
+const matches=await db.ProfilePlayback.filter(key);
+if(matches.length>1)return Response.json({error:'Conflicting playback records'},{status:409});
+const row=matches[0];
 if(b.state==='removed'&&!row)return Response.json({ok:true});
 const data={position:b.state==='progress'?position:0,duration:b.state==='progress'?duration:0,state:b.state,changed_at:Date.now()};
 if(row)await db.ProfilePlayback.update(row.id,data);else await db.ProfilePlayback.create({...key,...data});
