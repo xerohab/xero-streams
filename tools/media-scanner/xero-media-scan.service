@@ -1,12 +1,12 @@
 [Unit]
 Description=XeroStreams isolated local media scan
-ConditionPathExists=/var/lib/xero-media-scan/episodes.json
+ConditionPathExists=/var/lib/xero-media-input/episodes.json
 [Service]
 Type=oneshot
 DynamicUser=yes
 StateDirectory=xero-media-scan
 WorkingDirectory=/var/lib/xero-media-scan
-ExecStart=/usr/bin/python3 /opt/xero-media-scan/scanner.py /var/lib/xero-media-scan/episodes.json --media-root /srv/xero-media-scan --db /var/lib/xero-media-scan/scan.sqlite --credits --recaps
+ExecStart=/usr/bin/python3 /opt/xero-media-scan/scanner.py /var/lib/xero-media-input/episodes.json --media-root /srv/xero-media-scan --db /var/lib/xero-media-scan/scan.sqlite --credits --recaps
 StandardOutput=truncate:/var/lib/xero-media-scan/results.json
 NoNewPrivileges=yes
 ProtectSystem=strict
