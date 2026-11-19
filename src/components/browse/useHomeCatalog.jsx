@@ -3,15 +3,16 @@ import {allowsKidsContent} from "@/lib/parentalControls";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { getCatalogMedia, getItemActivityAt } from "@/lib/activityUtils";
-import loadMediaRecords from "@/components/browse/loadMediaRecords";
+import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 
 export default function useHomeCatalog() {
-  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["cinema_catalog", "videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
-  const { data: series = [], isLoading: loadingSeries } = useQuery({ queryKey: ["cinema_catalog", "series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
-  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const profile = useProfile()?.activeProfile;
+  const kids = Boolean(profile?.is_kids);
+  const { data: videos = [], isLoading: loadingVideos } = useQuery(mediaCatalogueQuery(base44, "videos", kids ? profile.id : null));
+  const { data: series = [], isLoading: loadingSeries } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
+  const { data: franchises = [], isLoading: loadingFranchises } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: user } = useQuery({ queryKey: ["current_user"], queryFn: () => base44.auth.me().catch(() => null), staleTime: 0 });
   const rows = user?.homepage_rows || ["hero", "continue_watching", "latest", "tv", "movies"];
-  const kids=useProfile()?.activeProfile?.is_kids;
   const safeVideos = videos.filter((v) => !v.is_adult && (!kids||allowsKidsContent(v)));
   const safeSeries = series.filter((s) => !s.is_adult && (!kids||allowsKidsContent(s)));
   const populated = (items) => items.filter((item) => item.type !== "franchise" || item.items > 0).sort((a, b) => b.latestActivityAt - a.latestActivityAt);

@@ -6,23 +6,24 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { getCatalogMedia } from "@/lib/activityUtils";
 import { buildGenreIndex, listGenres } from "@/lib/genreUtils";
-import loadMediaRecords from "@/components/browse/loadMediaRecords";
+import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 
 const MIN_ROW_ITEMS = 6;
 const MAX_GENRE_ROWS = 3;
 
 /** Movies / TV catalogue: reuses the shared cached catalogue queries and filters them in memory. */
 export default function useBrowseCatalog(type) {
-  const kids=!!useProfile()?.activeProfile?.is_kids;
+  const profile = useProfile()?.activeProfile;
+  const kids = Boolean(profile?.is_kids);
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setSize] = useState(() => { const n = Number(localStorage.getItem("xero_page_size")); return [20, 30, 40, 50].includes(n) ? n : 20; });
   const genre = params.get("genre") || "all";
   const sort = params.get("sort") === "title" ? "title" : "latest";
-  const { data: videos = [], isLoading: lv } = useQuery({ queryKey: ["cinema_catalog", "videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
-  const { data: series = [], isLoading: ls } = useQuery({ queryKey: ["cinema_catalog", "series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
-  const { data: franchises = [], isLoading: lf } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: lv } = useQuery(mediaCatalogueQuery(base44, "videos", kids ? profile.id : null));
+  const { data: series = [], isLoading: ls } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
+  const { data: franchises = [], isLoading: lf } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
 
   const { groups, genreIndex, genres } = useMemo(() => {

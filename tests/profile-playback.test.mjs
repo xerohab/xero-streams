@@ -4,7 +4,7 @@ import handler from '../base44/functions/profilePlayback/entry.ts';
 function setup({user={id:'u'},kids=true,owns=true}={}){
  const rows=[{id:'r',video_id:'adult',state:'progress',position:10,duration:100}];
  const videos=[{id:'adult',age_rating:'18',title:'Adult'},{id:'safe',age_rating:'PG',title:'Safe',video_url:'https://media.example.test/safe'}];
- globalThis.__testClient={auth:{me:async()=>user},entities:{Video:{filter:async q=>videos.filter(v=>v.id===q.id)}},asServiceRole:{entities:{
+ globalThis.__testClient={auth:{me:async()=>user},entities:{Video:{filter:async q=>videos.filter(v=>v.id===q.id),list:async (_sort,limit,offset)=>videos.slice(offset,offset+limit)}},asServiceRole:{entities:{
  ViewingProfile:{filter:async()=>owns?[{is_kids:kids}]:[]},
  ProfilePlayback:{filter:async q=>rows.filter(r=>!q.video_id||r.video_id===q.video_id),update:async(id,data)=>Object.assign(rows.find(r=>r.id===id),data),create:async data=>rows.push(data)}
  }}};
@@ -24,4 +24,16 @@ test('Kids Watch source uses the authoritative rating and profile ownership',asy
  assert.deepEqual(await (await call({action:'source',video_id:'safe'})).json(),{source:'https://media.example.test/safe'});
  setup({owns:false});
  assert.equal((await call({action:'source',video_id:'safe'})).status,403);
+});
+
+test('Kids catalogue omits age-restricted records and enforces a Kids profile',async()=>{
+ setup();
+ const result=await call({action:'catalogue',kind:'videos',offset:0});
+ assert.equal(result.status,200);
+ const data=await result.json();
+ assert.deepEqual(data.rows.map(row=>row.id),['safe']);
+ assert.equal(data.next,null);
+ assert.equal((await call({action:'catalogue',kind:'videos',offset:-1})).status,400);
+ setup({kids:false});
+ assert.equal((await call({action:'catalogue',kind:'videos',offset:0})).status,403);
 });

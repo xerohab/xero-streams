@@ -16,10 +16,11 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import SearchFilters from "@/components/browse/SearchFilters";
 import PaginationControls from "@/components/browse/PaginationControls";
 import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
-import loadMediaRecords from "@/components/browse/loadMediaRecords";
+import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 
 export default function Search() {
-  const kids=!!useProfile()?.activeProfile?.is_kids;
+  const profile = useProfile()?.activeProfile;
+  const kids = Boolean(profile?.is_kids);
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
   const [query, setQuery] = useState(urlParams.get("q") || "");
@@ -41,9 +42,9 @@ export default function Search() {
     setCurrentPage(1);
   };
 
-  const { data: videos = [], isLoading: loadingVideos } = useQuery({ queryKey: ["cinema_catalog", "videos"], queryFn: () => loadMediaRecords(base44.entities.Video) });
-  const { data: seriesList = [], isLoading: loadingSeries } = useQuery({ queryKey: ["cinema_catalog", "series"], queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000) });
-  const { data: franchises = [] } = useQuery({ queryKey: ["cinema_catalog", "franchises"], queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
+  const { data: videos = [], isLoading: loadingVideos } = useQuery(mediaCatalogueQuery(base44, "videos", kids ? profile.id : null));
+  const { data: seriesList = [], isLoading: loadingSeries } = useQuery(mediaCatalogueQuery(base44, "series", kids ? profile.id : null));
+  const { data: franchises = [] } = useQuery({ queryKey: ["cinema_catalog", "franchises"], enabled: !kids, queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000) });
   const { data: categories = [] } = useQuery({ queryKey: ["video_categories"], queryFn: () => base44.entities.VideoCategory.list() });
   const { data: books = [] } = useQuery({ queryKey: ["search_books"], queryFn: () => base44.entities.Book.filter({ is_active: true }, "sort_order", 200) });
   const { data: authors = [] } = useQuery({ queryKey: ["book_authors"], queryFn: () => base44.entities.BookAuthor.list() });

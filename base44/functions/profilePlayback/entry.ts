@@ -8,6 +8,13 @@ const profile=typeof b.profile_id==='string'?(await db.ViewingProfile.filter({id
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
 const scope={user_id:u.id,profile_id:b.profile_id};
 const allowed=(v:any)=>!!v&&(!profile.is_kids||(!v.is_adult&&['U','G','PG','TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','BBFC U','BBFC PG'].includes(String(v.age_rating||'').trim().toUpperCase())));
+if(b.action==='catalogue'){
+ if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
+ if(!['videos','series'].includes(b.kind)||!Number.isSafeInteger(b.offset)||b.offset<0||b.offset>500000)return Response.json({error:'Invalid catalogue page'},{status:400});
+ const entity=b.kind==='videos'?base.entities.Video:base.entities.Series;
+ const rows=await entity.list('id',500,b.offset);
+ return Response.json({rows:rows.filter(allowed),next:rows.length===500?b.offset+500:null});
+}
 if(b.action==='source'){
  if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
