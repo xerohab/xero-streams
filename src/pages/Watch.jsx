@@ -332,13 +332,13 @@ export default function Watch() {
     const t = videoRef.current.currentTime;
     const duration = videoRef.current.duration;
     
-    if (video.intro_start != null && video.intro_end != null && t >= video.intro_start && t < video.intro_end) {
+    if (Number.isFinite(video.intro_start) && Number.isFinite(video.intro_end) && video.intro_start >= 0 && video.intro_end <= videoRef.current.duration && t >= video.intro_start && t < video.intro_end) {
       setShowSkipIntro(true);
     } else {
       setShowSkipIntro(false);
     }
     
-    if (video.recap_start != null && video.recap_end != null && t >= video.recap_start && t < video.recap_end) {
+    if (Number.isFinite(video.recap_start) && Number.isFinite(video.recap_end) && video.recap_start >= 0 && video.recap_end <= videoRef.current.duration && t >= video.recap_start && t < video.recap_end) {
       setShowSkipRecap(true);
     } else {
       setShowSkipRecap(false);
@@ -506,7 +506,7 @@ export default function Watch() {
               {showSkipIntro && (
                 <button
                   onClick={() => {
-                    videoRef.current.currentTime = video.intro_end;
+                    if (Number.isFinite(video.intro_end) && video.intro_end > videoRef.current.currentTime && video.intro_end <= videoRef.current.duration) videoRef.current.currentTime = video.intro_end;
                     base44.analytics.track({ eventName: "intro_skipped", properties: { video_id: video.id } });
                   }}
                   className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 border border-white/20 transition-all flex items-center gap-2 text-sm shadow-lg"
@@ -517,7 +517,7 @@ export default function Watch() {
               {showSkipRecap && !showSkipIntro && (
                 <button
                   onClick={() => {
-                    videoRef.current.currentTime = video.recap_end;
+                    if (Number.isFinite(video.recap_end) && video.recap_end > videoRef.current.currentTime && video.recap_end <= videoRef.current.duration) videoRef.current.currentTime = video.recap_end;
                     base44.analytics.track({ eventName: "recap_skipped", properties: { video_id: video.id } });
                   }}
                   className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 border border-white/20 transition-all flex items-center gap-2 text-sm shadow-lg"
