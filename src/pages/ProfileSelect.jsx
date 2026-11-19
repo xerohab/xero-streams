@@ -98,6 +98,28 @@ export default function ProfileSelect({ manage = false }) {
     }catch{window.alert("PIN change failed. Check your current PIN or try again later.");}
   };
 
+  const recoverPin = async (profile) => {
+    if (confirm("Send a PIN recovery code to your account email?")) {
+      try {
+        const request = await base44.functions.invoke("profilePin", { action: "request_recovery", profile_id: profile.id });
+        if (request.data?.ok !== true) throw new Error();
+      } catch {
+        window.alert("If you already requested a code, use it below. Otherwise, wait 15 minutes and try again.");
+      }
+    }
+    const code = await requestProfilePin("Enter the code from your account email", { recovery: true });
+    if (!code) return;
+    const new_pin = await requestProfilePin("Choose a new PIN (4–8 digits)");
+    if (!new_pin || await requestProfilePin("Confirm your new PIN") !== new_pin) return;
+    try {
+      const result = await base44.functions.invoke("profilePin", { action: "recover", profile_id: profile.id, code: code.toLowerCase(), new_pin });
+      if (result.data?.ok !== true) throw new Error();
+      window.alert("PIN saved. Select your profile and enter the new PIN.");
+    } catch {
+      window.alert("PIN recovery failed. Check that your code is correct and has not expired.");
+    }
+  };
+
   const canAdd = !!activeProfile && !activeProfile.is_kids && profiles.length < maxProfiles;
 
   return (
@@ -147,6 +169,7 @@ export default function ProfileSelect({ manage = false }) {
                   {profile.is_kids && <span className="absolute bottom-1 right-1 rounded bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">KIDS</span>}
                 </button>
               )}
+              {!isEditing && !profile.is_kids && <button className="text-xs text-muted-foreground hover:text-primary" onClick={() => recoverPin(profile)}>Recover PIN</button>}
               {managing&&!isEditing&&<div className="flex gap-2 text-xs"><button onClick={()=>managePin(profile)} className="text-primary">Set / change PIN</button><button onClick={()=>managePin(profile,true)} className="text-muted-foreground">Remove PIN</button></div>}
               <div className="flex items-center gap-1">
                 <span className="max-w-[120px] truncate text-sm font-semibold text-foreground">{profile.name}</span>

@@ -17,6 +17,12 @@
     "failures": {
       "type": "number"
     },
+    "recovery_digest": {
+      "type": "string"
+    },
+    "recovery_expires_at": {
+      "type": "number"
+    },
     "locked_until": {
       "type": "number"
     }
