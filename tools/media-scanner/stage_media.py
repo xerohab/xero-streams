@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Stage authorized direct media files only; never follow redirects."""
-import argparse, hashlib, http.client, ipaddress, json, os, socket, ssl, time
+import argparse, hashlib, http.client, ipaddress, json, os, socket, ssl, time, shutil
 from pathlib import Path
 from urllib.parse import urlsplit
 HOST="vids2.hab-lounge.com"
@@ -23,7 +23,7 @@ def stage(row,root,limit):
         res=conn.getresponse()
         if res.status!=200 or res.getheader("Content-Encoding","identity").lower()!="identity":raise ValueError("Unexpected response")
         size=int(res.getheader("Content-Length","0"))
-        if size<=0 or size>limit:raise ValueError("Media exceeds size budget")
+        if size<=0 or size>limit or shutil.disk_usage(root).free-size<10*1024**3:raise ValueError("Media exceeds size budget")
         import tempfile
         fd,tmp=tempfile.mkstemp(dir=root)
         count=0;deadline=time.monotonic()+1800
@@ -46,11 +46,21 @@ def main():
     if len({r["id"] for r in rows})!=len(rows):p.error("Duplicate identifiers")
     root=Path(a.root).resolve(strict=True);out=[];remaining=a.max_bytes
     batch=rows[a.offset:a.offset+a.max_files]
+    failures=[]
     for r in batch:
         try:
-            if remaining<=0:break
-            staged,size=stage(r,root,remaining);out.append(staged);remaining-=size
-        except Exception as e:print("Skipped:",type(e).__name__,file=__import__("sys").stderr)
+            if remaining<=0:raise ValueError('Batch budget exhausted')
+            for attempt in range(3):
+                try:
+                    staged,size=stage(r,root,remaining);break
+                except (OSError,http.client.HTTPException):
+                    if attempt==2:raise
+                    time.sleep(2**attempt)
+            out.append(staged);remaining-=size
+        except Exception as e:
+            failures.append({"id":r["id"],"revision":r["revision"],"reason":type(e).__name__})
+            print("Skipped:",type(e).__name__,file=__import__("sys").stderr)
     target=Path(a.output);tmp=target.with_suffix(".tmp");tmp.write_text(json.dumps(out));tmp.replace(target)
+    failed=target.with_suffix(".failures.json");tmp=failed.with_suffix(".tmp");tmp.write_text(json.dumps(failures));tmp.replace(failed)
     print("Staged",len(out),"of",len(batch),"files; next offset:",min(len(rows),a.offset+len(batch)))
 if __name__=="__main__":main()
