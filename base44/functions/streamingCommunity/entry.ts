@@ -15,7 +15,7 @@ export default async function(req: Request) {
    const ids = [...scores.keys()];
    const videos = ids.length ? await db.Video.filter({id:{$in:ids}},'-created_date',5000):[];
    const totals = new Map<string,number>();
-   for(const v of videos) if(!v.is_adult && !v.coming_soon && v.video_url && v.content_type!=='book'){
+   for(const v of videos) if(!v.is_adult && !v.coming_soon && (v.has_playback||v.video_url) && v.content_type!=='book'){
     const key = v.series_id?'series:'+v.series_id:'video:'+v.id;
     totals.set(key,(totals.get(key)||0)+(scores.get(v.id)||0));
    }
