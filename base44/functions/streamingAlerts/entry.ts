@@ -19,7 +19,7 @@ export default async function(req:Request){
  const publicKey=Deno.env.get('XERO_VAPID_PUBLIC_KEY'),privateKey=Deno.env.get('XERO_VAPID_PRIVATE_KEY'),subject=Deno.env.get('XERO_VAPID_SUBJECT');
  const pushEnabled=!!(publicKey&&privateKey&&subject);
  const deliver=async(row:any,v:any,email:boolean)=>{
-  if(!v||v.coming_soon||!v.video_url||v.is_adult)return;
+  if(!v||v.coming_soon||!(v.has_playback||v.video_url)||v.is_adult)return;
   const key='release:'+v.id;
   let n=(await db.StreamingNotification.filter({user_id:row.user_id,event_key:key}))[0];
   if(!n)n=await db.StreamingNotification.create({user_id:row.user_id,event_key:key,title:'Available now: '+v.title,message:'Your requested release is ready to watch.',link:'/watch?id='+encodeURIComponent(v.id),read:false,email_sent:false});
