@@ -27,8 +27,15 @@ try{
   const now=Date.now(),email=u.email.toLowerCase();
   if(b.action==='request_recovery'){
    if(row?.recovery_expires_at>now)return Response.json({error:'Use the current code or wait 15 minutes before requesting another'},{status:429});
+   if(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
    const code=hex(crypto.getRandomValues(new Uint8Array(16)));
-   const recovery={recovery_digest:await hashCode(code,email),recovery_expires_at:now+900000};
+   const recovery_salt=hex(crypto.getRandomValues(new Uint8Array(32)));
+   const recovery={
+    recovery_digest:await hashCode(code,email),
+    recovery_expires_at:now+900000,
+    recovery_salt,
+    recovery_pin_digest:await digest(b.new_pin,recovery_salt)
+   };
    if(row)await db.ProfilePin.update(row.id,recovery);
    else await db.ProfilePin.create({...scope,salt:'',digest:'',...recovery});
    await base.asServiceRole.integrations.Core.SendEmail({
@@ -37,13 +44,11 @@ try{
    });
    return Response.json({ok:true});
   }
-  if(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
   if(!row||!(row.recovery_expires_at>now)||typeof b.code!=='string'||!/^([a-f0-9]{32})$/.test(b.code)||
      !equalDigest(await hashCode(b.code,email),row.recovery_digest))return Response.json({error:'Invalid or expired recovery code'},{status:403});
-  const salt=hex(crypto.getRandomValues(new Uint8Array(32))),hashed=await digest(b.new_pin,salt);
   const current=(await db.ProfilePin.filter(scope))[0];
-  if(current?.id!==row.id||current.recovery_digest!==row.recovery_digest||!(current.recovery_expires_at>Date.now()))return Response.json({error:'Invalid or expired recovery code'},{status:403});
-  await db.ProfilePin.update(row.id,{salt,digest:hashed,failures:0,locked_until:0,recovery_digest:'',recovery_expires_at:0});
+  if(current?.id!==row.id||current.recovery_digest!==row.recovery_digest||!(current.recovery_expires_at>Date.now())||!current.recovery_salt||!current.recovery_pin_digest)return Response.json({error:'Invalid or expired recovery code'},{status:403});
+  await db.ProfilePin.update(row.id,{salt:current.recovery_salt,digest:current.recovery_pin_digest,failures:0,locked_until:0,recovery_digest:'',recovery_expires_at:0,recovery_salt:'',recovery_pin_digest:''});
   return Response.json({ok:true});
  }
  const enabled=!!row?.digest;
@@ -62,7 +67,7 @@ try{
  if(b.action==='verify')return Response.json({ok:true});
  if(b.action==='remove'){if(row)await db.ProfilePin.delete(row.id);return Response.json({ok:true});}
  if(typeof b.new_pin!=='string'||!/^\d{4,8}$/.test(b.new_pin))return Response.json({error:'Choose a 4–8 digit PIN'},{status:400});
- const salt=hex(crypto.getRandomValues(new Uint8Array(32))),data={salt,digest:await digest(b.new_pin,salt),failures:0,locked_until:0,recovery_digest:'',recovery_expires_at:0};
+ const salt=hex(crypto.getRandomValues(new Uint8Array(32))),data={salt,digest:await digest(b.new_pin,salt),failures:0,locked_until:0,recovery_digest:'',recovery_expires_at:0,recovery_salt:'',recovery_pin_digest:''};
  if(row)await db.ProfilePin.update(row.id,data);else await db.ProfilePin.create({...scope,...data});
  return Response.json({ok:true});
 }catch{return Response.json({error:'PIN service unavailable'},{status:500});}

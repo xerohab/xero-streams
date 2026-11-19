@@ -99,9 +99,11 @@ export default function ProfileSelect({ manage = false }) {
   };
 
   const recoverPin = async (profile) => {
-    if (confirm("Send a PIN recovery code to your account email?")) {
+    if (confirm("Send a PIN recovery code to your account email? Choose Cancel if you already have a code.")) {
+      const new_pin = await requestProfilePin("Choose a new PIN (4–8 digits)");
+      if (!new_pin || await requestProfilePin("Confirm your new PIN") !== new_pin) return;
       try {
-        const request = await base44.functions.invoke("profilePin", { action: "request_recovery", profile_id: profile.id });
+        const request = await base44.functions.invoke("profilePin", { action: "request_recovery", profile_id: profile.id, new_pin });
         if (request.data?.ok !== true) throw new Error();
       } catch {
         window.alert("If you already requested a code, use it below. Otherwise, wait 15 minutes and try again.");
@@ -109,10 +111,8 @@ export default function ProfileSelect({ manage = false }) {
     }
     const code = await requestProfilePin("Enter the code from your account email", { recovery: true });
     if (!code) return;
-    const new_pin = await requestProfilePin("Choose a new PIN (4–8 digits)");
-    if (!new_pin || await requestProfilePin("Confirm your new PIN") !== new_pin) return;
     try {
-      const result = await base44.functions.invoke("profilePin", { action: "recover", profile_id: profile.id, code: code.toLowerCase(), new_pin });
+      const result = await base44.functions.invoke("profilePin", { action: "recover", profile_id: profile.id, code: code.toLowerCase() });
       if (result.data?.ok !== true) throw new Error();
       window.alert("PIN saved. Select your profile and enter the new PIN.");
     } catch {

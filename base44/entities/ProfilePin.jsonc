@@ -20,6 +20,12 @@
     "recovery_digest": {
       "type": "string"
     },
+    "recovery_salt": {
+      "type": "string"
+    },
+    "recovery_pin_digest": {
+      "type": "string"
+    },
     "recovery_expires_at": {
       "type": "number"
     },

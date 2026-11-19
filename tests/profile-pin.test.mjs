@@ -17,24 +17,24 @@ test('five incorrect attempts lock PIN and invalid replacement does not incremen
 
 test('email recovery sets a missing adult PIN and consumes the code',async()=>{
  const {rows,emails}=setup({kids:true,user:{id:'u',email:'owner@example.test',email_verified:true}});
- assert.equal((await call({action:'request_recovery',email:'someone-else@example.test'})).status,200);
+ assert.equal((await call({action:'request_recovery',new_pin:'7654',email:'someone-else@example.test'})).status,200);
  assert.equal(emails[0].to,'owner@example.test');
  const [code]=emails[0].body.match(/[a-f0-9]{32}/);
  assert.notEqual(rows[0].recovery_digest,code);
  assert.deepEqual(await (await call({action:'status'})).json(),{enabled:false,requires_setup:true});
- assert.equal((await call({action:'request_recovery'})).status,429);
+ assert.equal((await call({action:'request_recovery',new_pin:'7654'})).status,429);
  assert.equal((await call({action:'recover',code:'0'.repeat(32),new_pin:'7654'})).status,403);
- assert.equal((await call({action:'recover',code,new_pin:'7654'})).status,200);
+ assert.equal((await call({action:'recover',code,new_pin:'0000'})).status,200);
  assert.equal((await call({action:'recover',code,new_pin:'1234'})).status,403);
  assert.equal((await call({action:'verify',pin:'7654'})).status,200);
 });
 
 test('recovery rejects expired codes and explicitly unverified email',async()=>{
  const {rows,emails}=setup({user:{id:'u',email:'owner@example.test'}});
- await call({action:'request_recovery'});
+ await call({action:'request_recovery',new_pin:'7654'});
  const [code]=emails[0].body.match(/[a-f0-9]{32}/);
  rows[0].recovery_expires_at=Date.now()-1;
  assert.equal((await call({action:'recover',code,new_pin:'7654'})).status,403);
  setup({user:{id:'u',email:'owner@example.test',email_verified:false}});
- assert.equal((await call({action:'request_recovery'})).status,403);
+ assert.equal((await call({action:'request_recovery',new_pin:'7654'})).status,403);
 });
