@@ -67,9 +67,9 @@ if(b.action==='source'){
   const purchases=await db.VideoPurchase.filter({user_id:u.id,video_id:v.id,status:'completed'});
   if(!purchases.length&&u.role!=='admin')return Response.json({error:'Purchase required'},{status:403});
  }
- // During staging, existing catalogue sources remain authoritative until cleared.
+ // Prefer the verified private source; legacy fields are a migration fallback.
  let media=v;
- if(!v.video_url&&!v.coming_soon&&db.ProtectedMediaSource){
+ if(!v.coming_soon&&db.ProtectedMediaSource){
   const matches=await db.ProtectedMediaSource.filter({video_id:v.id});
   if(matches.length>1)return Response.json({error:'Conflicting media sources'},{status:409});
   if(matches.length===1)media=matches[0];
