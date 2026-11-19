@@ -67,3 +67,19 @@ test('Kids profiles exclude episodes whose parent series is restricted or missin
  assert.equal((await call({action:'source',video_id:'e1'})).status,404);
  assert.equal((await call({action:'save',video_id:'e3',state:'completed'})).status,404);
 });
+
+
+test('Kids source does not disclose paid playback without a completed purchase',async()=>{
+ setup();
+ const client=globalThis.__testClient;
+ const video={id:'safe',age_rating:'PG',is_for_sale:true,video_url:'https://media.example.test/paid'};
+ client.entities.Video.filter=async()=>[video];
+ let purchased=false;
+ client.asServiceRole.entities.VideoPurchase={filter:async q=>{
+  assert.deepEqual(q,{user_id:'u',video_id:'safe',status:'completed'});
+  return purchased?[{id:'purchase'}]:[];
+ }};
+ assert.equal((await call({action:'source',video_id:'safe'})).status,403);
+ purchased=true;
+ assert.equal((await (await call({action:'source',video_id:'safe'})).json()).source,video.video_url);
+});
