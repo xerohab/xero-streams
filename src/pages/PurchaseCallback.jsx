@@ -34,6 +34,7 @@ export default function PurchaseCallback() {
           return;
         }
         // Existing book, video, donation and in-flight legacy orders retain their flow.
+        if (localStorage.getItem("pending_plan_purchase") && !localStorage.getItem("pending_book_purchase") && !localStorage.getItem("pending_video_purchase")) throw new Error("Legacy premium order requires support verification before capture");
         const res = await base44.functions.invoke("capturePaypalOrder", { orderId: token });
         if (res.data?.success) {
           // Check what we were buying
@@ -65,23 +66,8 @@ export default function PurchaseCallback() {
             setStatus("completed");
             setTimeout(() => navigate("/dashboard"), 2000);
           } else if (pendingPlan) {
-            const { plan_id } = JSON.parse(pendingPlan);
-            
-            // Cancel existing sub if any
-            const existing = await base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" });
-            for (const sub of existing) {
-              await base44.entities.UserSubscription.update(sub.id, { status: "cancelled" });
-            }
-
-            await base44.entities.UserSubscription.create({
-              user_id: user.id,
-              plan_id,
-              status: "active",
-              paypal_order_id: token
-            });
-            localStorage.removeItem("pending_plan_purchase");
-            setStatus("completed");
-            setTimeout(() => navigate("/dashboard"), 2000);
+            // Never activate premium from an unbound legacy order.
+            throw new Error("Legacy premium order requires support verification");
           } else {
             // Probably a donation
             setStatus("completed");
