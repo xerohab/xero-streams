@@ -1,3 +1,4 @@
+import { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 import {useProfile} from "@/lib/ProfileContext";
 import {allowsKidsContent} from "@/lib/parentalControls";
 import React, { useState, useEffect } from "react";
@@ -23,7 +24,8 @@ import { isRecentlyUpdated, toActivityTimestamp } from "@/lib/activityUtils";
 const OUTLINE_BTN = "xero-action px-5";
 
 export default function MovieDetail() {
-  const kids=!!useProfile()?.activeProfile?.is_kids;
+  const profile = useProfile()?.activeProfile;
+  const kids = Boolean(profile?.is_kids);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get("id");
@@ -51,26 +53,35 @@ export default function MovieDetail() {
     enabled: !!user
   });
 
-  const { data: video, isLoading } = useQuery({
+  const { data: kidsVideos = [], isLoading: kidsLoading } = useQuery({
+    ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null), enabled: kids,
+  });
+  const { data: directVideo, isLoading: directLoading } = useQuery({
     queryKey: ["video", videoId],
     queryFn: async () => {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
     },
-    enabled: !!videoId,
+    enabled: !kids && !!videoId,
   });
 
-  const { data: franchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !!video?.franchise_id });
+  const video = kids ? kidsVideos.find(item => item.id === videoId) : directVideo;
+  const isLoading = kids ? kidsLoading : directLoading;
+
+  const { data: directFranchise } = useQuery({ queryKey: ["franchise", video?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: video.franchise_id}); return res[0]; }, enabled: !kids && !!video?.franchise_id });
+
+  const franchise = kids ? null : directFranchise;
 
   const { data: movieCatalog = [] } = useQuery({
     queryKey: ["movies_more_like_this"],
+    enabled: !kids,
     queryFn: () => base44.entities.Video.filter({ content_type: "movie", is_adult: false }, "-updated_date", 120),
   });
   
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
   // More Like This: same collection first, then same category, then newest
-  const moreLikeThis = movieCatalog
+  const moreLikeThis = (kids ? kidsVideos.filter(item => item.content_type === "movie") : movieCatalog)
     .filter((v) => v.id !== videoId && !v.series_id && (!kids||allowsKidsContent(v)))
     .map((v) => ({
       v,

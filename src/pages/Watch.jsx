@@ -17,7 +17,7 @@ import SectionHeader from "@/components/browse/SectionHeader";
 import WatchPartyControls from "@/components/browse/WatchPartyControls";
 import WatchPrimaryControls from "@/components/browse/WatchPrimaryControls";
 import WatchInfo from "@/components/browse/WatchInfo";
-import loadMediaRecords from "@/components/browse/loadMediaRecords";
+import loadMediaRecords, { mediaCatalogueQuery } from "@/components/browse/loadMediaRecords";
 import Navbar from "@/components/browse/Navbar";
 import { format } from "date-fns";
 import ReviewSection from "@/components/browse/ReviewSection";
@@ -128,9 +128,11 @@ export default function Watch() {
   });
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
+  const playbackProfile=useProfile()?.activeProfile;
+  const playbackProfileId=playbackProfile?.id||null;
+  const kids=playbackProfile?.is_kids;
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
-    queryKey: ["cinema_catalog", "videos"],
-    queryFn: () => loadMediaRecords(base44.entities.Video),
+    ...mediaCatalogueQuery(base44, "videos", kids ? playbackProfileId : null),
     staleTime: Infinity,
   });
 
@@ -142,15 +144,12 @@ export default function Watch() {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
     },
-    enabled: !!videoId && !videoFromAll,
+    enabled: !kids && !!videoId && !videoFromAll,
     staleTime: Infinity,
     gcTime: Infinity,
   });
 
-  const playbackProfile=useProfile()?.activeProfile;
-  const playbackProfileId=playbackProfile?.id||null;
-  const kids=playbackProfile?.is_kids;
-  const candidateVideo = videoFromAll || fetchedVideo;
+  const candidateVideo = videoFromAll || (!kids ? fetchedVideo : null);
   const video=kids&&!allowsKidsContent(candidateVideo)?null:candidateVideo;
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
   const isLoading = !video && (isFetchingVideo || isLoadingAll);
@@ -174,16 +173,18 @@ export default function Watch() {
   }, [video?.id]);
 
   const { data: seriesList = [] } = useQuery({
-    queryKey: ["cinema_catalog", "series"],
-    queryFn: () => loadMediaRecords(base44.entities.Series, "-created_date", 1000),
+    ...mediaCatalogueQuery(base44, "series", kids ? playbackProfileId : null),
     staleTime: Infinity,
   });
 
-  const { data: franchises = [] } = useQuery({
+  const { data: directFranchises = [] } = useQuery({
     queryKey: ["cinema_catalog", "franchises"],
+    enabled: !kids,
     queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
     staleTime: Infinity,
   });
+
+  const franchises = kids ? [] : directFranchises;
 
   const { data: approvedSource, isPending: isCheckingSource, isError: sourceError } = useQuery({
     queryKey: ["kids-watch-source", user?.id, playbackProfileId, videoId],
