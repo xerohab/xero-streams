@@ -193,7 +193,12 @@ export default function Watch() {
   })();
   const [playbackAttempt, setPlaybackAttempt] = useState(0);
   const [playbackIssue, setPlaybackIssue] = useState(null);
+  const autoRetried = useRef(false);
   useHls(videoRef, hlsSrc, playbackProfileId, playbackAttempt);
+
+  useEffect(() => {
+    autoRetried.current = false;
+  }, [hlsSrc, playbackProfileId]);
 
   useEffect(() => {
     setPlaybackIssue(null);
@@ -202,10 +207,14 @@ export default function Watch() {
     const showIssue = () => setPlaybackIssue("The stream couldn't be loaded.");
     const clearIssue = () => setPlaybackIssue(null);
     const startupTimer = window.setTimeout(() => {
-      if (player.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
-        setPlaybackIssue("The stream is taking too long to load.");
+      if (player.played.length || player.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA || player.error) return;
+      if (!autoRetried.current) {
+        autoRetried.current = true;
+        setPlaybackAttempt(attempt => attempt + 1);
+        return;
       }
-    }, 20000);
+      setPlaybackIssue("The stream is taking too long to load.");
+    }, autoRetried.current ? 20000 : 12000);
     player.addEventListener("error", showIssue);
     player.addEventListener("canplay", clearIssue);
     return () => {
