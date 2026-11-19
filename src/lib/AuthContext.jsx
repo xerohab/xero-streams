@@ -1,6 +1,6 @@
 import {cancelProfilePin} from "@/lib/requestProfilePin";
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import {heartbeatDevice} from "@/lib/deviceSession";
+import {heartbeatDevice,deviceId} from "@/lib/deviceSession";
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -132,7 +132,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
+    // Remove the local push endpoint before clearing the account token.
+    const cleanup=async()=>{
+      try{const reg=await navigator.serviceWorker?.getRegistration();const sub=await reg?.pushManager?.getSubscription();if(sub)await sub.unsubscribe();}catch{}
+      try{if(localStorage.getItem("xero_device_id"))await base44.functions.invoke("browserPush",{action:"remove",device_id:deviceId()});}catch{}
+    };
+    await Promise.race([cleanup(),new Promise(resolve=>setTimeout(resolve,2500))]);
     cancelProfilePin();localStorage.removeItem("xero_active_profile");
     setUser(null);
     setIsAuthenticated(false);
