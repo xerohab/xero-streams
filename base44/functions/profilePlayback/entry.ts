@@ -17,6 +17,7 @@ const profiles=typeof b?.profile_id==='string'&&b.profile_id.trim()&&b.profile_i
 const profile=profiles.length===1?profiles[0]:null;
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
 const scope={user_id:u.id,profile_id:b.profile_id};
+const findVideo=async(id:string)=>{const rows=await base.entities.Video.filter({id});return rows.length===1?rows[0]:null;};
 const allowed=(v:any)=>!!v&&(!profile.is_kids||(!v.is_adult&&['U','G','PG','TV-Y','TV-Y7','TV-Y7-FV','TV-G','TV-PG','BBFC U','BBFC PG'].includes(String(v.age_rating||'').trim().toUpperCase())));
 const seriesAccess=new Map<string,Promise<boolean>>();
 const allowedVideo=async(v:any)=>{
@@ -54,8 +55,7 @@ if(b.action==='catalogue'){
 if(b.action==='source'){
  if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
- const matches=await base.entities.Video.filter({id:b.video_id});
- const v=matches.length===1?matches[0]:null;
+ const v=await findVideo(b.video_id);
  if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
  // Paid titles must not bypass entitlement checks through the Kids endpoint.
  if(v.is_for_sale){
@@ -72,11 +72,11 @@ if(b.action==='source'){
 if(b.action==='list'){
 const rows=await db.ProfilePlayback.filter(scope,'-changed_at',200);
 const output=[];
-for(let i=0;i<rows.length;i+=8){const batch=await Promise.all(rows.slice(i,i+8).map(async r=>{const v=(await base.entities.Video.filter({id:r.video_id}))[0];return await allowedVideo(v)?{id:r.video_id,title:v.title,thumbnail_url:v.thumbnail_url,is_adult:!!v.is_adult,position:r.position,duration:r.duration,state:r.state,changed_at:r.changed_at}:null;}));output.push(...batch.filter(Boolean));}
+for(let i=0;i<rows.length;i+=8){const batch=await Promise.all(rows.slice(i,i+8).map(async r=>{const v=await findVideo(r.video_id);return await allowedVideo(v)?{id:r.video_id,title:v.title,thumbnail_url:v.thumbnail_url,is_adult:!!v.is_adult,position:r.position,duration:r.duration,state:r.state,changed_at:r.changed_at}:null;}));output.push(...batch.filter(Boolean));}
 return Response.json({rows:output});
 }
 if(b.action!=='save'||typeof b.video_id!=='string'||!b.video_id.trim()||b.video_id.length>256||!['progress','completed','removed'].includes(b.state))return Response.json({error:'Invalid operation'},{status:400});
-if(b.state!=='removed'&&!(await allowedVideo((await base.entities.Video.filter({id:b.video_id}))[0])))return Response.json({error:'Unavailable title'},{status:404});
+if(b.state!=='removed'&&!(await allowedVideo(await findVideo(b.video_id))))return Response.json({error:'Unavailable title'},{status:404});
 const position=b.position??0,duration=b.duration??0;
 if(!Number.isFinite(position)||!Number.isFinite(duration)||position<0||duration<0||position>duration||duration>604800||(b.state==='progress'&&duration<=0))return Response.json({error:'Invalid progress'},{status:400});
 const key={...scope,video_id:b.video_id};
