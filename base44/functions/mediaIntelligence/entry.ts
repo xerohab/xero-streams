@@ -17,6 +17,7 @@ export default async function(req:Request){
  const v=(await db.Video.filter({id:b.id}))[0];
  if(!v||v.content_type!=='episode'||v.is_adult||v.coming_soon)return Response.json({error:'Unavailable episode'},{status:404});
  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>240)return Response.json({error:'Invalid timestamps'},{status:400});
+ if(typeof b.revision!=='string'||!b.revision||b.revision!==v.updated_date)return Response.json({error:'Episode changed; rescan before approving'},{status:409});
  await db.Video.update(b.id,{intro_start:start,intro_end:end});return Response.json({ok:true});
  }
  return Response.json({error:'Unknown action'},{status:400});
