@@ -186,15 +186,16 @@ export default function Watch() {
   const franchises = kids ? [] : directFranchises;
 
   const profileAccess=profileContext?.profileAccess;
-  const useProtectedSource=Boolean(kids || (playbackProfileId && !video?.video_url && !video?.coming_soon && profileAccess?.token));
+  const guestSource=Boolean(!user && !profileContext?.user && !profilePending && video && !video.video_url && !video.coming_soon && !video.is_for_sale && !video.is_adult);
+  const useProtectedSource=Boolean(guestSource || kids || (playbackProfileId && !video?.video_url && !video?.coming_soon && profileAccess?.token));
   const { data: approvedSource, isPending: isCheckingSource, isError: sourceError } = useQuery({
     queryKey: ["profile-watch-source", user?.id, playbackProfileId, videoId, profileAccess?.expiresAt],
-    enabled: Boolean(useProtectedSource && video && playbackProfileId && !profilePending),
+    enabled: Boolean(useProtectedSource && video && (guestSource || playbackProfileId) && !profilePending),
     retry: false,
     staleTime: 0,
     gcTime: 0,
     queryFn: async () => {
-      const result = await base44.functions.invoke("profilePlayback", {
+      const result = guestSource ? await base44.functions.invoke("guestPlayback", {video_id:videoId}) : await base44.functions.invoke("profilePlayback", {
         action: "source", profile_id: playbackProfileId, video_id: videoId, access_token: profileAccess?.token
       });
       if (!result.data || !Object.hasOwn(result.data, "source")) throw new Error("Source not available");
