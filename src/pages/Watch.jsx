@@ -480,8 +480,10 @@ export default function Watch() {
       {sourceError ? "Playback is unavailable on this profile." : "Checking playback availability…"}
     </div>;
   }
-  const isComingSoon = video.coming_soon || !playbackSource;
-  const embedUrl = !isComingSoon ? getEmbedUrl(playbackSource) : null;
+  const purchaseRequired = Boolean(video.is_for_sale && !isPurchased && user?.role !== 'admin');
+  const isComingSoon = video.coming_soon || (!playbackSource && !purchaseRequired);
+  const playerUnavailable = isComingSoon || purchaseRequired;
+  const embedUrl = !playerUnavailable ? getEmbedUrl(playbackSource) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -491,7 +493,7 @@ export default function Watch() {
         <div className="xero-container">
         <div className="overflow-hidden rounded-lg border border-border/60 bg-background">
             <div className="relative aspect-video">
-              {isComingSoon ? (
+              {playerUnavailable ? (
                 <div
                   className="w-full h-full flex flex-col items-center justify-center gap-4 bg-black"
                   style={video.thumbnail_url ? { backgroundImage: `url(${video.thumbnail_url})`, backgroundSize: "cover", backgroundPosition: "center" } : {}}
@@ -499,7 +501,7 @@ export default function Watch() {
                   <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
                   <div className="relative z-10 flex flex-col items-center gap-3 text-center px-6">
                     <CalendarClock className="w-14 h-14 text-amber-400" />
-                    <h2 className="text-white text-2xl md:text-3xl font-black">Coming Soon</h2>
+                    <h2 className="text-white text-2xl md:text-3xl font-black">{purchaseRequired && !video.coming_soon ? 'Purchase required' : 'Coming Soon'}</h2>
                     {video.release_date && (
                       <p className="text-amber-400 text-base font-semibold">
                         {format(new Date(video.release_date), "d MMMM yyyy")}
@@ -592,7 +594,7 @@ export default function Watch() {
 
               {/* Top-right controls — hidden when coming soon or embedded */}
               <div className="absolute top-3 right-3 z-20 flex gap-2">
-                {!isComingSoon && !embedUrl && (
+                {!playerUnavailable && !embedUrl && (
                   <button
                     onClick={handlePiP}
                     className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm"
@@ -628,8 +630,8 @@ export default function Watch() {
 
         </div>
         <div className="xero-container">
-          {user && !isComingSoon && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
-          {!isComingSoon&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
+          {user && !playerUnavailable && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
+          {!playerUnavailable&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
           <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} allowTransactions={!kids} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
           <WatchInfo video={video} series={series} />
           {user&&<PlaybackReport key={videoId} videoId={videoId}/>}
