@@ -23,7 +23,8 @@ def stage(row,root,limit):
         res=conn.getresponse()
         if res.status!=200 or res.getheader("Content-Encoding","identity").lower()!="identity":raise ValueError("Unexpected response")
         size=int(res.getheader("Content-Length","0"))
-        if size<=0 or size>limit or shutil.disk_usage(root).free-size<10*1024**3:raise ValueError("Media exceeds size budget")
+        used=sum(f.stat().st_size for f in root.iterdir() if f.is_file() and not f.is_symlink())
+        if size<=0 or size>limit or used+size>100*1024**3 or shutil.disk_usage(root).free-size<10*1024**3:raise ValueError("Media exceeds size budget")
         import tempfile
         fd,tmp=tempfile.mkstemp(dir=root)
         count=0;deadline=time.monotonic()+1800
