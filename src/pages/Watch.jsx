@@ -128,11 +128,14 @@ export default function Watch() {
   });
   const isPremium = user?.role === "admin" || premiumSubs.length > 0;
 
-  const playbackProfile=useProfile()?.activeProfile;
+  const profileContext=useProfile();
+  const playbackProfile=profileContext?.activeProfile;
+  const profilePending=Boolean(profileContext?.loading || (profileContext?.user && !playbackProfile));
   const playbackProfileId=playbackProfile?.id||null;
   const kids=playbackProfile?.is_kids;
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
     ...mediaCatalogueQuery(base44, "videos", kids ? playbackProfileId : null),
+    enabled: !profilePending,
     staleTime: Infinity,
   });
 
@@ -144,12 +147,12 @@ export default function Watch() {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
     },
-    enabled: !kids && !!videoId && !videoFromAll,
+    enabled: !profilePending && !kids && !!videoId && !videoFromAll,
     staleTime: Infinity,
     gcTime: Infinity,
   });
 
-  const candidateVideo = videoFromAll || (!kids ? fetchedVideo : null);
+  const candidateVideo = profilePending ? null : videoFromAll || (!kids ? fetchedVideo : null);
   const video=kids&&!allowsKidsContent(candidateVideo)?null:candidateVideo;
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
   const isLoading = !video && (isFetchingVideo || isLoadingAll);
@@ -200,7 +203,7 @@ export default function Watch() {
       return result.data;
     }
   });
-  const playbackSource = kids ? approvedSource?.source : video?.video_url;
+  const playbackSource = profilePending ? null : kids ? approvedSource?.source : video?.video_url;
   const playbackSubtitles = kids ? approvedSource?.subtitles : video?.subtitles;
 
   // HLS hook — stop local playback when cast overlay is open
@@ -455,7 +458,7 @@ export default function Watch() {
 
 
 
-  if (isLoading) {
+  if (profilePending || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
