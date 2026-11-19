@@ -3,7 +3,7 @@ import webpush from 'npm:web-push@3.6.7';
 export default async function(req:Request){
 try{
 const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
-if(u?.role!=='admin')return Response.json({error:'Forbidden'},{status:403});
+if(u?.role!=='admin'||u.is_banned)return Response.json({error:'Forbidden'},{status:403});
 const publicKey=Deno.env.get('XERO_VAPID_PUBLIC_KEY'),privateKey=Deno.env.get('XERO_VAPID_PRIVATE_KEY'),subject=Deno.env.get('XERO_VAPID_SUBJECT');
 if(!publicKey||!privateKey||!subject)return Response.json({error:'Push not configured'},{status:503});
 const db=base.asServiceRole.entities,b=await req.json();
@@ -22,9 +22,9 @@ if((await db.BrowserPushReceipt.filter(receipt))[0]){skipped++;continue;}
 try{
 const url=new URL(s.endpoint);
 if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash||!['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(url.hostname)){skipped++;continue;}
-await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},JSON.stringify({type:'release',id:n.id,title:String(n.title).slice(0,160),link:n.link}),{vapidDetails:{subject,publicKey,privateKey},TTL:3600,timeout:10000});
+await webpush.sendNotification({endpoint:s.endpoint,keys:{p256dh:s.p256dh,auth:s.auth}},JSON.stringify({type:'release',id:n.id,title:'A release is available',link:'/dashboard'}),{vapidDetails:{subject,publicKey,privateKey},TTL:3600,timeout:10000});
 await db.BrowserPushReceipt.create({...receipt,sent_at:Date.now()});sent++;
-}catch(e){if(e.statusCode===404||e.statusCode===410)await db.BrowserPushSubscription.delete(s.id);failed++;}
+}catch(e){if(e.statusCode===404||e.statusCode===410){try{await db.BrowserPushSubscription.delete(s.id);}catch{}}failed++;}
 }
 return Response.json({sent,failed,skipped});
 }catch{return Response.json({error:'Push delivery unavailable'},{status:500});}
