@@ -1,3 +1,4 @@
+import {getDownloadAccess} from "@/lib/ProfileContext";
 import { base44 } from "@/api/base44Client";
 
 /**
@@ -8,9 +9,11 @@ import { base44 } from "@/api/base44Client";
  * Falls back to anchor navigation if CORS blocks the fetch.
  */
 export async function downloadSingleVideo(videoId, onProgress) {
+  const access=getDownloadAccess();
+  if(!access)throw Error("Unlock an adult profile to download.");
   const response = await base44.functions.fetch("/proxyDownload", {
     method: "POST",
-    body: JSON.stringify({ video_id: videoId }),
+    body: JSON.stringify({ video_id: videoId, ...access }),
     headers: { "Content-Type": "application/json" },
   });
 
@@ -96,9 +99,11 @@ export async function downloadSeriesZip(type, id, title, onProgress) {
     if (onProgress) onProgress({ current: i + 1, total: downloadable.length, title: video.title });
 
     // Validate auth + log the download via backend, then trigger direct browser download
+    const access=getDownloadAccess();
+    if(!access)throw Error("Unlock an adult profile to download.");
     let res;
     try {
-      res = await base44.functions.invoke("proxyDownload", { video_id: video.id });
+      res = await base44.functions.invoke("proxyDownload", { video_id: video.id, ...access });
     } catch (err) {
       const msg = err?.response?.data?.error || err?.data?.error || err.message;
       throw new Error(msg);
