@@ -1,7 +1,12 @@
 import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
 export default async function(req:Request){
 try{
- const base=createClientFromRequest(req),secret=Deno.env.get('XERO_SCANNER_TOKEN'),worker=!!secret&&req.headers.get('x-scanner-token')===secret;
+ const base=createClientFromRequest(req);
+ const presented=req.headers.get('x-scanner-token');
+ const worker=['XERO_SCANNER_TOKEN','XERO_LINUX_SCANNER_TOKEN'].some(name=>{
+  const token=Deno.env.get(name);
+  return !!token&&presented===token;
+ });
  const u=await base.auth.me().catch(()=>null);
  if(u?.is_banned||(!worker&&u?.role!=='admin'))return Response.json({error:'Forbidden'},{status:403});
  const b=await req.json(),db=base.asServiceRole.entities;

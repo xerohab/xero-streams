@@ -11,12 +11,13 @@ export default async function(req:Request){
   if(!rows.length)return Response.json({error:'Not found'},{status:404});
   await db.StreamingNotification.update(rows[0].id,{read:true});return Response.json({ok:true});
  }
- if((body.action && body.action!=='deliver')||(user && (user.role!=='admin'||user.is_banned)))return Response.json({error:'Forbidden'},{status:403});
+ if(!user)return Response.json({error:'Unauthorized'},{status:401});
+ if((body.action && body.action!=='deliver')||user.role!=='admin'||user.is_banned)return Response.json({error:'Forbidden'},{status:403});
  try{
  const [follows,reminders]=await Promise.all([db.SeriesFollow.list('-created_date',5000),db.ReleaseReminder.list('-created_date',5000)]);
  let sent=0,failed=0,pushed=0;
  const publicKey=Deno.env.get('XERO_VAPID_PUBLIC_KEY'),privateKey=Deno.env.get('XERO_VAPID_PRIVATE_KEY'),subject=Deno.env.get('XERO_VAPID_SUBJECT');
- const pushEnabled=!!(publicKey&&privateKey&&subject&&user?.role==='admin');
+ const pushEnabled=!!(publicKey&&privateKey&&subject);
  const deliver=async(row:any,v:any,email:boolean)=>{
   if(!v||v.coming_soon||!v.video_url||v.is_adult)return;
   const key='release:'+v.id;
