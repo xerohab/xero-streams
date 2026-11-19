@@ -1,3 +1,4 @@
+import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -113,7 +114,7 @@ export default function VideoUploadForm({ seriesList, franchises = [], onSuccess
       genres: form.genres || [],
     };
     const startedAt = Date.now();
-    const createdVideo = await base44.entities.Video.create(payload);
+    const createdVideo = await createAdminVideo(payload);
     // Some SDK responses wrap the created record. Resolve the saved ID before notifying Discord.
     let saved = createdVideo?.id ? createdVideo : (createdVideo?.data?.id ? createdVideo.data : createdVideo?.record?.id ? createdVideo.record : null);
     if (!saved) {
