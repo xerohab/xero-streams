@@ -15,7 +15,8 @@ export default async function loadMediaRecords(entity, sort = "-created_date", p
   }
   throw new Error("Catalogue page limit exceeded");
 }
-export function mediaCatalogueQuery(client, kind, kidsProfileId) {
+export function mediaCatalogueQuery(client, kind, kidsProfileId, pending = false) {
+  if (pending) return { queryKey: ["profile_pending_catalogue", kind], enabled: false, queryFn: async () => [] };
   const entity = kind === "videos" ? client.entities.Video : client.entities.Series;
   if (!kidsProfileId) {
     return {
