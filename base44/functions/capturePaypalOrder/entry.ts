@@ -24,7 +24,7 @@ async function getAccessToken() {
 Deno.serve(async (req) => {
   try {
     const { orderId } = await req.json();
-    if (!orderId) return Response.json({ error: "Missing orderId" }, { status: 400 });
+    if (typeof orderId !== "string" || !/^[A-Z0-9]{10,64}$/.test(orderId)) return Response.json({ error: "Invalid orderId" }, { status: 400 });
 
     const accessToken = await getAccessToken();
 
@@ -37,12 +37,12 @@ Deno.serve(async (req) => {
     });
 
     const result = await captureRes.json();
-    if (result.status === "COMPLETED") {
+    if (captureRes.ok && result.status === "COMPLETED" && result.id === orderId && result.purchase_units?.some(unit => unit.payments?.captures?.some(capture => capture.status === "COMPLETED"))) {
       return Response.json({ success: true, status: result.status });
     } else {
-      throw new Error(result.message || "Capture failed");
+      throw new Error("Capture failed");
     }
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: "Payment verification failed" }, { status: 500 });
   }
 });
