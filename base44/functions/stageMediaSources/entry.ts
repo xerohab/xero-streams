@@ -13,6 +13,7 @@ export default async function(req:Request){
  for(const v of rows){
  const data={video_id:v.id,video_url:v.video_url||'',download_url:v.download_url||'',subtitles:Array.isArray(v.subtitles)?v.subtitles:[]};
  if(!data.video_url&&!data.download_url&&!data.subtitles.length){counts.empty++;continue;}
+ if(typeof data.video_url!=='string'||typeof data.download_url!=='string'||data.subtitles.some(t=>!t||typeof t.url!=='string')){counts.conflicts++;continue;}
  const matches=await db.ProtectedMediaSource.filter({video_id:v.id});
  if(matches.length>1){counts.conflicts++;continue;}
  if(matches.length===1){
