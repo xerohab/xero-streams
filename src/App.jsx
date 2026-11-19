@@ -86,7 +86,7 @@ const AuthenticatedApp = () => {
   return (
     <>
     <PremiumModalProvider>
-    <ProfileProvider key={user?.id||"guest"}>
+    <ProfileProvider key={user?.id||"guest"} authenticatedUser={user||null}>
     <DownloadManagerProvider>
     <ProfileNotificationMonitor userId={user?.id}/>
     <Routes>
