@@ -73,7 +73,7 @@ export default async function(req:Request){
  const matches=await db.Video.filter({id:b.id});const v=matches.length===1?matches[0]:null;
  if(!v||v.content_type!=='episode'||v.is_adult||v.coming_soon)return Response.json({error:'Unavailable episode'},{status:404});
  if(typeof b.revision!=='string'||!b.revision||b.revision!==v.updated_date)return Response.json({error:'Episode changed; rescan before approving'},{status:409});
- await db.Video.update(b.id,fields);return Response.json({ok:true});
+ await db.Video.update(b.id,fields);for(const kind of seen){const records=await db.MediaScanResult.filter({video_id:b.id,kind});if(records.length===1&&records[0].revision===b.revision)await db.MediaScanResult.update(records[0].id,{status:'approved'}).catch(()=>null);}return Response.json({ok:true});
  }
  return Response.json({error:'Unknown action'},{status:400});
 }
