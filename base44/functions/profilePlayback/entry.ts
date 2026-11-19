@@ -9,10 +9,11 @@ const catalogueFields=[
 ];
 export default async function(req:Request){
 try{
+if(req.method!=='POST')return Response.json({error:'Method not allowed'},{status:405});
 const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
-if(!u||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
+if(!u?.id||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
 const b=await req.json(),db=base.asServiceRole.entities;
-const profiles=typeof b.profile_id==='string'&&b.profile_id.length<=256?await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}):[];
+const profiles=typeof b?.profile_id==='string'&&b.profile_id.trim()&&b.profile_id.length<=256?await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}):[];
 const profile=profiles.length===1?profiles[0]:null;
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
 const scope={user_id:u.id,profile_id:b.profile_id};
@@ -22,7 +23,7 @@ const allowedVideo=async(v:any)=>{
  if(!allowed(v))return false;
  if(!profile.is_kids||!v.series_id)return true;
  if(!seriesAccess.has(v.series_id)){
-  seriesAccess.set(v.series_id,base.entities.Series.filter({id:v.series_id}).then(rows=>allowed(rows[0])));
+  seriesAccess.set(v.series_id,base.entities.Series.filter({id:v.series_id}).then(rows=>rows.length===1&&allowed(rows[0])));
  }
  return seriesAccess.get(v.series_id);
 };
@@ -40,7 +41,7 @@ if(b.action==='catalogue'){
   for(let i=0;i<parentIds.length;i+=100){
    const ids=parentIds.slice(i,i+100);
    const parents=await base.entities.Series.filter({id:{$in:ids}},'id',ids.length);
-   for(const parent of parents.filter(allowed))approvedParents.add(parent.id);
+   for(const id of ids){const matches=parents.filter(parent=>parent.id===id);if(matches.length===1&&allowed(matches[0]))approvedParents.add(id);}
   }
   visible.push(...rated.filter(video=>!video.series_id||approvedParents.has(video.series_id)));
  }
@@ -53,7 +54,8 @@ if(b.action==='catalogue'){
 if(b.action==='source'){
  if(!profile.is_kids)return Response.json({error:'Invalid profile'},{status:403});
  if(typeof b.video_id!=='string'||!b.video_id||b.video_id.length>256)return Response.json({error:'Invalid title'},{status:400});
- const v=(await base.entities.Video.filter({id:b.video_id}))[0];
+ const matches=await base.entities.Video.filter({id:b.video_id});
+ const v=matches.length===1?matches[0]:null;
  if(!(await allowedVideo(v)))return Response.json({error:'Unavailable title'},{status:404});
  // Paid titles must not bypass entitlement checks through the Kids endpoint.
  if(v.is_for_sale){
