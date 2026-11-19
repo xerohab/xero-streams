@@ -134,7 +134,7 @@ export default function Watch() {
   const playbackProfileId=playbackProfile?.id||null;
   const kids=playbackProfile?.is_kids;
   const { data: allVideos = [], isLoading: isLoadingAll } = useQuery({
-    ...mediaCatalogueQuery(base44, "videos", kids ? playbackProfileId : null),
+    ...mediaCatalogueQuery(base44, "videos", kids ? playbackProfileId : null, profilePending),
     enabled: !profilePending,
     staleTime: Infinity,
   });
@@ -142,7 +142,7 @@ export default function Watch() {
   const videoFromAll = allVideos.find(v => v.id === videoId);
 
   const { data: fetchedVideo, isLoading: isFetchingVideo } = useQuery({
-    queryKey: ["video", videoId],
+    queryKey: profilePending ? ["profile_pending_video", videoId] : ["video", videoId],
     queryFn: async () => {
       const videos = await base44.entities.Video.filter({ id: videoId });
       return videos[0];
@@ -176,13 +176,13 @@ export default function Watch() {
   }, [video?.id]);
 
   const { data: seriesList = [] } = useQuery({
-    ...mediaCatalogueQuery(base44, "series", kids ? playbackProfileId : null),
+    ...mediaCatalogueQuery(base44, "series", kids ? playbackProfileId : null, profilePending),
     staleTime: Infinity,
   });
 
   const { data: directFranchises = [] } = useQuery({
     queryKey: ["cinema_catalog", "franchises"],
-    enabled: !kids,
+    enabled: !profilePending && !kids,
     queryFn: () => loadMediaRecords(base44.entities.Franchise, "-created_date", 1000),
     staleTime: Infinity,
   });
