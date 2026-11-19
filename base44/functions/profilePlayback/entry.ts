@@ -52,7 +52,7 @@ if(b.action==='catalogue'){
  }
  const rowsWithoutSources=visible.map(row=>({
   ...Object.fromEntries(catalogueFields.filter(field=>Object.hasOwn(row,field)).map(field=>[field,row[field]])),
-  has_playback:!row.coming_soon&&typeof row.video_url==='string'&&Boolean(row.video_url.trim())
+  has_playback:!row.coming_soon&&(row.has_playback===true||(typeof row.video_url==='string'&&Boolean(row.video_url.trim())))
  }));
  return Response.json({rows:rowsWithoutSources,next:rows.length===500?b.offset+500:null});
 }
