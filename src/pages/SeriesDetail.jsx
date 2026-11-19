@@ -29,7 +29,9 @@ import { getItemActivityAt, isRecentlyUpdated } from "@/lib/activityUtils";
 const OUTLINE_BTN = "xero-action px-5";
 
 export default function SeriesDetail() {
-  const profile = useProfile()?.activeProfile;
+  const context = useProfile();
+  const profile = context?.activeProfile;
+  const pending = Boolean(context?.loading || (context?.user && !profile));
   const kids = Boolean(profile?.is_kids);
   const [searchParams] = useSearchParams();
   const seriesId = searchParams.get("id");
@@ -68,10 +70,10 @@ export default function SeriesDetail() {
   };
 
   const { data: kidsSeries = [], isLoading: kidsSeriesLoading } = useQuery({
-    ...mediaCatalogueQuery(base44, "series", kids ? profile.id : null), enabled: kids,
+    ...mediaCatalogueQuery(base44, "series", kids ? profile.id : null, pending), enabled: !pending && kids,
   });
   const { data: kidsVideos = [], isLoading: kidsVideosLoading } = useQuery({
-    ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null), enabled: kids,
+    ...mediaCatalogueQuery(base44, "videos", kids ? profile.id : null, pending), enabled: !pending && kids,
   });
   const { data: directSeries, isLoading: directSeriesLoading } = useQuery({
     queryKey: ["series", seriesId],
@@ -79,10 +81,10 @@ export default function SeriesDetail() {
       const list = await base44.entities.Series.filter({ id: seriesId });
       return list[0];
     },
-    enabled: !kids && !!seriesId,
+    enabled: !pending && !kids && !!seriesId,
   });
 
-  const series = kids ? kidsSeries.find(item => item.id === seriesId) : directSeries;
+  const series = pending ? null : kids ? kidsSeries.find(item => item.id === seriesId) : directSeries;
   const loadingSeries = kids ? kidsSeriesLoading : directSeriesLoading;
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function SeriesDetail() {
   const { data: directEpisodes = [], isLoading: directEpisodesLoading } = useQuery({
     queryKey: ["episodes", seriesId],
     queryFn: () => base44.entities.Video.filter({ series_id: seriesId }, "sort_order", 2000),
-    enabled: !kids && !!seriesId,
+    enabled: !pending && !kids && !!seriesId,
   });
 
   const episodes = kids && series ? kidsVideos.filter(item => item.series_id === seriesId) : kids ? [] : directEpisodes;
@@ -102,7 +104,7 @@ export default function SeriesDetail() {
   const { data: images = [], isLoading: loadingImages } = useQuery({
     queryKey: ["series-images", seriesId],
     queryFn: () => base44.entities.Image.filter({ series_id: seriesId }, "-created_date"),
-    enabled: !!seriesId && (!kids || Boolean(series)),
+    enabled: !pending && !!seriesId && (!kids || Boolean(series)),
   });
 
   const { data: premiumSubs = [] } = useQuery({
@@ -110,7 +112,7 @@ export default function SeriesDetail() {
     queryFn: () => base44.entities.UserSubscription.filter({ user_id: user.id, status: "active" }),
     enabled: !!user
   });
-  const { data: directFranchise } = useQuery({ queryKey: ["franchise", series?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: series.franchise_id}); return res[0]; }, enabled: !kids && !!series?.franchise_id });
+  const { data: directFranchise } = useQuery({ queryKey: ["franchise", series?.franchise_id], queryFn: async () => { const res = await base44.entities.Franchise.filter({id: series.franchise_id}); return res[0]; }, enabled: !pending && !kids && !!series?.franchise_id });
 
   const franchise = kids ? null : directFranchise;
 
@@ -118,14 +120,14 @@ export default function SeriesDetail() {
   const { data: directSiblings = [] } = useQuery({
     queryKey: ["series_siblings", series?.franchise_id],
     queryFn: () => base44.entities.Series.filter({ franchise_id: series.franchise_id }, "sort_order", 500),
-    enabled: !kids && !!series?.franchise_id,
+    enabled: !pending && !kids && !!series?.franchise_id,
   });
 
   const siblings = kids ? kidsSeries.filter(item => series?.franchise_id && item.franchise_id === series.franchise_id) : directSiblings;
 
   const { data: directRecentSeries = [] } = useQuery({
     queryKey: ["series_recommendations"],
-    enabled: !kids,
+    enabled: !pending && !kids,
     queryFn: () => base44.entities.Series.filter({ is_adult: false }, "-updated_date", 60),
   });
 
@@ -146,7 +148,7 @@ export default function SeriesDetail() {
     .sort((a, b) => Number(b.category === series?.category) - Number(a.category === series?.category))
     .slice(0, 14);
 
-  if (loadingSeries || loadingEpisodes || loadingImages) {
+  if (pending || loadingSeries || loadingEpisodes || loadingImages) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
