@@ -1,3 +1,4 @@
+import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
 import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export default function AdultBulkImageUpload({ adultSeriesList, onSuccess }) {
       setUploadProgress(Math.round(((i + 1) / files.length) * 100));
     }
 
-    await base44.entities.Video.bulkCreate(records);
+    await bulkCreateAdminVideos(records);
     toast.success(`Uploaded ${records.length} image${records.length !== 1 ? "s" : ""}!`);
     setFiles([]);
     setPreviews([]);
