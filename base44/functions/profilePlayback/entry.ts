@@ -13,6 +13,7 @@ if(req.method!=='POST')return Response.json({error:'Method not allowed'},{status
 const base=createClientFromRequest(req),u=await base.auth.me().catch(()=>null);
 if(!u?.id||u.is_banned)return Response.json({error:'Unauthorized'},{status:401});
 const b=await req.json(),db=base.asServiceRole.entities;
+if(!b||typeof b!=='object'||Array.isArray(b))return Response.json({error:'Invalid operation'},{status:400});
 const profiles=typeof b?.profile_id==='string'&&b.profile_id.trim()&&b.profile_id.length<=256?await db.ViewingProfile.filter({id:b.profile_id,user_id:u.id}):[];
 const profile=profiles.length===1?profiles[0]:null;
 if(!profile)return Response.json({error:'Invalid profile'},{status:403});
@@ -33,6 +34,7 @@ if(b.action==='catalogue'){
  if(!['videos','series'].includes(b.kind)||!Number.isSafeInteger(b.offset)||b.offset<0||b.offset>500000)return Response.json({error:'Invalid catalogue page'},{status:400});
  const entity=b.kind==='videos'?base.entities.Video:base.entities.Series;
  const rows=await entity.list('id',500,b.offset);
+ if(!Array.isArray(rows)||rows.length>500||rows.some(row=>!row?.id)||new Set(rows.map(row=>row.id)).size!==rows.length)return Response.json({error:'Conflicting catalogue records'},{status:409});
  const visible=[];
  if(b.kind==='series')visible.push(...rows.filter(allowed));
  else {
