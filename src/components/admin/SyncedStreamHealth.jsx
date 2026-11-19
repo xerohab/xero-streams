@@ -9,7 +9,7 @@ export default function SyncedStreamHealth(){
  for(let i=0;i<1000;i++){const r=await base44.functions.invoke("streamHealth",{action:"list",offset});if(!Array.isArray(r.data?.rows))throw new Error();records.push(...r.data.rows);if(r.data.next===null)break;if(!Number.isInteger(r.data.next)||r.data.next<=offset||i===999)throw new Error();offset=r.data.next;}
  const catalog=await loadMediaRecords(base44.entities.Video);
  const map=new Map();for(const r of records){const old=map.get(r.video_id);if(!old||Date.parse(r.checked_at)>Date.parse(old.checked_at))map.set(r.video_id,r);}
- setRows(catalog.filter(v=>!v.is_adult&&!v.coming_soon&&v.video_url?.startsWith("https://")).map(v=>{const r=map.get(v.id);return {id:v.id,title:v.title,status:!r?"unchecked":r.revision!==(v.updated_date||"")?"stale":r.status,checked_at:r?.checked_at,http_status:r?.http_status};}));setPage(0);
+ setRows(catalog.filter(v=>!v.is_adult&&!v.coming_soon&&(v.has_playback||v.video_url?.startsWith("https://"))).map(v=>{const r=map.get(v.id);return {id:v.id,title:v.title,status:!r?"unchecked":r.revision!==(v.updated_date||"")?"stale":r.status,checked_at:r?.checked_at,http_status:r?.http_status};}));setPage(0);
  }catch{setError("Unable to load synchronized health results.");}finally{setBusy(false);}};
  useEffect(()=>{load();},[]);
  const shown=(rows||[]).filter(r=>(filter==="all"||r.status===filter)&&String(r.title||"").toLowerCase().includes(search.toLowerCase()));
