@@ -1,3 +1,4 @@
+import { loadProfileWatchlists } from "@/lib/profileWatchlists";
 import BrowserNotifications from "@/components/dashboard/BrowserNotifications";
 import DevicesSection from "@/components/dashboard/DevicesSection";
 import FriendsSection from "@/components/dashboard/FriendsSection";
@@ -180,7 +181,7 @@ export default function Dashboard() {
 
   const { data: watchlists = [], refetch: refetchWatchlists } = useQuery({
     queryKey: ["watchlists", user?.id, activeProfile?.id],
-    queryFn: async () => (await base44.entities.Watchlist.filter({ user_id: user.id })).filter(w=>w.profile_id===activeProfile?.id || (!w.profile_id && activeProfile?.is_default)),
+    queryFn: () => loadProfileWatchlists(base44.entities.Watchlist, user.id, activeProfile),
     enabled: !!user && !!activeProfile && !profileLoading
   });
 
