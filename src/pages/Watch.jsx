@@ -53,6 +53,7 @@ export default function Watch() {
 
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [showSkipRecap, setShowSkipRecap] = useState(false);
+  const [showSkipCredits, setShowSkipCredits] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -341,6 +342,7 @@ export default function Watch() {
       setShowSkipRecap(false);
     }
 
+    setShowSkipCredits(Number.isFinite(video.credits_start)&&Number.isFinite(video.credits_end)&&video.credits_start>=0&&video.credits_end>video.credits_start&&Number.isFinite(duration)&&video.credits_end<=duration&&t>=video.credits_start&&t<video.credits_end);
     if (duration > 0 && duration - t <= 10 && !countdownStartedRef.current && nextVideoRef.current) {
       countdownStartedRef.current = true;
       startCountdown(10);
@@ -509,7 +511,7 @@ export default function Watch() {
                   <SkipForward className="w-4 h-4" /> Skip Intro
                 </button>
               )}
-              {showSkipRecap && (
+              {showSkipRecap && !showSkipIntro && (
                 <button
                   onClick={() => {
                     videoRef.current.currentTime = video.recap_end;
@@ -519,6 +521,10 @@ export default function Watch() {
                 >
                   <SkipForward className="w-4 h-4" /> Skip Recap
                 </button>
+              )}
+
+              {showSkipCredits && !showSkipIntro && !showSkipRecap && !embedUrl && (
+                <button className="absolute bottom-20 right-6 bg-black/80 hover:bg-black text-white px-4 py-2 rounded-md font-semibold z-30 flex items-center gap-2" onClick={()=>{const player=videoRef.current;if(player&&Number.isFinite(video.credits_end)&&video.credits_end<=player.duration&&player.currentTime>=video.credits_start&&player.currentTime<video.credits_end)player.currentTime=video.credits_end;}}><SkipForward className="w-4 h-4" /> Skip Credits</button>
               )}
 
               {/* Top-right controls — hidden when coming soon or embedded */}
