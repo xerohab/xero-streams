@@ -42,7 +42,7 @@ export default function MediaPreview({ item, type, isUpdated, isPremium, onDownl
             <Info className="h-4 w-4" />
           </Link>
         )}
-        {onDownload && isPremium && playable && item.video_url && (
+        {onDownload && isPremium && playable && (item.has_playback || item.video_url) && (
           <button type="button" onClick={(event) => onDownload(item, event)} disabled={downloading} aria-label={`Download ${item.title}`} className="flex items-center gap-1 rounded-lg border border-border bg-secondary p-2 text-primary disabled:opacity-60">
             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {downloading && <span className="text-[10px]">{progress}%</span>}
