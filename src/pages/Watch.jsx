@@ -147,7 +147,9 @@ export default function Watch() {
     gcTime: Infinity,
   });
 
-  const kids=useProfile()?.activeProfile?.is_kids;
+  const playbackProfile=useProfile()?.activeProfile;
+  const playbackProfileId=playbackProfile?.id||null;
+  const kids=playbackProfile?.is_kids;
   const candidateVideo = videoFromAll || fetchedVideo;
   const video=kids&&!allowsKidsContent(candidateVideo)?null:candidateVideo;
   const isPurchased = purchases.some(p => p.video_id === video?.id && p.status === "completed");
@@ -350,7 +352,7 @@ export default function Watch() {
 
     if (now - lastSaveRef.current < 10000) return;
     lastSaveRef.current = now;
-    saveProgress(video, t, duration);
+    saveProgress(video, t, duration, playbackProfileId);
 
     // Perk Sphere viewing tracking (every 30 seconds)
     if (user && videoRef.current && now - lastPsTrackRef.current >= 30000) {
@@ -364,12 +366,12 @@ export default function Watch() {
         is_ended: false,
       }).catch(() => {});
     }
-  }, [video, startCountdown, user, sendPlaybackReport]);
+  }, [video, startCountdown, user, sendPlaybackReport, playbackProfileId]);
 
   const handleEnded = useCallback(() => {
     if (video?.id) {
-      removeProgress(video.id);
-      addWatched(video.id);
+      removeProgress(video.id,playbackProfileId);
+      addWatched(video.id,playbackProfileId);
     }
     // Perk Sphere viewing ended signal
     if (user && video?.id && psSessionIdRef.current) {
@@ -385,7 +387,7 @@ export default function Watch() {
     if (!countdownStartedRef.current) {
       startCountdown(10);
     }
-  }, [video, startCountdown, user, sendPlaybackReport]);
+  }, [video, startCountdown, user, sendPlaybackReport, playbackProfileId]);
 
   // Picture-in-Picture
   const handlePiP = async () => {
@@ -465,6 +467,7 @@ export default function Watch() {
                 />
               ) : (
                 <video
+                  key={playbackProfileId||'guest'}
                   ref={videoRef}
                   controls
                   autoPlay
