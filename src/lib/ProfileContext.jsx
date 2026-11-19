@@ -93,6 +93,7 @@ export function ProfileProvider({ children }) {
       let active = list.find((p) => p.id === savedId);
       if (!active) active = list[0]; // fallback to first (default)
       if(active?.is_kids){for(const adult of list.filter(p=>!p.is_kids)){const status=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(status.data?.enabled!==true){active=null;break;}}}
+      if(version!==generation.current)return;
       const authorized=active && await authorizeProfile(active,false);
       if(version!==generation.current)return;
       if (authorized) {
@@ -125,9 +126,10 @@ export function ProfileProvider({ children }) {
   // Switch active profile
   const switchProfile = useCallback(async (profile) => {
     const target=profiles.find(p=>p.id===profile?.id);
-    if(!target)return false;
+    if(!target||loading)return false;
     const version=++generation.current;
     if(target.is_kids){try{for(const adult of profiles.filter(p=>!p.is_kids)){const r=await base44.functions.invoke("profilePin",{action:"status",profile_id:adult.id});if(r.data?.enabled!==true){window.alert("Set a PIN on every adult profile before entering Kids mode.");return false;}}}catch{return false;}}
+    if(version!==generation.current)return false;
     if(!(await authorizeProfile(target,false)))return false;
     if(version!==generation.current)return false;
     profile=target;
@@ -139,7 +141,7 @@ export function ProfileProvider({ children }) {
     // Update last_used_date
     base44.entities.ViewingProfile.update(profile.id, { last_used_date: new Date().toISOString() }).catch(() => {});
     return true;
-  }, [profiles]);
+  }, [profiles, loading]);
 
   // Create a new profile
   const createProfile = useCallback(async (data) => {
@@ -164,7 +166,12 @@ export function ProfileProvider({ children }) {
     const profile=profiles.find(p=>p.id===id);
     if(!profile||!activeProfile||(activeProfile.is_kids&&(id!==activeProfile.id||Object.keys(data).some(k=>!["favourites","favourite_series","favourite_franchises"].includes(k)))))return null;
     if(Object.hasOwn(data,"is_kids")&&Boolean(data.is_kids)!==Boolean(profile.is_kids)){window.alert("Profile age mode cannot be changed. Create a new profile instead.");return null;}
+    const allowed = new Set(['name','avatar','accent_color','favourites','favourite_series','favourite_franchises']);
+    if(Object.keys(data).some(k=>!allowed.has(k)&&k!=='is_kids'))return null;
+    data=Object.fromEntries(Object.entries(data).filter(([k])=>allowed.has(k)));
+    const version=generation.current;
     const updated = await base44.entities.ViewingProfile.update(id, data);
+    if(version!==generation.current)return null;
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
     if (activeProfile?.id === id) {
       setActiveProfileState((prev) => ({ ...prev, ...data }));
