@@ -495,7 +495,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
           )}
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>
-            <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary hover:bg-primary/90">
+            <Button onClick={handleSave} disabled={saving||!sourceReady} className="flex-1 bg-primary hover:bg-primary/90">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
             </Button>
           </div>
