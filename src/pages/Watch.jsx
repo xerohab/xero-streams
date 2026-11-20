@@ -25,6 +25,19 @@ import { saveProgress, getProgress, removeProgress, addWatched, syncPlayback } f
 
 import { useCast } from "@/lib/CastContext";
 
+let castSdkPromise;
+function loadCastSdk(){
+  if(window.cast?.framework && window.chrome?.cast?.isAvailable)return Promise.resolve();
+  if(!castSdkPromise)castSdkPromise=new Promise((resolve,reject)=>{
+    const timeout=setTimeout(()=>reject(new Error('Cast SDK unavailable')),12000);
+    window.__onGCastApiAvailable=available=>{clearTimeout(timeout);available?resolve():reject(new Error('Cast unavailable'));};
+    const script=document.createElement('script');
+    script.src='https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+    script.async=true;script.onerror=()=>{clearTimeout(timeout);reject(new Error('Cast SDK blocked'));};
+    document.head.appendChild(script);
+  });
+  return castSdkPromise;
+}
 function getEmbedUrl(url) {
   if (!url) return null;
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
@@ -41,15 +54,35 @@ export default function Watch() {
   const { isCasting: isMobileCasting } = useCast();
   const videoRef = useRef(null);
   const [castNotice,setCastNotice]=useState('');
+  const [castReady,setCastReady]=useState(false);
+  useEffect(()=>{let live=true;loadCastSdk().then(()=>{window.cast.framework.CastContext.getInstance().setOptions({receiverApplicationId:window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,autoJoinPolicy:window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});if(live)setCastReady(true);}).catch(()=>{});return()=>{live=false;};},[]);
   const handleCast=async()=>{
     const player=videoRef.current;
     if(!player)return;
     setCastNotice('');
     try {
+      if(castReady && !video?.is_adult && !video?.is_for_sale){
+        const context=window.cast.framework.CastContext.getInstance();
+        if(!context.getCurrentSession())await context.requestSession();
+        const session=context.getCurrentSession();
+        if(!session)throw new Error('No receiver selected');
+        const source=new URL(playbackSource);
+        if(source.protocol!=='https:')throw new Error('Unsupported cast source');
+        const ext=source.pathname.toLowerCase();
+        const mime=ext.endsWith('.m3u8')?'application/x-mpegURL':ext.endsWith('.webm')?'video/webm':'video/mp4';
+        const info=new window.chrome.cast.media.MediaInfo(source.href,mime);
+        info.metadata=new window.chrome.cast.media.GenericMediaMetadata();
+        info.metadata.title=video.title||'XeroStreams';
+        const request=new window.chrome.cast.media.LoadRequest(info);
+        request.currentTime=player.currentTime||0;request.autoplay=true;
+        await session.loadMedia(request);player.pause();
+        setCastNotice('Playing on your Cast device. Use your browser Cast controls to disconnect.');
+        return;
+      }
       if(typeof player.webkitShowPlaybackTargetPicker==='function'){player.webkitShowPlaybackTargetPicker();return;}
       if(typeof player.remote?.prompt==='function'){await player.remote.prompt();return;}
       setCastNotice('Use Chrome or Edge’s browser Cast menu to cast this tab, or Safari AirPlay on a compatible device.');
-    } catch(e){if(e?.name!=='NotAllowedError'&&e?.name!=='AbortError')setCastNotice('No compatible casting device found. Check your Wi-Fi connection or use your browser’s Cast menu.');}
+    } catch(e){setCastNotice('No compatible casting device found. Check your Wi-Fi connection or use your browser’s Cast menu.');}
   };
   const [cinemaMode,setCinemaMode]=useState(false);
   const [bingeMode,setBingeMode]=useState(()=>localStorage.getItem("xero_binge_mode")==="true");
