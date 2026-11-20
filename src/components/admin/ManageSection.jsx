@@ -1,3 +1,4 @@
+import {loadAdminVideoSource} from "@/lib/adminVideoWrites";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,7 +147,8 @@ export default function ManageSection({
 
       if (v.quality && v.quality !== "Unknown") continue;
 
-      const text = `${v.title || ''} ${v.video_url || ''} ${v.description || ''}`.toLowerCase();
+      let source;try{source=await loadAdminVideoSource(v.id);}catch{continue;}
+      const text = `${v.title || ''} ${source.video_url || ''} ${v.description || ''}`.toLowerCase();
       let q = "Unknown";
 
       if (text.includes("4k") || text.includes("2160") || text.includes("uhd")) q = "4K";
