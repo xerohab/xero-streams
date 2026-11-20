@@ -6,6 +6,7 @@ export default async function loadMediaRecords(entity, sort = "-created_date", p
   for (let offset = 0; offset <= 500000; offset += pageSize) {
     const page = await entity.list(sort, pageSize, offset);
     if (!Array.isArray(page) || page.length > pageSize) throw new Error("Invalid catalogue page");
+    const before = records.length;
     for (const record of page) {
       if (!record?.id) throw new Error("Invalid catalogue record");
       if (seen.has(record.id)) continue;
@@ -13,6 +14,7 @@ export default async function loadMediaRecords(entity, sort = "-created_date", p
       records.push(record);
     }
     if (page.length < pageSize) return records;
+    if (records.length === before) throw new Error("Repeated or invalid catalogue page");
   }
   throw new Error("Catalogue page limit exceeded");
 }
