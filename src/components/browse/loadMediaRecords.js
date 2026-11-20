@@ -7,7 +7,8 @@ export default async function loadMediaRecords(entity, sort = "-created_date", p
     const page = await entity.list(sort, pageSize, offset);
     if (!Array.isArray(page) || page.length > pageSize) throw new Error("Invalid catalogue page");
     for (const record of page) {
-      if (!record?.id || seen.has(record.id)) throw new Error("Repeated or invalid catalogue record");
+      if (!record?.id) throw new Error("Invalid catalogue record");
+      if (seen.has(record.id)) continue;
       seen.add(record.id);
       records.push(record);
     }
@@ -21,7 +22,7 @@ export function mediaCatalogueQuery(client, kind, kidsProfileId, pending = false
   if (!kidsProfileId) {
     return {
       queryKey: ["cinema_catalog", kind],
-      queryFn: () => loadMediaRecords(entity, "-created_date", kind === "videos" ? 2000 : 1000),
+      queryFn: () => loadMediaRecords(entity, "-id", kind === "videos" ? 2000 : 1000),
     };
   }
   return {
