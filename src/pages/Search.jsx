@@ -61,10 +61,11 @@ export default function Search() {
       return [];
     }
 
-    let filteredVideos = kids? videos.filter(allowsKidsContent):videos;
-    let filteredSeries = kids ? seriesList.filter(allowsKidsContent) : seriesList;
-    let filteredFranchises = kids?[]:franchises;
-    let filteredBooks = kids?[]:books;
+    const restrictedSeries = new Set(seriesList.filter(s => s.is_adult).map(s => s.id));
+    let filteredVideos = videos.filter(v => !v.is_adult && !restrictedSeries.has(v.series_id) && (!kids || allowsKidsContent(v)));
+    let filteredSeries = seriesList.filter(s => !s.is_adult && (!kids || allowsKidsContent(s)));
+    let filteredFranchises = kids ? [] : franchises.filter(f => !f.is_adult);
+    let filteredBooks = kids ? [] : books.filter(b => !b.is_adult);
 
     if (q) {
       filteredVideos = filteredVideos.filter(v => v.title?.toLowerCase().includes(q) || v.description?.toLowerCase().includes(q));
