@@ -1,13 +1,16 @@
 import {createClientFromRequest} from 'npm:@base44/sdk@0.8.52';
 export default async function(req:Request){
+ try{return await handle(req);}catch(e){console.error('Media intelligence failure',e?.name);return Response.json({error:'Media intelligence backend unavailable',detail:String(e?.name||'Error')},{status:503});}
+}
+async function handle(req:Request){
  if(req.method!=='POST')return Response.json({error:'Method not allowed'},{status:405});
  const base=createClientFromRequest(req);
- const u=await base.auth.me().catch(()=>null);
  const presented=req.headers.get('x-scanner-token');
  const worker=['XERO_SCANNER_TOKEN','XERO_LINUX_SCANNER_TOKEN'].some(name=>{
   const token=Deno.env.get(name);
   return !!token&&presented===token;
  });
+ const u=worker?null:await base.auth.me().catch(()=>null);
  if(u?.is_banned||(!worker&&u?.role!=='admin'))return Response.json({error:'Forbidden'},{status:403});
  const db=base.asServiceRole.entities;
  const b=await req.json().catch(()=>({}));
