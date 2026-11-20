@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { loadAdminVideoSource, updateAdminVideo } from "@/lib/adminVideoWrites";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import toast from "react-hot-toast";
 export default function StoreManager() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(null);
+  const openProtectedItem = async item => {try {const source=item._type==='video'?await loadAdminVideoSource(item.id):null;setEditingType(item._type);setEditing(source?{...item,_download_url:source.download_url}:item);}catch(e){toast.error('Unable to load protected download link');}};
   const [editingType, setEditingType] = useState(null); // 'video' or 'book'
   const [searchQuery, setSearchQuery] = useState("");
   const [grantEmail, setGrantEmail] = useState("");
@@ -84,7 +86,7 @@ export default function StoreManager() {
   });
 
   const updateVideo = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Video.update(id, data),
+    mutationFn: ({ id, data }) => updateAdminVideo(id, data),
     onSuccess: () => { queryClient.invalidateQueries(["videos"]); setEditing(null); toast.success("Updated!"); }
   });
 
@@ -128,7 +130,7 @@ export default function StoreManager() {
   if (loadingVideos || loadingBooks) return <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />;
 
   const storeItems = [
-    ...videos.filter(v => v.is_for_sale).map(v => ({ ...v, _type: 'video', _download_url: v.download_url })),
+    ...videos.filter(v => v.is_for_sale).map(v => ({ ...v, _type: 'video', _download_url: undefined })),
     ...books.filter(b => b.is_active).map(b => ({ ...b, _type: 'book', is_for_sale: b.is_active, _download_url: b.file_url }))
   ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
@@ -160,7 +162,7 @@ export default function StoreManager() {
           {searchResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
               {searchResults.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-3 hover:bg-secondary cursor-pointer border-b border-border last:border-0" onClick={() => { setEditingType(item._type); setEditing(item); setSearchQuery(""); }}>
+                <div key={item.id} className="flex items-center justify-between p-3 hover:bg-secondary cursor-pointer border-b border-border last:border-0" onClick={() => { openProtectedItem(item); setSearchQuery(""); }}>
                   <div className="flex items-center gap-2">
                     {item._type === 'video' ? <Film className="w-4 h-4 text-primary" /> : <Book className="w-4 h-4 text-primary" />}
                     <span className="font-medium text-sm">{item.title}</span>
@@ -274,11 +276,11 @@ export default function StoreManager() {
                     <span className="text-primary bg-primary/10 px-2 py-0.5 rounded text-xs">${item.price}</span>
                   </p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1 truncate max-w-md">
-                    <Download className="w-3 h-3" /> {item._download_url || "No download link set"}
+                    <Download className="w-3 h-3" /> {item._download_url || (item._type==='video'?'Protected — open to edit':'No download link set')}
                   </p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" onClick={() => { setEditingType(item._type); setEditing(item); }}>
+              <Button size="sm" variant="outline" onClick={() => { openProtectedItem(item); }}>
                 <Pencil className="w-4 h-4 mr-2" /> Edit Store Options
               </Button>
             </div>
