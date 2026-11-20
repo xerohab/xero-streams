@@ -7,7 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import useHls from "@/hooks/useHls";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CalendarClock, Loader2, PictureInPicture2, SkipForward } from "lucide-react";
+import { CalendarClock, Loader2, PictureInPicture2, SkipForward, Cast } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VideoCard from "@/components/browse/VideoCard";
 import MediaGrid from "@/components/browse/MediaGrid";
@@ -40,6 +40,17 @@ export default function Watch() {
   const videoId = new URLSearchParams(location.search).get("id");
   const { isCasting: isMobileCasting } = useCast();
   const videoRef = useRef(null);
+  const [castNotice,setCastNotice]=useState('');
+  const handleCast=async()=>{
+    const player=videoRef.current;
+    if(!player)return;
+    setCastNotice('');
+    try {
+      if(typeof player.webkitShowPlaybackTargetPicker==='function'){player.webkitShowPlaybackTargetPicker();return;}
+      if(typeof player.remote?.prompt==='function'){await player.remote.prompt();return;}
+      setCastNotice('Use Chrome or Edge’s browser Cast menu to cast this tab, or Safari AirPlay on a compatible device.');
+    } catch(e){if(e?.name!=='NotAllowedError'&&e?.name!=='AbortError')setCastNotice('No compatible casting device found. Check your Wi-Fi connection or use your browser’s Cast menu.');}
+  };
   const [cinemaMode,setCinemaMode]=useState(false);
   const [bingeMode,setBingeMode]=useState(()=>localStorage.getItem("xero_binge_mode")==="true");
   const [playbackPrefs,setPlaybackPrefs]=useState(()=>{try{return JSON.parse(localStorage.getItem("xero_playback_preferences")||"{}");}catch{return {};}});
@@ -597,6 +608,7 @@ export default function Watch() {
 
               {/* Top-right controls — hidden when coming soon or embedded */}
               <div className="absolute top-3 right-3 z-20 flex gap-2">
+                {!playerUnavailable && !embedUrl && !kids && <button type="button" onClick={handleCast} className="bg-black/60 hover:bg-black/90 text-white rounded-full p-2 transition-all backdrop-blur-sm" title="Cast to TV" aria-label="Cast to TV"><Cast className="w-5 h-5"/></button>}
                 {!playerUnavailable && !embedUrl && (
                   <button
                     onClick={handlePiP}
@@ -633,6 +645,7 @@ export default function Watch() {
 
         </div>
         <div className="xero-container">
+          {castNotice && !kids && <p role="status" className="py-2 text-sm text-muted-foreground">{castNotice}</p>}
           {user && !playerUnavailable && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
           {!playerUnavailable&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
           <WatchPrimaryControls video={video} series={series} isComingSoon={isComingSoon} isPremium={isPremium} allowTransactions={!kids} isPurchased={isPurchased} isFavourited={isFavourited} onFavourite={handleToggleFavourite} prevVideo={prevVideo} nextVideo={nextVideo} prevLabel={prevSeriesEpisode || prevEpisode ? "Previous Episode" : "Previous Movie"} nextLabel={nextEpisode ? "Next Episode" : "Next Movie"} onNavigate={navigate} onPurchase={handlePurchase} purchasing={purchasing} />
