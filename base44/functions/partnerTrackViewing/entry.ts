@@ -68,8 +68,8 @@ async function handleRequest(req) {
       );
     }
 
-    const privateSources = !video.video_url && base44.asServiceRole.entities.ProtectedMediaSource ? pageItems(await base44.asServiceRole.entities.ProtectedMediaSource.filter({video_id:videoId})) : [];
-    const mediaUrl=video.video_url || (privateSources.length===1?privateSources[0].video_url:'');
+    const privateSources = base44.asServiceRole.entities.ProtectedMediaSource ? pageItems(await base44.asServiceRole.entities.ProtectedMediaSource.filter({video_id:videoId})) : [];
+    const mediaUrl=privateSources.length===1?privateSources[0].video_url:privateSources.length===0?video.video_url:'';
     // Suppress YouTube content entirely — do not submit any event to Linux.
     if (isYouTubeContent(mediaUrl)) {
       return Response.json({
