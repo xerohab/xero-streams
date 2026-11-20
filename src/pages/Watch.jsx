@@ -61,7 +61,7 @@ export default function Watch() {
     if(!player)return;
     setCastNotice('');
     try {
-      if(castReady && !video?.is_adult && !video?.is_for_sale){
+      if((castReady || (window.cast?.framework && window.chrome?.cast?.isAvailable)) && !video?.is_adult && !video?.is_for_sale){
         const context=window.cast.framework.CastContext.getInstance();
         if(!context.getCurrentSession())await context.requestSession();
         const session=context.getCurrentSession();
@@ -79,9 +79,10 @@ export default function Watch() {
         setCastNotice('Playing on your Cast device. Use your browser Cast controls to disconnect.');
         return;
       }
-      if(typeof player.webkitShowPlaybackTargetPicker==='function'){player.webkitShowPlaybackTargetPicker();return;}
-      if(typeof player.remote?.prompt==='function'){await player.remote.prompt();return;}
-      setCastNotice('Use Chrome or Edge’s browser Cast menu to cast this tab, or Safari AirPlay on a compatible device.');
+      if(typeof player.webkitShowPlaybackTargetPicker==='function' && !window.chrome){player.webkitShowPlaybackTargetPicker();return;}
+      if(castReady){setCastNotice('Direct Google Cast is unavailable for this title. Use your browser menu to cast the tab.');return;}
+      setCastNotice('Google Cast SDK is unavailable in this browser. In Chrome, open the three-dot menu, choose Cast, save and share, then Cast. Select your TV.');return;
+
     } catch(e){setCastNotice('No compatible casting device found. Check your Wi-Fi connection or use your browser’s Cast menu.');}
   };
   const [cinemaMode,setCinemaMode]=useState(false);
