@@ -1,4 +1,4 @@
-import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
+import {loadAdminVideoSource,updateAdminVideo} from "@/lib/adminVideoWrites";
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -203,6 +203,8 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
       });
     }
   }, [video?.id]);
+  const [sourceReady,setSourceReady]=useState(false);
+  useEffect(()=>{let active=true;setSourceReady(false);if(video?.id&&open)loadAdminVideoSource(video.id).then(source=>{if(active){setForm(prev=>({...prev,...source}));setSourceReady(true);}}).catch(()=>{if(active)toast.error('Unable to load protected media source');});return()=>{active=false;};},[video?.id,open]);
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -216,8 +218,9 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
   };
 
   const handleSave = async () => {
+    if(!sourceReady){toast.error('Wait for protected source to load');return;}
     setSaving(true);
-    await updateAdminVideo(video.id, {
+    try { await updateAdminVideo(video.id, {
       ...form,
       content_updated_at: new Date().toISOString(),
       episode_number: form.episode_number ? Number(form.episode_number) : null,
@@ -243,6 +246,7 @@ export default function EditVideoModal({ video, seriesList, franchises = [], cat
       age_rating: form.age_rating || "",
       runtime_or_episodes: form.runtime_or_episodes || "",
     });
+    }catch(e){toast.error(e.message||'Save failed');setSaving(false);return;}
     toast.success("Video updated!");
     setSaving(false);
     onSaved?.();
