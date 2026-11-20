@@ -55,12 +55,20 @@ export default function Watch() {
   const videoRef = useRef(null);
   const [castNotice,setCastNotice]=useState('');
   const [castReady,setCastReady]=useState(false);
-  useEffect(()=>{let live=true;loadCastSdk().then(()=>{window.cast.framework.CastContext.getInstance().setOptions({receiverApplicationId:window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,autoJoinPolicy:window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});if(live)setCastReady(true);}).catch(()=>{});return()=>{live=false;};},[]);
+  const castInitializing=useRef(false);
+  const [autoplayBlocked,setAutoplayBlocked]=useState(false);
   const handleCast=async()=>{
     const player=videoRef.current;
     if(!player)return;
     setCastNotice('');
     try {
+      if(!castReady && !castInitializing.current && !video?.is_adult && !video?.is_for_sale && typeof player.webkitShowPlaybackTargetPicker!=='function'){
+        castInitializing.current=true;
+        setCastNotice('Preparing Google Cast…');
+        try{await loadCastSdk();window.cast.framework.CastContext.getInstance().setOptions({receiverApplicationId:window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,autoJoinPolicy:window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});setCastReady(true);setCastNotice('Cast is ready. Click Cast to TV again to choose a device.');return;}
+        catch{setCastNotice('Google Cast is unavailable. Use Chrome’s Cast menu or a compatible AirPlay device.');return;}
+        finally{castInitializing.current=false;}
+      }
       if((castReady || (window.cast?.framework && window.chrome?.cast?.isAvailable)) && !video?.is_adult && !video?.is_for_sale){
         const context=window.cast.framework.CastContext.getInstance();
         if(!context.getCurrentSession())await context.requestSession();
@@ -570,7 +578,7 @@ export default function Watch() {
                 />
               ) : (
                 <video
-                  key={playbackProfileId||'guest'}
+                  key={`${playbackProfileId||'guest'}:${videoId}`}
                   ref={videoRef}
                   controls
                   autoPlay
@@ -581,11 +589,12 @@ export default function Watch() {
                   className="w-full h-full"
                   poster={video.thumbnail_url}
                   onLoadedMetadata={restorePlaybackPrefs}
+                  onCanPlay={e=>{const p=e.currentTarget;if(p.paused&&p.currentTime===0&&!p.dataset.autoAttempt){p.dataset.autoAttempt='1';p.play().then(()=>setAutoplayBlocked(false)).catch(err=>{if(err?.name==='NotAllowedError')setAutoplayBlocked(true);});}}}
                   onVolumeChange={savePlaybackPrefs}
                   onRateChange={savePlaybackPrefs}
                   onEnded={handleEnded}
                   onTimeUpdate={e=>{handleTimeUpdate();const v=e.currentTarget;if(bingeMode&&Number.isFinite(video.intro_start)&&Number.isFinite(video.intro_end)&&video.intro_end>video.intro_start&&video.intro_end<v.duration&&v.currentTime>=video.intro_start&&v.currentTime<video.intro_end)v.currentTime=video.intro_end;}}
-                  onPlay={trackPlaybackBoundary}
+                  onPlay={e=>{setAutoplayBlocked(false);trackPlaybackBoundary(e);}}
                   onPause={trackPlaybackBoundary}
                   onSeeking={trackPlaybackBoundary}
                   onSeeked={trackPlaybackBoundary}
@@ -679,6 +688,7 @@ export default function Watch() {
 
         </div>
         <div className="xero-container">
+          {autoplayBlocked && !playerUnavailable && <button className="xero-action px-3 py-2" onClick={()=>videoRef.current?.play().then(()=>setAutoplayBlocked(false)).catch(()=>{})}>Play video</button>}
           {castNotice && !kids && <p role="status" className="py-2 text-sm text-muted-foreground">{castNotice}</p>}
           {user && !playerUnavailable && !embedUrl && !video.is_adult && <WatchPartyControls key={videoId} videoId={videoId} videoRef={videoRef} />}
           {!playerUnavailable&&!embedUrl&&<div className="flex gap-3 items-center py-2"><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(v){v.currentTime=0;v.play().catch(()=>{});}}}>Restart</button><label className="flex items-center gap-2"><input type="checkbox" checked={bingeMode} onChange={e=>{setBingeMode(e.target.checked);localStorage.setItem("xero_binge_mode",String(e.target.checked));}}/>Binge Mode</label><button className="xero-action px-3 py-2" onClick={()=>{const v=videoRef.current;if(!v)return;if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});setCinemaMode(false);}else{v.requestFullscreen?.().then(()=>setCinemaMode(true)).catch(()=>{});}}}>{cinemaMode&&isFullscreen?"Exit Cinema Mode":"Cinema Mode"}</button></div>}
