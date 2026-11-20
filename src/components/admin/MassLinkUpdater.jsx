@@ -1,4 +1,4 @@
-import {createAdminVideo,updateAdminVideo,bulkCreateAdminVideos} from "@/lib/adminVideoWrites";
+import {loadAdminVideoSource,updateAdminVideo} from "@/lib/adminVideoWrites";
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -89,10 +89,11 @@ export default function MassLinkUpdater({ videos, seriesList, franchises, onSucc
     setResult(null);
     setLoading(true);
     try {
-      const targets = await getTargetEntities();
+      let targets = await getTargetEntities();
       const field = getFieldForTarget();
       const entityName = getEntityNameForTarget();
       
+      if(entityName==='Video'&&['video_url','download_url'].includes(field)){const resolved=[];for(let i=0;i<targets.length;i+=5){const chunk=targets.slice(i,i+5);resolved.push(...await Promise.all(chunk.map(async v=>({...v,...await loadAdminVideoSource(v.id)}))));}targets=resolved;}
       const affected = targets.filter((v) => v[field] && v[field].includes(findText));
       setPreview(
         affected.map((v) => ({
